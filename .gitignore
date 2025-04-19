@@ -1,0 +1,12 @@
+cache/
+out/
+flat/
+.idea/
+.env
+broadcast
+.DS_Store
+lib/*
+!lib/openzeppelin-contracts/
+!lib/forge-std/
+lcov.info
+report/
