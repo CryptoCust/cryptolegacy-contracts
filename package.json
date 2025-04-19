@@ -1,0 +1,28 @@
+{
+  "name": "cryptolegacy-contracts",
+  "description": "Smart contracts for CryptoLegacy – a secure, upgradeable system for automated crypto asset transfer and recovery in cases of emergency, loss, or inactivity. Powered by EIP-2535 Diamond Standard for modular plugin-based execution.",
+  "version": "1.0.0",
+  "main": "npm run test",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "testm": "forge test -vvv --optimize false --mt",
+    "test": "forge test -vvv --optimize false",
+    "flat": "node ./flat-all.js",
+    "contracts-size": "forge build --sizes",
+    "coverage-summary": "forge coverage --report summary --no-match-coverage '((script|test|(contracts/(mocks|interfaces)))/.*|libraries/LibDiamond.sol)'",
+    "coverage-html": "forge coverage --report lcov --no-match-coverage '((script|test|(contracts/(mocks|interfaces)))/.*|libraries/LibDiamond.sol)' && genhtml lcov.info -o report --branch-coverage --ignore-errors inconsistent,category",
+    "clear": "rm -rf broadcast cache",
+    "build": "npm run clear && forge build",
+    "deploy-arb": "npm run clear && source .env && forge script --chain arbitrum script/MockCryptoLegacyFactory.s.sol --rpc-url $ARBITRUM_RPC_URL --broadcast --verify -vvvv --evm-version shanghai --optimize true --optimizer-runs 200 --private-key $PRIVATE_KEY",
+    "redeploy-arb": "npm run clear && source .env && forge script --chain arbitrum script/UpgradeMockCryptoLegacyFactory.s.sol --rpc-url $ARBITRUM_RPC_URL --broadcast --verify -vvvv --evm-version shanghai --optimize true --optimizer-runs 200 --private-key $PRIVATE_KEY",
+    "deploy-base": "npm run clear && source .env && forge script --chain base script/MockCryptoLegacyFactory.s.sol --rpc-url $BASE_RPC_URL --broadcast --verify -vvvv --evm-version shanghai --optimize true --optimizer-runs 200 --private-key $PRIVATE_KEY",
+    "redeploy-base": "npm run clear && source .env && forge script --chain base script/UpgradeMockCryptoLegacyFactory.s.sol --rpc-url $BASE_RPC_URL --broadcast --verify -vvvv --evm-version shanghai --optimize true --optimizer-runs 200 --private-key $PRIVATE_KEY",
+    "deploy-optimism": "npm run clear && source .env && forge script --chain optimism script/MockCryptoLegacyFactory.s.sol --rpc-url $OPTIMISM_RPC_URL --broadcast --verify -vvvv --evm-version shanghai --optimize true --optimizer-runs 200 --private-key $PRIVATE_KEY",
+    "redeploy-optimism": "npm run clear && source .env && forge script --chain optimism script/UpgradeMockCryptoLegacyFactory.s.sol --rpc-url $OPTIMISM_RPC_URL --broadcast --verify -vvvv --evm-version shanghai --optimize true --optimizer-runs 200 --private-key $PRIVATE_KEY"
+  },
+  "author": "CryptoCustoms",
+  "license": "ISC"
+}

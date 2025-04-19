@@ -1,0 +1,63 @@
+/*
+* Copyright (c) 2024 CryptoCustoms. All Rights Reserved.
+*/
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {CryptoLegacyBasePlugin} from "../plugins/CryptoLegacyBasePlugin.sol";
+
+contract MockMaliciousERC20 is ERC20 {
+    address public targetContract; // The contract to re-enter
+    bool public isReentering; // Flag to prevent infinite loops
+
+    constructor(address _targetContract) ERC20("MaliciousToken", "MTK") {
+        targetContract = _targetContract;
+        _mint(msg.sender, 1000 ether); // Mint some initial tokens
+    }
+
+    // Override the transfer function to re-enter the target contract
+    function transfer(address to, uint256 amount) public override returns (bool) {
+        if (!isReentering && to == targetContract) {
+            isReentering = true;
+            (bool success, bytes memory returnData) = to.call(abi.encodeWithSelector(CryptoLegacyBasePlugin.beneficiaryClaim.selector, new address[](1), address(0), 0));
+            string memory revertMessage;
+            if (returnData.length > 0) {
+                // Manually extract the revert message starting from byte 4
+                bytes memory messageData = new bytes(returnData.length - 4);
+                for (uint256 i = 4; i < returnData.length; i++) {
+                    messageData[i - 4] = returnData[i];
+                }
+                // Decode the message data into a string
+                revertMessage = abi.decode(messageData, (string));
+            }
+            // Compare the parsed revert message with the expected message
+            require(success, revertMessage);
+            isReentering = false;
+        }
+        return super.transfer(to, amount);
+    }
+
+    // Override the transferFrom function to re-enter the target contract
+    function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
+        if (!isReentering && to == targetContract) {
+            isReentering = true;
+            (bool success, bytes memory returnData) = to.call(abi.encodeWithSelector(CryptoLegacyBasePlugin.beneficiaryClaim.selector, new address[](1), address(0), 0));
+            string memory revertMessage;
+            if (returnData.length > 0) {
+                // Manually extract the revert message starting from byte 4
+                bytes memory messageData = new bytes(returnData.length - 4);
+                for (uint256 i = 4; i < returnData.length; i++) {
+                    messageData[i - 4] = returnData[i];
+                }
+                // Decode the message data into a string
+                revertMessage = abi.decode(messageData, (string));
+            }
+            // Compare the parsed revert message with the expected message
+            require(success, revertMessage);
+            isReentering = false;
+        }
+        return super.transferFrom(from, to, amount);
+    }
+}

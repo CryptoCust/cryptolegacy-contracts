@@ -1,0 +1,391 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.13;
+
+import "./AbstractTestHelper.sol";
+import "../contracts/FeeRegistry.sol";
+import "../contracts/LegacyMessenger.sol";
+import "../contracts/PluginsRegistry.sol";
+import "../contracts/mocks/MockERC20.sol";
+import "../contracts/mocks/MockERC721.sol";
+import "../contracts/plugins/LensPlugin.sol";
+import "../contracts/mocks/MockClaimPlugin.sol";
+import "../contracts/plugins/NftLegacyPlugin.sol";
+import "../contracts/interfaces/ICryptoLegacy.sol";
+import "../contracts/CryptoLegacyBuildManager.sol";
+import "../contracts/mocks/MockMaliciousERC20.sol";
+import "../contracts/plugins/UpdateRolePlugin.sol";
+import "../contracts/mocks/MockMaliciousERC721.sol";
+import "../contracts/libraries/LibCryptoLegacy.sol";
+import "../contracts/plugins/LegacyRecoveryPlugin.sol";
+import "../contracts/interfaces/ICryptoLegacyLens.sol";
+import "../contracts/plugins/TrustedGuardiansPlugin.sol";
+import "../contracts/interfaces/ITrustedGuardiansPlugin.sol";
+import "../contracts/plugins/BeneficiaryPluginAddRights.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "./CrossChainTestHelper.sol";
+
+contract FeeRegistryTest is CrossChainTestHelper {
+
+  function setUp() public override {
+    super.setUp();
+  }
+
+  function testFeeRegistry() public {
+    uint256[] memory chainIds = new uint256[](2);
+    chainIds[0] = SIDE_CHAIN_ID_1;
+    chainIds[1] = SIDE_CHAIN_ID_2;
+
+    vm.expectRevert("Ownable: caller is not the owner");
+    feeRegistry.setSupportedRefCodeInChains(chainIds, true);
+
+    vm.prank(owner);
+    feeRegistry.setSupportedRefCodeInChains(chainIds, true);
+
+    uint256[] memory gotChainIds = feeRegistry.getSupportedRefInChainsList();
+    assertEq(gotChainIds, chainIds);
+
+    vm.prank(owner);
+    feeRegistry.setSupportedRefCodeInChains(chainIds, false);
+
+    gotChainIds = feeRegistry.getSupportedRefInChainsList();
+    assertEq(gotChainIds.length, 0);
+
+    chainIds = new uint256[](1);
+    chainIds[0] = SIDE_CHAIN_ID_1;
+
+    vm.prank(owner);
+    feeRegistry.setSupportedRefCodeInChains(chainIds, true);
+
+    gotChainIds = feeRegistry.getSupportedRefInChainsList();
+    assertEq(gotChainIds, chainIds);
+  }
+
+  function testFeeRegistryBeneficiaries() public {
+    vm.prank(owner);
+    pluginsRegistry.addPlugin(lensPlugin, "");
+
+    assertEq(feeRegistry.getContractCaseFee(address(buildManager), buildManager.REGISTRY_BUILD_CASE()), buildFee);
+
+    bytes32[] memory beneficiaryArr = new bytes32[](1);
+    beneficiaryArr[0] = keccak256(abi.encode(bobBeneficiary1));
+    ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr = new ICryptoLegacy.BeneficiaryConfig[](1);
+    beneficiaryConfigArr[0] = ICryptoLegacy.BeneficiaryConfig(10, 100, 10000);
+
+    IFeeRegistry.FeeBeneficiary[] memory custBeneficiaryConfigArr = new IFeeRegistry.FeeBeneficiary[](2);
+    custBeneficiaryConfigArr[0] = IFeeRegistry.FeeBeneficiary(custFeeRecipient1, 4000);
+    custBeneficiaryConfigArr[1] = IFeeRegistry.FeeBeneficiary(custFeeRecipient2, 6000);
+
+    vm.expectRevert("Ownable: caller is not the owner");
+    feeRegistry.setFeeBeneficiaries(custBeneficiaryConfigArr);
+    vm.prank(owner);
+    feeRegistry.setFeeBeneficiaries(custBeneficiaryConfigArr);
+
+    assertEq(custFeeRecipient1.balance, 0);
+    assertEq(custFeeRecipient2.balance, 0);
+    address[] memory plugins = _getBasePlugins();
+    buildRoll();
+    vm.prank(bob);
+    assertEq(address(feeRegistry).balance, 0);
+    assertEq(feeRegistry.accumulatedFee(), 0);
+    ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(bytes8(0), beneficiaryArr, beneficiaryConfigArr, plugins, 180 days, 90 days);
+    address payable cl = buildManager.buildCryptoLegacy{value: buildFee}(buildArgs, _getRefArgsStruct(bob), _getCreate2ArgsStruct(address(0), bytes32(uint(0))));
+
+    vm.expectRevert(ICryptoLegacy.NotBuildManager.selector);
+    CryptoLegacyBasePlugin(cl).initializeByBuildManager(0, 0, buildArgs.beneficiaryHashes, buildArgs.beneficiaryConfig, bytes8(0), uint64(0), uint64(0));
+
+    vm.expectRevert(ICryptoLegacy.AlreadyInit.selector);
+    vm.prank(address(buildManager));
+    CryptoLegacyBasePlugin(cl).initializeByBuildManager(0, 0, buildArgs.beneficiaryHashes, buildArgs.beneficiaryConfig, bytes8(0), uint64(0), uint64(0));
+
+    assertEq(address(feeRegistry).balance, buildFee);
+    assertEq(feeRegistry.accumulatedFee(), buildFee);
+    feeRegistry.withdrawAccumulatedFee();
+    assertEq(feeRegistry.accumulatedFee(), 0);
+    assertEq(address(feeRegistry).balance, 0);
+
+    assertEq(custFeeRecipient1.balance, 0.08 ether);
+    assertEq(custFeeRecipient2.balance, 0.12 ether);
+
+    buildManager.payInitialFee{value: lifetimeFee}(bytes8(0), alice, _getEmptyUintList(), _getEmptyUintList());
+
+    assertEq(address(feeRegistry).balance, lifetimeFee);
+    assertEq(feeRegistry.accumulatedFee(), lifetimeFee);
+    feeRegistry.withdrawAccumulatedFee();
+    assertEq(feeRegistry.accumulatedFee(), 0);
+    assertEq(address(feeRegistry).balance, 0);
+
+    assertEq(custFeeRecipient1.balance, 0.88 ether);
+    assertEq(custFeeRecipient2.balance, 1.32 ether);
+  }
+
+  function testChangeCodeReferrer() public {
+    vm.prank(owner);
+    vm.expectEmit(true, true, true, false);
+    emit IPluginsRegistry.AddPlugin(lensPlugin, "123");
+    pluginsRegistry.addPlugin(lensPlugin, "123");
+
+    bytes8 customRefCodeAlice = 0x0123456789abcdef;
+    bytes8 customRefCodeBob = 0x0123456789abcdee;
+    vm.prank(alice);
+    buildManager.createCustomRef(customRefCodeAlice, aliceRecipient, _getRefChains(), _getRefChains());
+
+    vm.prank(alice);
+    vm.expectRevert(IFeeRegistry.RefAlreadyCreated.selector);
+    buildManager.createCustomRef(customRefCodeAlice, aliceRecipient, _getRefChains(), _getRefChains());
+
+    vm.prank(alice);
+    vm.expectRevert(IFeeRegistry.AlreadyReferrer.selector);
+    buildManager.createCustomRef(customRefCodeBob, aliceRecipient, _getRefChains(), _getRefChains());
+
+    vm.prank(bob);
+    buildManager.createCustomRef(customRefCodeBob, bobBeneficiary1, _getRefChains(), _getRefChains());
+
+    vm.expectRevert(IFeeRegistry.NotReferrer.selector);
+    feeRegistry.changeCodeReferrer(bytes8(0), dan, dan, _getEmptyUintList(), _getEmptyUintList());
+
+    vm.expectRevert(IFeeRegistry.NotReferrer.selector);
+    feeRegistry.changeCodeReferrer(customRefCodeAlice, dan, dan, _getEmptyUintList(), _getEmptyUintList());
+
+    vm.prank(alice);
+    vm.expectRevert(IFeeRegistry.AlreadyReferrer.selector);
+    feeRegistry.changeCodeReferrer(customRefCodeAlice, bob, bob, _getEmptyUintList(), _getEmptyUintList());
+
+    vm.prank(alice);
+    vm.expectRevert(IFeeRegistry.AlreadyReferrer.selector);
+    feeRegistry.changeCodeReferrer(customRefCodeAlice, alice, alice, _getEmptyUintList(), _getEmptyUintList());
+
+    vm.prank(alice);
+    feeRegistry.changeCodeReferrer(customRefCodeAlice, dan, dan, _getEmptyUintList(), _getEmptyUintList());
+
+    vm.prank(dan);
+    feeRegistry.changeRecipientReferrer(customRefCodeAlice, danRecipient, _getEmptyUintList(), _getEmptyUintList());
+
+    bytes32[] memory beneficiaryArr = new bytes32[](1);
+    beneficiaryArr[0] = keccak256(abi.encode(bobBeneficiary1));
+    ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr = new ICryptoLegacy.BeneficiaryConfig[](1);
+    beneficiaryConfigArr[0] = ICryptoLegacy.BeneficiaryConfig(10, 100, 10000);
+    address[] memory plugins = _getBasePlugins();
+
+    buildRoll();
+
+    uint256 discount = buildFee * refDiscountPct / 10000;
+    uint256 share = buildFee * refSharePct / 10000;
+    assertEq(aliceRecipient.balance, 0);
+    assertEq(danRecipient.balance, 0);
+    ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(customRefCodeAlice, beneficiaryArr, beneficiaryConfigArr, plugins, 180 days, 90 days);
+    buildManager.buildCryptoLegacy{value: buildFee - discount}(buildArgs, _getRefArgsStruct(address(0)), _getCreate2ArgsStruct(address(0), bytes32(uint(0))));
+    assertEq(aliceRecipient.balance, 0);
+    assertEq(danRecipient.balance, share);
+
+    vm.prank(owner);
+    vm.expectEmit(true, true, true, false);
+    emit IPluginsRegistry.RemovePlugin(lensPlugin);
+    pluginsRegistry.removePlugin(lensPlugin);
+
+    buildRoll();
+
+    vm.expectRevert(LibCreate2Deploy.Create2Failed.selector);
+    buildManager.buildCryptoLegacy{value: buildFee - discount}(buildArgs, _getRefArgsStruct(address(0)), _getCreate2ArgsStruct(address(0), bytes32(uint(0))));
+  }
+
+  function testCrossChainRefs() public {
+    uint256[] memory chainIdsToLock = new uint256[](2);
+    chainIdsToLock[0] = SIDE_CHAIN_ID_1;
+    chainIdsToLock[1] = SIDE_CHAIN_ID_2;
+
+    uint256[] memory crossChainFees = new uint256[](2);
+    crossChainFees[0] = deBridgeFee + 1;
+    crossChainFees[1] = deBridgeFee + 2;
+
+    vm.prank(alice);
+    vm.expectRevert(abi.encodeWithSelector(ILockChainGate.IncorrectFee.selector, deBridgeFee * 2 + 3));
+    buildManager.createRef(bob, chainIdsToLock, crossChainFees);
+
+    vm.expectRevert("Ownable: caller is not the owner");
+    feeRegistry.setCodeOperator(address(buildManager), false);
+
+    vm.prank(owner);
+    feeRegistry.setCodeOperator(address(buildManager), false);
+
+    vm.prank(alice);
+    vm.expectRevert(IFeeRegistry.NotOperator.selector);
+    buildManager.createRef{value: deBridgeFee * 2 + 3}(bob, chainIdsToLock, crossChainFees);
+
+    vm.prank(owner);
+    feeRegistry.setCodeOperator(address(buildManager), true);
+
+    vm.prank(alice);
+    vm.expectEmit(true, true, true, false);
+    emit MockDeBridgeGate.SentMessage(SIDE_CHAIN_ID_1, deBridgeFee);
+    (bytes8 refCode, ) = buildManager.createRef{value: deBridgeFee * 2 + 3}(bob, chainIdsToLock, crossChainFees);
+
+    IFeeRegistry.Referrer memory ref = mainLock.refererByCode(refCode);
+    assertEq(ref.owner, alice);
+    assertEq(ref.recipient, bob);
+
+    assertEq(mainLock.codeByReferrer(alice), refCode);
+
+    mockCallProxy.setSourceChainIdAndContract(mainLock);
+    mockDeBridgeGate.executeLastMessage();
+    _checkDeBridgeCallData(abi.encodeWithSelector(sideLock2.crossCreateCustomCode.selector, MAIN_CHAIN_ID, alice, bob, refCode, uint32(0), uint32(0)));
+
+    vm.prank(address(mockCallProxy));
+    sideLock1.crossCreateCustomCode(MAIN_CHAIN_ID, alice, bob, refCode, uint32(0), uint32(0));
+
+    ref = sideLock1.refererByCode(refCode);
+    assertEq(ref.owner, alice);
+    assertEq(ref.recipient, bob);
+
+    assertEq(sideLock1.codeByReferrer(alice), refCode);
+
+    ref = sideLock2.refererByCode(refCode);
+    assertEq(ref.owner, alice);
+    assertEq(ref.recipient, bob);
+
+    assertEq(sideLock2.codeByReferrer(alice), refCode);
+
+    vm.prank(alice);
+    feeRegistry.changeRecipientReferrer(refCode, dan, _getEmptyUintList(), _getEmptyUintList());
+
+    uint32 specificDiscountPct = uint32(refDiscountPct + 1);
+    uint32 specificSharePct = uint32(refSharePct + 1);
+    vm.prank(owner);
+    feeRegistry.setRefererSpecificPct(alice, specificDiscountPct, specificSharePct);
+
+    (uint32 discountPct, uint32 sharePct) = feeRegistry.getCodePct(refCode);
+    assertEq(discountPct, uint32(refDiscountPct + 1));
+    assertEq(sharePct, uint32(refSharePct + 1));
+
+    chainIdsToLock[0] = SIDE_CHAIN_ID_3;
+    chainIdsToLock[1] = SIDE_CHAIN_ID_2;
+
+    crossChainFees[0] = 0;
+    crossChainFees[1] = 0;
+
+    vm.prank(alice);
+    buildManager.updateCrossChainsRef{value: deBridgeFee * 2}(chainIdsToLock, crossChainFees);
+
+    mockCallProxy.setSourceChainIdAndContract(mainLock);
+    mockDeBridgeGate.executeLastMessage();
+    _checkDeBridgeCallData(abi.encodeWithSelector(sideLock2.crossUpdateCustomCode.selector, MAIN_CHAIN_ID, alice, dan, refCode, specificDiscountPct, specificSharePct));
+
+    (discountPct, sharePct) = sideLock2.getCodePct(refCode);
+    assertEq(discountPct, uint32(refDiscountPct + 1));
+    assertEq(sharePct, uint32(refSharePct + 1));
+
+    vm.prank(address(mockCallProxy));
+    sideLock3.crossUpdateCustomCode(MAIN_CHAIN_ID, alice, dan, refCode, specificDiscountPct, specificSharePct);
+
+    ref = sideLock1.refererByCode(refCode);
+    assertEq(ref.owner, alice);
+    assertEq(ref.recipient, bob);
+
+    ref = sideLock2.refererByCode(refCode);
+    assertEq(ref.owner, alice);
+    assertEq(ref.recipient, dan);
+
+    ref = sideLock3.refererByCode(refCode);
+    assertEq(ref.owner, alice);
+    assertEq(ref.recipient, dan);
+
+    vm.prank(alice);
+    feeRegistry.changeCodeReferrer(refCode, bob, bob, _getEmptyUintList(), _getEmptyUintList());
+
+    (discountPct, sharePct) = sideLock2.getCodePct(refCode);
+    assertEq(discountPct, uint32(refDiscountPct + 1));
+    assertEq(sharePct, uint32(refSharePct + 1));
+
+    chainIdsToLock = new uint256[](3);
+    chainIdsToLock[0] = SIDE_CHAIN_ID_1;
+    chainIdsToLock[1] = SIDE_CHAIN_ID_2;
+    chainIdsToLock[2] = SIDE_CHAIN_ID_3;
+
+    crossChainFees = new uint256[](3);
+    crossChainFees[0] = deBridgeFee + 1;
+    crossChainFees[1] = deBridgeFee + 2;
+    crossChainFees[2] = deBridgeFee + 3;
+
+    vm.prank(alice);
+    vm.expectRevert(IFeeRegistry.CodeNotCreated.selector);
+    buildManager.updateCrossChainsRef{value: deBridgeFee * 3 + 6}(chainIdsToLock, crossChainFees);
+
+    vm.prank(bob);
+    buildManager.updateCrossChainsRef{value: deBridgeFee * 3 + 6}(chainIdsToLock, crossChainFees);
+
+    mockCallProxy.setSourceChainIdAndContract(mainLock);
+    mockDeBridgeGate.executeLastMessage();
+    assertEq(mockDeBridgeGate.targetContractAddress(), address(sideLock3));
+    _checkDeBridgeCallData(abi.encodeWithSelector(sideLock3.crossUpdateCustomCode.selector, MAIN_CHAIN_ID, bob, bob, refCode, specificDiscountPct, specificSharePct));
+
+    vm.prank(address(mockCallProxy));
+    sideLock2.crossUpdateCustomCode(MAIN_CHAIN_ID, bob, bob, refCode, specificDiscountPct, specificSharePct);
+
+    vm.prank(address(mockCallProxy));
+    sideLock1.crossUpdateCustomCode(MAIN_CHAIN_ID, bob, bob, refCode, specificDiscountPct, specificSharePct);
+
+    ref = sideLock1.refererByCode(refCode);
+    assertEq(ref.owner, bob);
+    assertEq(ref.recipient, bob);
+
+    ref = sideLock2.refererByCode(refCode);
+    assertEq(ref.owner, bob);
+    assertEq(ref.recipient, bob);
+
+    ref = sideLock3.refererByCode(refCode);
+    assertEq(ref.owner, bob);
+    assertEq(ref.recipient, bob);
+
+    (discountPct, sharePct) = sideLock2.getCodePct(refCode);
+    assertEq(discountPct, specificDiscountPct);
+    assertEq(sharePct, specificSharePct);
+
+    vm.prank(owner);
+    feeRegistry.setRefererSpecificPct(bob, uint32(0), uint32(0));
+
+    chainIdsToLock = new uint256[](2);
+    chainIdsToLock[0] = SIDE_CHAIN_ID_1;
+    chainIdsToLock[1] = SIDE_CHAIN_ID_2;
+
+    crossChainFees = new uint256[](2);
+    crossChainFees[0] = deBridgeFee + 1;
+    crossChainFees[1] = deBridgeFee + 2;
+
+    vm.prank(bob);
+    feeRegistry.changeCodeReferrer{value: deBridgeFee * 2 + 3}(refCode, alice, alice, chainIdsToLock, crossChainFees);
+
+    mockDeBridgeGate.executeLastMessage();
+    vm.prank(address(mockCallProxy));
+    sideLock1.crossUpdateCustomCode(MAIN_CHAIN_ID, alice, dan, refCode, uint32(0), uint32(0));
+
+    (discountPct, sharePct) = sideLock2.getCodePct(refCode);
+    assertEq(discountPct, refDiscountPct);
+    assertEq(sharePct, refSharePct);
+
+    assertEq(buildManager.calculateCrossChainCreateRefFee(chainIdsToLock, crossChainFees), deBridgeFee * 2 + 3);
+    vm.prank(charlie);
+    (bytes8 newRefCode, ) = buildManager.createRef{value: deBridgeFee * 2 + 3}(charlie, chainIdsToLock, crossChainFees);
+
+    ref = sideLock3.refererByCode(refCode);
+    assertEq(ref.owner, bob);
+    assertEq(ref.recipient, bob);
+
+    chainIdsToLock = new uint256[](1);
+    chainIdsToLock[0] = SIDE_CHAIN_ID_3;
+
+    crossChainFees = new uint256[](1);
+    crossChainFees[0] = deBridgeFee + 3;
+
+    vm.prank(charlie);
+    feeRegistry.changeCodeReferrer{value: deBridgeFee + 3}(newRefCode, bob, bob, chainIdsToLock, crossChainFees);
+
+    mockDeBridgeGate.executeLastMessage();
+
+    ref = sideLock3.refererByCode(refCode);
+    assertEq(ref.owner, bob);
+    assertEq(ref.recipient, bob);
+
+    ref = sideLock3.refererByCode(newRefCode);
+    assertEq(ref.owner, address(0));
+    assertEq(ref.recipient, address(0));
+  }
+}
