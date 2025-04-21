@@ -105,8 +105,9 @@ contract SignatureRoleTimelockTest is AbstractTestHelper {
 
         vm.stopPrank();
 
-        sigs = new ISignatureRoleTimelock.SignatureToAdd[](1);
+        sigs = new ISignatureRoleTimelock.SignatureToAdd[](2);
         sigs[0] = ISignatureRoleTimelock.SignatureToAdd(address(feeRegistry), feeRegistry.setDebridgeNativeFee.selector, ROLE_2, 3 days);
+        sigs[1] = ISignatureRoleTimelock.SignatureToAdd(address(buildManager), buildManager.setExternalLens.selector, ROLE_2, 0);
         vm.prank(address(srt));
         vm.expectRevert(ISignatureRoleTimelock.RoleDontExist.selector);
         srt.addSignatureRoleList(sigs);
@@ -131,16 +132,24 @@ contract SignatureRoleTimelockTest is AbstractTestHelper {
         vm.prank(owner);
         feeRegistry.transferOwnership(address(srt));
 
-        vm.startPrank(owner);
+        vm.prank(owner);
         vm.expectRevert(ISignatureRoleTimelock.CallerNotCurrentAddress.selector);
         srt.addSignatureRoleList(sigs);
+
+        sigs[0].timelock = 10 days;
+
+        vm.prank(address(srt));
+        vm.expectRevert(abi.encodeWithSelector(ISignatureRoleTimelock.OutOfTimelockBounds.selector, 7 days));
+        srt.addSignatureRoleList(sigs);
+
+        sigs[0].timelock = 3 days;
 
         bytes memory addSignatureBytes = abi.encodeWithSelector(srt.addSignatureRoleList.selector, sigs);
 
         ISignatureRoleTimelock.CallToAdd[] memory calls = new ISignatureRoleTimelock.CallToAdd[](1);
         calls[0] = ISignatureRoleTimelock.CallToAdd(address(srt), addSignatureBytes);
+        vm.prank(owner);
         bytes32[] memory callIds = srt.scheduleCallList(calls);
-        vm.stopPrank();
 
         (role, timelock) = srt.signatureRoles(address(feeRegistry), feeRegistry.setDebridgeNativeFee.selector);
         assertEq(timelock, 0 days);
@@ -181,9 +190,10 @@ contract SignatureRoleTimelockTest is AbstractTestHelper {
         assertEq(resSigs[1].timelock, 3 days);
 
         targets = srt.getTargets();
-        assertEq(targets.length, 2);
+        assertEq(targets.length, 3);
         assertEq(targets[0], address(srt));
         assertEq(targets[1], address(feeRegistry));
+        assertEq(targets[2], address(buildManager));
 
         (role, timelock) = srt.signatureRoles(address(feeRegistry), feeRegistry.setDebridgeGate.selector);
         assertEq(timelock, 2 days);
@@ -348,10 +358,17 @@ contract SignatureRoleTimelockTest is AbstractTestHelper {
         assertEq(resSigs[0].role, ROLE_2);
         assertEq(resSigs[0].timelock, 3 days);
 
+        resSigs = srt.getTargetSigs(address(buildManager));
+        assertEq(resSigs.length, 1);
+        assertEq(resSigs[0].signature, buildManager.setExternalLens.selector);
+        assertEq(resSigs[0].role, ROLE_2);
+        assertEq(resSigs[0].timelock, 1);
+
         targets = srt.getTargets();
-        assertEq(targets.length, 2);
+        assertEq(targets.length, 3);
         assertEq(targets[0], address(srt));
         assertEq(targets[1], address(feeRegistry));
+        assertEq(targets[2], address(buildManager));
 
         sigsToRemove[0] = ISignatureRoleTimelock.SignatureToRemove(address(feeRegistry), feeRegistry.setDebridgeNativeFee.selector);
 
@@ -361,8 +378,9 @@ contract SignatureRoleTimelockTest is AbstractTestHelper {
         assertEq(resSigs.length, 0);
 
         targets = srt.getTargets();
-        assertEq(targets.length, 1);
+        assertEq(targets.length, 2);
         assertEq(targets[0], address(srt));
+        assertEq(targets[1], address(buildManager));
 
         assertEq(srt.hasRole(ROLE_2, dan), true);
         assertEq(srt.hasRole(ROLE_2, alice), false);
@@ -418,6 +436,10 @@ contract SignatureRoleTimelockTest is AbstractTestHelper {
 
         vm.prank(msig2);
         callIds = srt.scheduleCallList(calls);
+
+        vm.expectRevert(ISignatureRoleTimelock.CallAlreadyScheduled.selector);
+        vm.prank(msig2);
+        srt.scheduleCallList(calls);
 
         vm.warp(block.timestamp + LibDeploy._getDefaultTimelock() / 2);
 
@@ -499,9 +521,23 @@ contract SignatureRoleTimelockTest is AbstractTestHelper {
         callIds = srt.scheduleCallList(callsToClearCustomChain);
 
         ISignatureRoleTimelock.SignatureToAdd[] memory sigs = new ISignatureRoleTimelock.SignatureToAdd[](1);
-        sigs[0] = ISignatureRoleTimelock.SignatureToAdd(address(feeRegistry), upgradedFeeRegistry.clearCustomChainId.selector, LibDeploy._getMsig2Role(), LibDeploy._getDefaultTimelock());
+        sigs[0] = ISignatureRoleTimelock.SignatureToAdd(address(feeRegistry), upgradedFeeRegistry.clearCustomChainId.selector, LibDeploy.stringToHash("MultiSig4"), LibDeploy._getDefaultTimelock());
 
         bytes memory addSignatureBytes = abi.encodeWithSelector(srt.addSignatureRoleList.selector, sigs);
+        calls = new ISignatureRoleTimelock.CallToAdd[](1);
+        calls[0] = ISignatureRoleTimelock.CallToAdd(address(srt), addSignatureBytes);
+
+        vm.prank(msig1);
+        callIds = srt.scheduleCallList(calls);
+
+        vm.warp(block.timestamp + 5 days);
+
+        vm.expectRevert(abi.encodeWithSelector(ISignatureRoleTimelock.CallFailed.selector, abi.encodeWithSelector(ISignatureRoleTimelock.RoleDontExist.selector)));
+        srt.executeCallList(callIds);
+
+        sigs[0] = ISignatureRoleTimelock.SignatureToAdd(address(feeRegistry), upgradedFeeRegistry.clearCustomChainId.selector, LibDeploy._getMsig2Role(), LibDeploy._getDefaultTimelock());
+
+        addSignatureBytes = abi.encodeWithSelector(srt.addSignatureRoleList.selector, sigs);
         calls = new ISignatureRoleTimelock.CallToAdd[](1);
         calls[0] = ISignatureRoleTimelock.CallToAdd(address(srt), addSignatureBytes);
 

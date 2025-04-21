@@ -69,6 +69,46 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(version, uint16(1));
   }
 
+  function testBuildManagerOwnerFunctions() public {
+    vm.expectRevert("Ownable: caller is not the owner");
+    buildManager.setRegistries(IFeeRegistry(address(1)), IPluginsRegistry(address(2)), IBeneficiaryRegistry(address(3)));
+
+    vm.prank(owner);
+    buildManager.setRegistries(IFeeRegistry(address(1)), IPluginsRegistry(address(2)), IBeneficiaryRegistry(address(3)));
+
+    assertEq(address(buildManager.feeRegistry()), address(1));
+    assertEq(address(buildManager.pluginsRegistry()), address(2));
+    assertEq(address(buildManager.beneficiaryRegistry()), address(3));
+
+    vm.expectRevert("Ownable: caller is not the owner");
+    buildManager.setFactory(ICryptoLegacyFactory(address(4)));
+
+    vm.prank(owner);
+    buildManager.setFactory(ICryptoLegacyFactory(address(4)));
+    assertEq(buildManager.getFactoryAddress(), address(4));
+  }
+
+  function testBuildManagerIntervalRestrictions() public {
+    vm.startPrank(owner);
+    CryptoLegacyBuildManager newBuildManager = new CryptoLegacyBuildManager(owner, feeRegistry, pluginsRegistry, beneficiaryRegistry, lifetimeNft, factory);
+    LibDeploy._afterDeployBuildManager(newBuildManager);
+    feeRegistry.setCodeOperator(address(newBuildManager), true);
+    vm.stopPrank();
+
+    bytes32[] memory beneficiaryArr = new bytes32[](2);
+    beneficiaryArr[0] = keccak256(abi.encode(bobBeneficiary1));
+    beneficiaryArr[1] = keccak256(abi.encode(bobBeneficiary2));
+    ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr = new ICryptoLegacy.BeneficiaryConfig[](2);
+    beneficiaryConfigArr[0] = ICryptoLegacy.BeneficiaryConfig(0, 0, 4000);
+    beneficiaryConfigArr[1] = ICryptoLegacy.BeneficiaryConfig(0, 0, 6000);
+
+    ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(bytes8(0), beneficiaryArr, beneficiaryConfigArr, _getBasePlugins(), updateInterval - 1, challengeTimeout);
+    buildRoll();
+
+    vm.expectRevert(ICryptoLegacyBuildManager.NotValidTimeout.selector);
+    newBuildManager.buildCryptoLegacy(buildArgs, _getRefArgsStruct(bob), _getCreate2ArgsStruct(address(0), bytes32(uint(0))));
+  }
+
   function testProxyBuilder() public {
     address newProxyAdmin = address(new ProxyAdmin());
     vm.expectRevert("Ownable: caller is not the owner");
@@ -183,6 +223,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.stopPrank();
 
     (CryptoLegacyBasePlugin cryptoLegacy, , , ) = _buildCryptoLegacyWithPlugins(bob, buildFee, bytes8(0), _getOneInitPluginList(lensPlugin));
+    assertEq(cryptoLegacy.getCryptoLegacyVer(), 1);
     CryptoLegacy cl = CryptoLegacy(payable(address(cryptoLegacy)));
     DiamondLoupeFacet.Facet[] memory facets = cl.facets();
     assertEq(facets.length, 2);
@@ -199,16 +240,29 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     assertEq(cl.facetAddress(facets[0].functionSelectors[0]), facets[0].facetAddress);
     assertEq(cl.supportsInterface(facets[0].functionSelectors[0]), false);
+
+    vm.expectRevert(ICryptoLegacyDiamondBase.NotSelfCall.selector);
+    cl.staticCallChecker();
   }
 
   function testCreateCryptoLegacyAndUpdate() public {
     bytes8 customRefCode = 0x0123456789abcdef;
+
+    vm.expectRevert(IFeeRegistry.ZeroCode.selector);
+    buildManager.createCustomRef(bytes8(0), aliceRecipient, _getRefChains(), _getRefChains());
+
     vm.prank(alice);
     vm.expectEmit(true, true, true, true);
     emit ICryptoLegacyBuildManager.CreateCustomRef(alice, customRefCode, aliceRecipient, _getRefChains());
     (bytes8 refCode, ) = buildManager.createCustomRef(customRefCode, aliceRecipient, _getRefChains(), _getRefChains());
     assertEq(customRefCode, refCode);
     IFeeRegistry.Referrer memory ref = feeRegistry.getReferrerByCode(refCode);
+    assertEq(ref.owner, alice);
+    assertEq(ref.recipient, aliceRecipient);
+    assertEq(ref.sharePct, feeRegistry.defaultSharePct());
+    assertEq(ref.discountPct, feeRegistry.defaultDiscountPct());
+
+    ref = feeRegistry.getReferrerByAddress(alice);
     assertEq(ref.owner, alice);
     assertEq(ref.recipient, aliceRecipient);
     assertEq(ref.sharePct, feeRegistry.defaultSharePct());
@@ -375,7 +429,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(mockToken1.balanceOf(bobBeneficiary1), 40 ether);
   }
 
-  function _buildCryptoLegacyWithVesting() internal returns(CryptoLegacyBasePlugin cryptoLegacy, ICryptoLegacyLens cryptoLegacyLens, bytes32[] memory beneficiaryArr, ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr) {
+  function _buildCryptoLegacyWithVesting() internal returns(CryptoLegacyBasePlugin cryptoLegacy, LensPlugin cryptoLegacyLens, bytes32[] memory beneficiaryArr, ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr) {
     vm.prank(owner);
     pluginsRegistry.addPlugin(lensPlugin, "");
 
@@ -392,7 +446,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(bytes8(0), beneficiaryArr, beneficiaryConfigArr, _getBasePlugins(), 180 days, 90 days);
     address payable cl = buildManager.buildCryptoLegacy{value: buildFee}(buildArgs, _getRefArgsStruct(bob), _getCreate2ArgsStruct(address(0), bytes32(uint(0))));
     cryptoLegacy = CryptoLegacyBasePlugin(cl);
-    cryptoLegacyLens = ICryptoLegacyLens(cl);
+    cryptoLegacyLens = LensPlugin(cl);
     ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
     assertEq(clData.lastUpdateAt, createdAt);
   }
@@ -400,7 +454,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
   function testCreateCryptoLegacyVesting() public {
     (
       CryptoLegacyBasePlugin cryptoLegacy,
-      ICryptoLegacyLens cryptoLegacyLens,
+      LensPlugin cryptoLegacyLens,
       bytes32[] memory beneficiaryArr,
       ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr
     ) = _buildCryptoLegacyWithVesting();
@@ -414,6 +468,13 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(beneficiaryConfigArr[1].shareBps, clListData.beneficiaryConfigArr[1].shareBps);
     assertEq(beneficiaryConfigArr[1].claimDelay, clListData.beneficiaryConfigArr[1].claimDelay);
     assertEq(beneficiaryConfigArr[1].vestingPeriod, clListData.beneficiaryConfigArr[1].vestingPeriod);
+
+    {
+      ICryptoLegacy.BeneficiaryConfig memory bConfig = cryptoLegacyLens.getBeneficiaryConfig(addressToHash(bobBeneficiary1));
+      assertEq(beneficiaryConfigArr[0].shareBps, bConfig.shareBps);
+      assertEq(beneficiaryConfigArr[0].claimDelay, bConfig.claimDelay);
+      assertEq(beneficiaryConfigArr[0].vestingPeriod, bConfig.vestingPeriod);
+    }
 
     ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
     vm.warp(block.timestamp + clData.updateInterval);
@@ -474,6 +535,8 @@ contract CryptoLegacyTest is AbstractTestHelper {
     cryptoLegacy.beneficiaryClaim(_getOneAddressList(address(mockToken1)), address(0), 0);
     assertEq(mockToken1.balanceOf(bobBeneficiary2), 1.2 ether);
     assertEq(mockToken1.balanceOf(bobBeneficiary1), 1.6 ether);
+
+    assertEq(cryptoLegacyLens.getBeneficiaryVesting(addressToHash(bobBeneficiary1), address(mockToken1)), 1.6 ether);
 
     vm.warp(block.timestamp + 3);
     cryptoLegacy.beneficiaryClaim(_getOneAddressList(address(mockToken1)), address(0), 0);
@@ -625,7 +688,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
   }
 
   function testCreateCryptoLegacyVestingAndAddTokens() public {
-    (CryptoLegacyBasePlugin cryptoLegacy, ICryptoLegacyLens cryptoLegacyLens, , ) = _buildCryptoLegacyWithVesting();
+    (CryptoLegacyBasePlugin cryptoLegacy, LensPlugin cryptoLegacyLens, , ) = _buildCryptoLegacyWithVesting();
 
     vm.prank(treasury);
     mockToken1.approve(address(cryptoLegacy), 100 ether);
@@ -644,6 +707,8 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.prank(bobBeneficiary1);
     cryptoLegacy.transferTreasuryTokensToLegacy(_treasuries, _tokens);
 
+    assertEq(address(buildManager).balance, 0);
+
     vm.startPrank(bobBeneficiary1);
     vm.warp(block.timestamp + 10 + 1);
     cryptoLegacy.beneficiaryClaim{value: updateFee}(_tokens, address(0), 0);
@@ -651,6 +716,8 @@ contract CryptoLegacyTest is AbstractTestHelper {
     (ICryptoLegacyLens.BeneficiaryTokenData[] memory result, uint64 startDate, uint64 endDate) = cryptoLegacyLens.getVestedAndClaimedData(addressToHash(bobBeneficiary1), _getOneAddressList(address(mockToken1)));
     assertEq(result[0].vestedAmount, 0.8 ether);
     assertEq(result[0].claimedAmount, 0.8 ether);
+
+    assertEq(address(buildManager).balance, updateFee);
 
     vm.warp(block.timestamp + 1);
 
@@ -660,6 +727,15 @@ contract CryptoLegacyTest is AbstractTestHelper {
     cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
     assertEq(mockToken1.balanceOf(bobBeneficiary1), 1.2 ether);
     vm.stopPrank();
+
+    vm.expectRevert("Ownable: caller is not the owner");
+    buildManager.withdrawFee(treasury, updateFee);
+
+    vm.prank(owner);
+    buildManager.withdrawFee(treasury, updateFee);
+
+    assertEq(address(buildManager).balance, 0);
+    assertEq(treasury.balance, updateFee);
 
     vm.prank(bob);
     mockToken1.transfer(address(cryptoLegacy), 100 ether);
@@ -687,7 +763,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
   }
 
   function testCreateCryptoLegacyVestingAndSubTokens() public {
-    (CryptoLegacyBasePlugin cryptoLegacy, ICryptoLegacyLens cryptoLegacyLens, , ) = _buildCryptoLegacyWithVesting();
+    (CryptoLegacyBasePlugin cryptoLegacy, LensPlugin cryptoLegacyLens, , ) = _buildCryptoLegacyWithVesting();
 
     vm.prank(treasury);
     mockToken1.approve(address(cryptoLegacy), 100 ether);
@@ -836,6 +912,31 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(feeRegistry.refererByCode(customRefCode).accumulatedFee, 0);
   }
 
+  function testBrokenFeeRegistry() public {
+    vm.prank(owner);
+    pluginsRegistry.addPlugin(lensPlugin, "");
+
+    (CryptoLegacyBasePlugin cryptoLegacy, ICryptoLegacyLens cryptoLegacyLens, , ) = _buildCryptoLegacyWithPlugins(bob, buildFee, bytes8(0), _getOneInitPluginList(lensPlugin));
+    vm.warp(block.timestamp + 1);
+
+    vm.prank(bob);
+    vm.expectEmit(true, false, false, false);
+    emit ICryptoLegacy.FeePaidByDefault(bytes8(0), false, 0, address(9), 0);
+    cryptoLegacy.update{value: updateFee}(_getEmptyUintList(), _getEmptyUintList());
+
+    vm.startPrank(owner);
+    buildManager.setRegistries(IFeeRegistry(address(0)), buildManager.pluginsRegistry(), buildManager.beneficiaryRegistry());
+    vm.stopPrank();
+
+    vm.warp(block.timestamp + cryptoLegacyLens.getCryptoLegacyBaseData().updateInterval + 1);
+
+    vm.prank(bob);
+    emit ICryptoLegacy.FeePaidByTransfer(bytes8(0), false, 0, address(9), 0);
+    cryptoLegacy.update{value: updateFee}(_getEmptyUintList(), _getEmptyUintList());
+
+    assertEq(address(buildManager).balance, updateFee);
+  }
+
   function testReplaceBasicPlugin() public {
     CryptoLegacyBasePlugin cryptoLegacy;
     ICryptoLegacyLens cryptoLegacyLens;
@@ -882,8 +983,32 @@ contract CryptoLegacyTest is AbstractTestHelper {
     pluginsRegistry.addPlugin(beneficiaryDistributionRightsPlugin, "");
     vm.stopPrank();
 
+    {
+      (
+        string memory name,
+        uint16 version,
+        uint64[] memory descriptionBlockNumbers
+      ) = pluginsRegistry.getPluginMetadata(beneficiaryDistributionRightsPlugin);
+      assertEq(descriptionBlockNumbers.length, 1);
+      assertEq(descriptionBlockNumbers[0], block.number);
+      assertEq(name, "beneficiary_plugin_add_rights");
+      assertEq(version, uint16(1));
+    }
+
     (cryptoLegacy, cryptoLegacyLens, , ) = _buildCryptoLegacyWithPlugins(bob, buildFee, bytes8(0), _getTwoInitPluginsList(lensPlugin, beneficiaryDistributionRightsPlugin));
     vm.warp(block.timestamp + 1);
+
+    {
+      (
+        string memory name,
+        uint16 version,
+        uint64[] memory descriptionBlockNumbers
+      ) = LensPlugin(address(cryptoLegacyLens)).getPluginMetadata(beneficiaryDistributionRightsPlugin);
+      assertEq(descriptionBlockNumbers.length, 1);
+      assertEq(descriptionBlockNumbers[0], block.number - 1);
+      assertEq(name, "beneficiary_plugin_add_rights");
+      assertEq(version, uint16(1));
+    }
 
     vm.prank(bob);
     cryptoLegacy.update{value: updateFee}(_getEmptyUintList(), _getEmptyUintList());
@@ -931,6 +1056,10 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.prank(bobBeneficiary1);
     cryptoLegacy.beneficiaryClaim{value: updateFee}(_tokens, address(0), 0);
     assertEq(mockToken1.balanceOf(bobBeneficiary1), 40 ether);
+
+    vm.prank(bobBeneficiary1);
+    vm.expectRevert(ISafeMinimalMultisig.MultisigOnlyExecutor.selector);
+    cryptoLegacyBeneficiaryPluginLegacy.barAddPluginList(_getOneAddressList(mockClaimPlugin));
 
     vm.prank(owner);
     pluginsRegistry.addPlugin(mockClaimPlugin, "");
@@ -1058,6 +1187,10 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.prank(bob);
     cryptoLegacyBeneficiaryPluginLegacy.barSetMultisigConfig(1);
 
+    vm.expectRevert(ISafeMinimalMultisig.MultisigIncorrectRequiredConfirmations.selector);
+    vm.prank(bob);
+    cryptoLegacyBeneficiaryPluginLegacy.barSetMultisigConfig(0);
+
     (voters, requiredConfirmations) = cryptoLegacyBeneficiaryPluginLegacy.barGetVotersAndConfirmations();
     assertEq(requiredConfirmations, 1);
     assertEq(uint(cryptoLegacyBeneficiaryPluginLegacy.barGetInitializationStatus()), uint(ISafeMinimalMultisig.InitializationStatus.INITIALIZED));
@@ -1102,6 +1235,8 @@ contract CryptoLegacyTest is AbstractTestHelper {
     }
     LegacyRecoveryPlugin legacyRecoveryPluginLegacy = LegacyRecoveryPlugin(address(cryptoLegacy));
 
+    assertEq(uint(legacyRecoveryPluginLegacy.lrGetInitializationStatus()), uint(ISafeMinimalMultisig.InitializationStatus.NOT_INITIALIZED_BUT_NEED));
+
     vm.prank(bob);
     vm.expectRevert(ISafeMinimalMultisig.MultisigIncorrectRequiredConfirmations.selector);
     legacyRecoveryPluginLegacy.lrSetMultisigConfig(_getTwoBytes32List(addressToHash(alice), addressToHash(dan)), 3);
@@ -1111,6 +1246,8 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     vm.prank(bob);
     legacyRecoveryPluginLegacy.lrSetMultisigConfig(_getTwoBytes32List(addressToHash(alice), addressToHash(dan)), 1);
+
+    assertEq(uint(legacyRecoveryPluginLegacy.lrGetInitializationStatus()), uint(ISafeMinimalMultisig.InitializationStatus.INITIALIZED));
 
     vm.prank(bob);
     cryptoLegacy.update{value: updateFee}(_getEmptyUintList(), _getEmptyUintList());
@@ -1226,6 +1363,19 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.prank(alice);
     legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrResetGuardianVoting.selector, new bytes(0));
 
+    {
+      (
+        bytes32[] memory voters,
+        uint256 requiredConfirmations,
+        ISafeMinimalMultisig.ProposalWithStatus memory proposalWithStatus
+      ) = legacyRecoveryPluginLegacy.lrGetProposalWithStatus(0);
+      assertEq(voters.length, 2);
+      assertEq(requiredConfirmations, 1);
+      assertEq(proposalWithStatus.proposal.selector, LegacyRecoveryPlugin.lrResetGuardianVoting.selector);
+      assertEq(proposalWithStatus.proposal.confirms, 1);
+      assertEq(proposalWithStatus.proposal.executed, true);
+      assertEq(proposalWithStatus.proposal.params, new bytes(0));
+    }
     vm.startPrank(bob);
 
     vm.expectRevert(abi.encodeWithSelector(ITrustedGuardiansPlugin.MaxGuardiansTimeout.selector, 30 days));
@@ -1734,7 +1884,9 @@ contract CryptoLegacyTest is AbstractTestHelper {
     address cl1Address = factory.computeAddress(bytes32(uint(1)), keccak256(factory.cryptoLegacyBytecode(address(buildManager), bob, _getBasePlugins())));
     buildRoll();
     vm.prank(bob);
-    address payable cl1 = buildManager.buildCryptoLegacy{value: buildFee}(buildArgs, _getRefArgsStruct(bob), _getCreate2ArgsStruct(cl1Address, bytes32(uint(1))));
+    address payable cl1 = buildManager.buildCryptoLegacy{value: buildFee}(buildArgs, _getCustomRefArgsStruct(bob, bytes8(uint64(1))), _getCreate2ArgsStruct(cl1Address, bytes32(uint(1))));
+
+    assertEq(feeRegistry.codeByReferrer(bob), bytes8(uint64(1)));
 
     vm.expectRevert(LibCreate2Deploy.AlreadyExists.selector);
     vm.prank(bob);
@@ -1859,6 +2011,12 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(blockNumbers.length, 1);
     assertEq(blockNumbers[0], block.number);
 
+    CryptoLegacyExternalLens externalLens = new CryptoLegacyExternalLens();
+
+    blockNumbers = externalLens.getMessagesBlockNumbersByRecipient(address(cryptoLegacy), beneficiaryArr[0]);
+    assertEq(blockNumbers.length, 1);
+    assertEq(blockNumbers[0], block.number);
+
     blockNumbers = cryptoLegacyLens.getMessagesBlockNumbersByRecipient(beneficiaryArr[1]);
     assertEq(blockNumbers.length, 1);
     assertEq(blockNumbers[0], block.number);
@@ -1932,6 +2090,10 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(clList[0], address(cryptoLegacy));
 
     vm.prank(bob);
+    vm.expectRevert(ICryptoLegacy.ZeroAddress.selector);
+    cryptoLegacy.transferOwnership(address(0));
+
+    vm.prank(bob);
     cryptoLegacy.transferOwnership(alice);
 
     clList = beneficiaryRegistry.getCryptoLegacyListByOwner(addressToHash(bob));
@@ -1940,6 +2102,14 @@ contract CryptoLegacyTest is AbstractTestHelper {
     clList = beneficiaryRegistry.getCryptoLegacyListByOwner(addressToHash(alice));
     assertEq(clList.length, 1);
     assertEq(clList[0], address(cryptoLegacy));
+
+    vm.prank(bob);
+    vm.expectRevert(ICryptoLegacy.NotTheOwner.selector);
+    cryptoLegacy.renounceOwnership();
+
+    vm.prank(alice);
+    cryptoLegacy.renounceOwnership();
+    assertEq(cryptoLegacy.owner(), address(0));
   }
 
   function testClaimAsRemovedBeneficiary() public {
@@ -2146,5 +2316,35 @@ contract CryptoLegacyTest is AbstractTestHelper {
     // Trying to pay again should revert with "INITIAL_FEE_ALREADY_PAID"
     vm.expectRevert(ICryptoLegacy.InitialFeeAlreadyPaid.selector);
     cryptoLegacy.payInitialFee{value: buildFee}(_getEmptyUintList(), _getEmptyUintList());
+  }
+
+  function testPayInitialFeeWithFailedBuildManager() public {
+    vm.prank(owner);
+    pluginsRegistry.addPlugin(lensPlugin, "");
+
+    (CryptoLegacyBasePlugin cryptoLegacy, ICryptoLegacyLens cryptoLegacyLens, , ) = _buildCryptoLegacy(bob, 0, 0x0);
+
+    ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
+    assertEq(clData.initialFeeToPay, buildFee);
+
+    vm.startPrank(owner);
+    buildManager.setRegistries(IFeeRegistry(address(0)), buildManager.pluginsRegistry(), buildManager.beneficiaryRegistry());
+    vm.stopPrank();
+
+    vm.startPrank(bob);
+    // Attempt partial
+    vm.expectRevert(abi.encodeWithSelector(ICryptoLegacy.IncorrectFee.selector, buildFee));
+    cryptoLegacy.payInitialFee{value: buildFee / 2}(_getEmptyUintList(), _getEmptyUintList());
+
+    vm.expectEmit(true, true, true, true);
+    emit ICryptoLegacy.FeePaidByTransfer(0x0, true, buildFee, address(buildManager), uint64(block.timestamp));
+    cryptoLegacy.payInitialFee{value: buildFee}(_getEmptyUintList(), _getEmptyUintList());
+    // Now initialFeeToPay should be 0
+    clData = cryptoLegacyLens.getCryptoLegacyBaseData();
+    assertEq(clData.initialFeeToPay, 0);
+    // Trying to pay again should revert with "INITIAL_FEE_ALREADY_PAID"
+    vm.expectRevert(ICryptoLegacy.InitialFeeAlreadyPaid.selector);
+    cryptoLegacy.payInitialFee{value: buildFee}(_getEmptyUintList(), _getEmptyUintList());
+    vm.stopPrank();
   }
 }

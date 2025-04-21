@@ -19,6 +19,11 @@ contract MockCallProxy is ICallProxy {
         submissionNativeSender = abi.encodePacked(address(_contract));
     }
 
+    function setSourceChainIdAndContract(uint256 cid, LockChainGate _contract) public {
+        submissionChainIdFrom = cid;
+        submissionNativeSender = abi.encodePacked(address(_contract));
+    }
+
     function callMessage(address contractToCall, bytes memory contractCallData) external payable returns(bool, bytes memory) {
         return contractToCall.call(contractCallData);
     }

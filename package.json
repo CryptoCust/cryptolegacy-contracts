@@ -13,7 +13,9 @@
     "flat": "node ./flat-all.js",
     "contracts-size": "forge build --sizes",
     "coverage-summary": "forge coverage --report summary --no-match-coverage '((script|test|(contracts/(mocks|interfaces)))/.*|libraries/LibDiamond.sol)'",
-    "coverage-html": "forge coverage --report lcov --no-match-coverage '((script|test|(contracts/(mocks|interfaces)))/.*|libraries/LibDiamond.sol)' && genhtml lcov.info -o report --branch-coverage --ignore-errors inconsistent,category",
+    "coverage-lcov": "forge coverage --report lcov --no-match-coverage '((script|test|(contracts/(mocks|interfaces)))/.*|libraries/LibDiamond.sol)'",
+    "coverage-json": "yarn && npm run coverage-lcov && node ./lcov-parse.js",
+    "coverage-html": "npm run coverage-lcov && genhtml lcov.info -o report --branch-coverage --ignore-errors inconsistent,category",
     "clear": "rm -rf broadcast cache",
     "build": "npm run clear && forge build",
     "deploy-arb": "npm run clear && source .env && forge script --chain arbitrum script/MockCryptoLegacyFactory.s.sol --rpc-url $ARBITRUM_RPC_URL --broadcast --verify -vvvv --evm-version shanghai --optimize true --optimizer-runs 200 --private-key $PRIVATE_KEY",
@@ -23,6 +25,9 @@
     "deploy-optimism": "npm run clear && source .env && forge script --chain optimism script/MockCryptoLegacyFactory.s.sol --rpc-url $OPTIMISM_RPC_URL --broadcast --verify -vvvv --evm-version shanghai --optimize true --optimizer-runs 200 --private-key $PRIVATE_KEY",
     "redeploy-optimism": "npm run clear && source .env && forge script --chain optimism script/UpgradeMockCryptoLegacyFactory.s.sol --rpc-url $OPTIMISM_RPC_URL --broadcast --verify -vvvv --evm-version shanghai --optimize true --optimizer-runs 200 --private-key $PRIVATE_KEY"
   },
-  "author": "CryptoCustoms",
-  "license": "ISC"
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "lcov-parse": "^1.0.0"
+  }
 }

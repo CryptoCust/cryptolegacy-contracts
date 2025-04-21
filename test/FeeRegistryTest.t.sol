@@ -31,6 +31,8 @@ contract FeeRegistryTest is CrossChainTestHelper {
   }
 
   function testFeeRegistry() public {
+    assertEq(feeRegistry.lifetimeNft(), address(lifetimeNft));
+
     uint256[] memory chainIds = new uint256[](2);
     chainIds[0] = SIDE_CHAIN_ID_1;
     chainIds[1] = SIDE_CHAIN_ID_2;
@@ -58,6 +60,12 @@ contract FeeRegistryTest is CrossChainTestHelper {
 
     gotChainIds = feeRegistry.getSupportedRefInChainsList();
     assertEq(gotChainIds, chainIds);
+
+    address[] memory codeOperators = feeRegistry.getCodeOperatorsList();
+    assertEq(codeOperators.length, 1);
+    assertEq(codeOperators[0], address(buildManager));
+
+    assertEq(feeRegistry.isCodeOperator(address(buildManager)), true);
   }
 
   function testFeeRegistryBeneficiaries() public {
@@ -77,6 +85,18 @@ contract FeeRegistryTest is CrossChainTestHelper {
 
     vm.expectRevert("Ownable: caller is not the owner");
     feeRegistry.setFeeBeneficiaries(custBeneficiaryConfigArr);
+    vm.prank(owner);
+    feeRegistry.setFeeBeneficiaries(custBeneficiaryConfigArr);
+
+    IFeeRegistry.FeeBeneficiary[] memory gotFeeBeneficiaries = feeRegistry.getFeeBeneficiaries();
+    assertEq(gotFeeBeneficiaries[0].recipient, custFeeRecipient1);
+    assertEq(gotFeeBeneficiaries[0].sharePct, 4000);
+    assertEq(gotFeeBeneficiaries[1].recipient, custFeeRecipient2);
+    assertEq(gotFeeBeneficiaries[1].sharePct, 6000);
+
+    custBeneficiaryConfigArr[1] = IFeeRegistry.FeeBeneficiary(custFeeRecipient2, 5000);
+
+    vm.expectRevert(IFeeRegistry.PctSumDoesntMatchBase.selector);
     vm.prank(owner);
     feeRegistry.setFeeBeneficiaries(custBeneficiaryConfigArr);
 
@@ -204,6 +224,14 @@ contract FeeRegistryTest is CrossChainTestHelper {
     vm.expectRevert("Ownable: caller is not the owner");
     feeRegistry.setCodeOperator(address(buildManager), false);
 
+    vm.expectRevert("Ownable: caller is not the owner");
+    feeRegistry.setSourceChainContract(1, address(2));
+
+    vm.prank(owner);
+    feeRegistry.setSourceChainContract(1, address(2));
+    (, , address sourceChain) = feeRegistry.deBridgeChainConfig(1);
+    assertEq(sourceChain, address(2));
+
     vm.prank(owner);
     feeRegistry.setCodeOperator(address(buildManager), false);
 
@@ -251,6 +279,10 @@ contract FeeRegistryTest is CrossChainTestHelper {
     uint32 specificSharePct = uint32(refSharePct + 1);
     vm.prank(owner);
     feeRegistry.setRefererSpecificPct(alice, specificDiscountPct, specificSharePct);
+
+    vm.expectRevert(IFeeRegistry.TooBigPct.selector);
+    vm.prank(owner);
+    feeRegistry.setRefererSpecificPct(alice, 10001, specificSharePct);
 
     (uint32 discountPct, uint32 sharePct) = feeRegistry.getCodePct(refCode);
     assertEq(discountPct, uint32(refDiscountPct + 1));

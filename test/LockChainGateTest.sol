@@ -14,6 +14,29 @@ contract LockChainGateCrosschainTest is CrossChainTestHelper {
         super.setUp();
     }
 
+    function testLockChainGateOwnerFunctions() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        feeRegistry.setLockPeriod(1 days);
+
+        assertEq(feeRegistry.lockPeriod(), 60);
+        vm.prank(owner);
+        feeRegistry.setLockPeriod(1 days);
+        assertEq(feeRegistry.lockPeriod(), 1 days);
+    }
+
+    function testDebridgeGateRefCode() public {
+        assertEq(feeRegistry.referralCode(), 0);
+
+        uint32 refCode = 22;
+        vm.expectRevert("Ownable: caller is not the owner");
+        feeRegistry.setReferralCode(refCode);
+
+        vm.prank(owner);
+        feeRegistry.setReferralCode(refCode);
+
+        assertEq(feeRegistry.referralCode(), uint256(refCode));
+    }
+
     function testPayOnlyRefFee() public {
         _addBasePluginsToRegistry();
 
@@ -29,7 +52,7 @@ contract LockChainGateCrosschainTest is CrossChainTestHelper {
         crossChainFees[0] = deBridgeFee + 1;
         crossChainFees[1] = deBridgeFee + 2;
 
-        ICryptoLegacyBuildManager.RefArgs memory refArgs = _getRefArgsStructWithChains(dan, chainIdsToLock, crossChainFees);
+        ICryptoLegacyBuildManager.RefArgs memory refArgs = _getCustomRefArgsStructWithChains(dan, bytes4(0), chainIdsToLock, crossChainFees);
 
         bytes32[] memory beneficiaryArr = new bytes32[](1);
         beneficiaryArr[0] = keccak256(abi.encode(bobBeneficiary1));
@@ -92,10 +115,12 @@ contract LockChainGateCrosschainTest is CrossChainTestHelper {
         assertEq(sideLock1.ownerOfTokenId(tokenId), address(0));
 
         mockCallProxy.setSourceChainIdAndContract(mainLock);
+
         mockDeBridgeGate.executeLastMessage();
         _checkDeBridgeCallData(abi.encodeWithSelector(sideLock1.crossLockLifetimeNft.selector, MAIN_CHAIN_ID, tokenId, holder));
 
         assertEq(sideLock1.ownerOfTokenId(tokenId), holder);
+        assertEq(sideLock1.lockedNftFromChainId(tokenId), MAIN_CHAIN_ID);
 
         vm.expectRevert(ILockChainGate.TokenNotLocked.selector);
         sideLock1.unlockLifetimeNftFromChain(tokenId);
@@ -151,6 +176,8 @@ contract LockChainGateCrosschainTest is CrossChainTestHelper {
         crossChainFees[0] = deBridgeFee + 1;
         crossChainFees[1] = deBridgeFee + 2;
 
+        assertEq(feeRegistry.getDeBridgeChainNativeFeeAndCheck{value: deBridgeFee + 1}(SIDE_CHAIN_ID_1, deBridgeFee + 1), deBridgeFee + 1);
+
         vm.expectRevert(abi.encodeWithSelector(ILockChainGate.IncorrectFee.selector, deBridgeFee * 2 + 3));
         buildManager.payInitialFee{value: lifetimeFee + deBridgeFee * 2}(bytes8(0), holder, chainIdsToLock, crossChainFees);
 
@@ -172,6 +199,19 @@ contract LockChainGateCrosschainTest is CrossChainTestHelper {
         mockCallProxy.setSourceChainIdAndContract(mainLock);
         mockDeBridgeGate.executeLastMessage();
         _checkDeBridgeCallData(abi.encodeWithSelector(sideLock2.crossLockLifetimeNft.selector, MAIN_CHAIN_ID, tokenId, holder));
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        sideLock1.setSourceChainContract(MAIN_CHAIN_ID, address(0));
+
+        vm.prank(owner);
+        sideLock1.setSourceChainContract(MAIN_CHAIN_ID, address(0));
+
+        vm.prank(address(mockCallProxy));
+        vm.expectRevert(ILockChainGate.SourceNotSpecified.selector);
+        sideLock1.crossLockLifetimeNft(MAIN_CHAIN_ID, tokenId, holder);
+
+        vm.prank(owner);
+        sideLock1.setSourceChainContract(MAIN_CHAIN_ID, address(mainLock));
 
         vm.prank(address(mockCallProxy));
         sideLock1.crossLockLifetimeNft(MAIN_CHAIN_ID, tokenId, holder);
@@ -243,8 +283,21 @@ contract LockChainGateCrosschainTest is CrossChainTestHelper {
         assertEq(lNft.lockedAt, 0);
         assertEq(lNft.tokenId, 0);
 
+        mockCallProxy.setSourceChainIdAndContract(sideLock1);
+
+        vm.prank(address(mockCallProxy));
+        vm.expectRevert(ILockChainGate.ChainIdMismatch.selector);
+        sideLock2.crossUpdateNftOwner(MAIN_CHAIN_ID, tokenId, newHolder);
+
+        mockCallProxy.setSourceChainIdAndContract(MAIN_CHAIN_ID, sideLock1);
+
+        vm.prank(address(mockCallProxy));
+        vm.expectRevert(ILockChainGate.NotValidSender.selector);
+        sideLock2.crossUpdateNftOwner(MAIN_CHAIN_ID, tokenId, newHolder);
+
         mockCallProxy.setSourceChainIdAndContract(mainLock);
         mockDeBridgeGate.executeLastMessage();
+
         assertEq(mockDeBridgeGate.targetContractAddress(), address(sideLock2));
         _checkDeBridgeCallData(abi.encodeWithSelector(sideLock2.crossUpdateNftOwner.selector, MAIN_CHAIN_ID, tokenId, newHolder));
 
@@ -291,6 +344,19 @@ contract LockChainGateCrosschainTest is CrossChainTestHelper {
         vm.prank(newHolder);
         vm.expectRevert(ILockChainGate.NotAvailable.selector);
         mainLock.updateNftOwnerOnChainList{value: deBridgeFee * 2 + 3}(tokenId, chainIdsToLock, crossChainFees);
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        mainLock.setDestinationChainContract(SIDE_CHAIN_ID_1, address(0));
+
+        vm.prank(owner);
+        mainLock.setDestinationChainContract(SIDE_CHAIN_ID_1, address(0));
+
+        vm.prank(dan);
+        vm.expectRevert(ILockChainGate.DestinationChainNotSpecified.selector);
+        mainLock.updateNftOwnerOnChainList{value: deBridgeFee * 2 + 3}(tokenId, chainIdsToLock, crossChainFees);
+
+        vm.prank(owner);
+        mainLock.setDestinationChainContract(SIDE_CHAIN_ID_1, address(sideLock1));
 
         vm.prank(dan);
         mainLock.updateNftOwnerOnChainList{value: deBridgeFee * 2 + 3}(tokenId, chainIdsToLock, crossChainFees);

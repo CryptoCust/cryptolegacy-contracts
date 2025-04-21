@@ -10,3 +10,5 @@ lib/*
 !lib/forge-std/
 lcov.info
 report/
+coverage/
+node_modules/

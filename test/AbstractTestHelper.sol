@@ -168,11 +168,15 @@ abstract contract AbstractTestHelper is Test {
   }
 
   function _getRefArgsStruct(address createRefRecipient) internal virtual returns(ICryptoLegacyBuildManager.RefArgs memory){
-    return _getRefArgsStructWithChains(createRefRecipient, _getRefChains(), _getRefChains());
+    return _getCustomRefArgsStructWithChains(createRefRecipient, bytes4(0), _getRefChains(), _getRefChains());
   }
 
-  function _getRefArgsStructWithChains(address createRefRecipient, uint256[] memory _chainIdsToLock, uint256[] memory _crossChainFees) internal virtual returns(ICryptoLegacyBuildManager.RefArgs memory){
-    return ICryptoLegacyBuildManager.RefArgs(createRefRecipient, bytes4(0), _chainIdsToLock, _crossChainFees);
+  function _getCustomRefArgsStruct(address createRefRecipient, bytes8 _customRefCode) internal virtual returns(ICryptoLegacyBuildManager.RefArgs memory){
+    return _getCustomRefArgsStructWithChains(createRefRecipient, _customRefCode, _getRefChains(), _getRefChains());
+  }
+
+  function _getCustomRefArgsStructWithChains(address createRefRecipient, bytes8 _customRefCode, uint256[] memory _chainIdsToLock, uint256[] memory _crossChainFees) internal virtual returns(ICryptoLegacyBuildManager.RefArgs memory){
+    return ICryptoLegacyBuildManager.RefArgs(createRefRecipient, _customRefCode, _chainIdsToLock, _crossChainFees);
   }
 
   function _getCreate2ArgsStruct(address _create2Address, bytes32 _create2Salt) internal virtual returns(ICryptoLegacyFactory.Create2Args memory){

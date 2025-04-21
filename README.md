@@ -1,5 +1,7 @@
 # CryptoLegacy – Secure On-Chain Inheritance & Recovery
 
+[![cov](https://CryptoCust.github.io/cryptolegacy-contracts/badges/coverage.svg)](https://github.com/CryptoCust/cryptolegacy-contracts/actions)
+
 **CryptoLegacy** is a modular, EIP-2535 Diamond-based smart contract system built using **Foundry**. It enables decentralized **inheritance**, **asset recovery**, and **estate planning** for crypto users, ensuring privacy, flexibility, and cross-chain support.
 
 ---

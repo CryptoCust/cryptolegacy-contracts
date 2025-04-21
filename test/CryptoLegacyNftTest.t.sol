@@ -56,9 +56,16 @@ contract CryptoLegacyNftTest is AbstractTestHelper {
     }
 
     function testLifetimeFee() public {
+        assertEq(feeRegistry.getLockOperatorsList().length, 1);
+        assertEq(feeRegistry.getLockOperatorsList()[0], address(buildManager));
+        assertEq(feeRegistry.isLockOperator(address(buildManager)), true);
+
         vm.startPrank(owner);
         feeRegistry.setLockOperator(address(buildManager), false);
         pluginsRegistry.addPlugin(lensPlugin, "");
+
+        assertEq(feeRegistry.getLockOperatorsList().length, 0);
+        assertEq(feeRegistry.isLockOperator(address(buildManager)), false);
 
         IFeeRegistry.FeeBeneficiary[] memory custBeneficiaryConfigArr = new IFeeRegistry.FeeBeneficiary[](1);
         custBeneficiaryConfigArr[0] = IFeeRegistry.FeeBeneficiary(custFeeRecipient1, 10000);
@@ -348,6 +355,18 @@ contract CryptoLegacyNftTest is AbstractTestHelper {
         vm.prank(owner);
         pluginsRegistry.addPlugin(plugins[0], "");
 
+        {
+            (
+                string memory name,
+                uint16 version,
+                uint64[] memory descriptionBlockNumbers
+            ) = pluginsRegistry.getPluginMetadata(plugins[0]);
+            assertEq(descriptionBlockNumbers.length, 1);
+            assertEq(descriptionBlockNumbers[0], block.number);
+            assertEq(name, "nft_legacy");
+            assertEq(version, uint16(1));
+        }
+
         vm.expectRevert(ICryptoLegacy.NotTheOwner.selector);
         CryptoLegacy(payable(address(cryptoLegacy))).addPluginList(plugins);
 
@@ -417,6 +436,9 @@ contract CryptoLegacyNftTest is AbstractTestHelper {
         assertEq(mockToken1.balanceOf(bobBeneficiary1), 0);
 
         vm.startPrank(bobBeneficiary1);
+
+        vm.expectRevert(ICryptoLegacy.ZeroTokens.selector);
+        nftLegacy.beneficiaryClaimNft(address(nft), _getEmptyUintList());
 
         assertEq(nft.ownerOf(1), address(cryptoLegacy));
         nftLegacy.beneficiaryClaimNft(address(nft), tokenIds1);
