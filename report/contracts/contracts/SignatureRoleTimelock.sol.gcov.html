@@ -1,0 +1,565 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - lcov.info - contracts/contracts/SignatureRoleTimelock.sol</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">contracts/contracts</a> - SignatureRoleTimelock.sol<span style="font-size: 80%;"> (source / <a href="SignatureRoleTimelock.sol.func-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">lcov.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryHi">97.6&nbsp;%</td>
+            <td class="headerCovTableEntry">165</td>
+            <td class="headerCovTableEntry">161</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2025-04-22 00:07:11</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryHi">96.3&nbsp;%</td>
+            <td class="headerCovTableEntry">27</td>
+            <td class="headerCovTableEntry">26</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="headerItem">Branches:</td>
+            <td class="headerCovTableEntryHi">93.5&nbsp;%</td>
+            <td class="headerCovTableEntry">31</td>
+            <td class="headerCovTableEntry">29</td>
+          </tr>
+                  <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">             Branch data     Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>                 :             : </span>
+<span id="L2"><span class="lineNum">       2</span>                 :             : // SPDX-License-Identifier: MIT</span>
+<span id="L3"><span class="lineNum">       3</span>                 :             : pragma solidity ^0.8.0;</span>
+<span id="L4"><span class="lineNum">       4</span>                 :             : </span>
+<span id="L5"><span class="lineNum">       5</span>                 :             : import &quot;./interfaces/ISignatureRoleTimelock.sol&quot;;</span>
+<span id="L6"><span class="lineNum">       6</span>                 :             : import &quot;@openzeppelin/contracts/access/AccessControl.sol&quot;;</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : import &quot;@openzeppelin/contracts/security/ReentrancyGuard.sol&quot;;</span>
+<span id="L8"><span class="lineNum">       8</span>                 :             : </span>
+<span id="L9"><span class="lineNum">       9</span>                 :             : /**</span>
+<span id="L10"><span class="lineNum">      10</span>                 :             :  * @title SignatureRoleTimelock</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             :  * @notice Provides timelocked role-based signature authorization for executing calls.</span>
+<span id="L12"><span class="lineNum">      12</span>                 :             :  *         Role assignments and signature role associations are enforced with a timelock delay.</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             :  * @dev Inherits from AccessControl for role management and ReentrancyGuard for security.</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             :  */</span>
+<span id="L15"><span class="lineNum">      15</span>                 :             : contract SignatureRoleTimelock is ISignatureRoleTimelock, AccessControl, ReentrancyGuard {</span>
+<span id="L16"><span class="lineNum">      16</span>                 :             :     /// @notice The administrator role is the default admin role.</span>
+<span id="L17"><span class="lineNum">      17</span>                 :             :     bytes32 public constant ADMIN_ROLE = DEFAULT_ADMIN_ROLE;</span>
+<span id="L18"><span class="lineNum">      18</span>                 :             :     /// @notice The maximum timelock duration is 7 days.</span>
+<span id="L19"><span class="lineNum">      19</span>                 :             :     uint128 public constant MAX_TIMELOCK_DURATION = 7 days;</span>
+<span id="L20"><span class="lineNum">      20</span>                 :             : </span>
+<span id="L21"><span class="lineNum">      21</span>                 :             :     /// @notice The maximum period during which an executed call remains valid is initially set to 14 days.</span>
+<span id="L22"><span class="lineNum">      22</span>                 :             :     uint128 public maxExecutionPeriod = 14 days;</span>
+<span id="L23"><span class="lineNum">      23</span>                 :             : </span>
+<span id="L24"><span class="lineNum">      24</span>                 :             :     /// @notice Mapping from role identifier to array of accounts holding that role.</span>
+<span id="L25"><span class="lineNum">      25</span>                 :             :     mapping(bytes32 =&gt; address[]) public roleAccounts;</span>
+<span id="L26"><span class="lineNum">      26</span>                 :             :     /// @notice Mapping from a target contract and function selector to its assigned signature attributes.</span>
+<span id="L27"><span class="lineNum">      27</span>                 :             :     mapping(address =&gt; mapping(bytes4 =&gt; SignatureAttr)) public signatureRoles;</span>
+<span id="L28"><span class="lineNum">      28</span>                 :             :     /// @notice Mapping from a target address to an array of its function selectors with assigned signature roles.</span>
+<span id="L29"><span class="lineNum">      29</span>                 :             :     mapping(address =&gt; bytes4[]) public targetSigs;</span>
+<span id="L30"><span class="lineNum">      30</span>                 :             :     /// @notice An array of target addresses that have signature roles.</span>
+<span id="L31"><span class="lineNum">      31</span>                 :             :     address[] public targets;</span>
+<span id="L32"><span class="lineNum">      32</span>                 :             : </span>
+<span id="L33"><span class="lineNum">      33</span>                 :             :     /// @notice Mapping from a scheduled call ID to its call request details.</span>
+<span id="L34"><span class="lineNum">      34</span>                 :             :     mapping(bytes32 =&gt; CallRequest) public pendingCalls;</span>
+<span id="L35"><span class="lineNum">      35</span>                 :             :     /// @notice Array of scheduled call IDs.</span>
+<span id="L36"><span class="lineNum">      36</span>                 :             :     bytes32[] public callsIds;</span>
+<span id="L37"><span class="lineNum">      37</span>                 :             : </span>
+<span id="L38"><span class="lineNum">      38</span>                 :             :     /**</span>
+<span id="L39"><span class="lineNum">      39</span>                 :             :      * @notice Constructor for the SignatureRoleTimelock contract.</span>
+<span id="L40"><span class="lineNum">      40</span>                 :             :      * @dev Assigns the deployer as an ADMIN_ROLE and assigns initial signature roles.</span>
+<span id="L41"><span class="lineNum">      41</span>                 :             :      *      It also accepts an array of AddressRoleInput to add role accounts and an array of SignatureToAdd</span>
+<span id="L42"><span class="lineNum">      42</span>                 :             :      *      to add associated signature roles with a timelock.</span>
+<span id="L43"><span class="lineNum">      43</span>                 :             :      * @param _adminTimelock The timelock duration for admin-related signatures.</span>
+<span id="L44"><span class="lineNum">      44</span>                 :             :      * @param _roles An array of AddressRoleInput structs for initial role account assignments.</span>
+<span id="L45"><span class="lineNum">      45</span>                 :             :      * @param _sigs An array of SignatureToAdd structs for initial signature role configuration.</span>
+<span id="L46"><span class="lineNum">      46</span>                 :             :      */</span>
+<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC tlaBgGNC">           4 :     constructor(</span></span>
+<span id="L48"><span class="lineNum">      48</span>                 :             :         uint128 _adminTimelock,</span>
+<span id="L49"><span class="lineNum">      49</span>                 :             :         ISignatureRoleTimelock.AddressRoleInput[] memory _roles,</span>
+<span id="L50"><span class="lineNum">      50</span>                 :             :         SignatureToAdd[] memory _sigs,</span>
+<span id="L51"><span class="lineNum">      51</span>                 :             :         address _adminAccount</span>
+<span id="L52"><span class="lineNum">      52</span>                 :             :     ) {</span>
+<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">           4 :         _addRoleAccount(ADMIN_ROLE, _adminAccount);</span></span>
+<span id="L54"><span class="lineNum">      54</span>                 :             :         // Add signature roles for functions that manage signature roles.</span>
+<span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">           4 :         _addSignatureRole(address(this), SignatureRoleTimelock(this).setRoleAccounts.selector, ADMIN_ROLE, _adminTimelock);</span></span>
+<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">           4 :         _addSignatureRole(address(this), SignatureRoleTimelock(this).addSignatureRoleList.selector, ADMIN_ROLE, _adminTimelock);</span></span>
+<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">           4 :         _addSignatureRole(address(this), SignatureRoleTimelock(this).removeSignatureRoleList.selector, ADMIN_ROLE, _adminTimelock);</span></span>
+<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">           4 :         _addSignatureRole(address(this), SignatureRoleTimelock(this).setMaxExecutionPeriod.selector, ADMIN_ROLE, _adminTimelock);</span></span>
+<span id="L59"><span class="lineNum">      59</span>                 :             :         // Assign additional role accounts provided in the input.</span>
+<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">           4 :         for (uint256 i = 0; i &lt; _roles.length; i++) {</span></span>
+<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">           7 :             _addRoleAccount(_roles[i].role, _roles[i].newAccount);</span></span>
+<span id="L62"><span class="lineNum">      62</span>                 :             :         }</span>
+<span id="L63"><span class="lineNum">      63</span>                 :             :         // Add initial signature roles for target contracts.</span>
+<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">           4 :         for (uint256 i = 0; i &lt; _sigs.length; i++) {</span></span>
+<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">          61 :             _addSignatureRole(_sigs[i].target, _sigs[i].signature, _sigs[i].role, _sigs[i].timelock);</span></span>
+<span id="L66"><span class="lineNum">      66</span>                 :             :         }</span>
+<span id="L67"><span class="lineNum">      67</span>                 :             :     }</span>
+<span id="L68"><span class="lineNum">      68</span>                 :             : </span>
+<span id="L69"><span class="lineNum">      69</span>                 :             :     /**</span>
+<span id="L70"><span class="lineNum">      70</span>                 :             :      * @notice Modifier that restricts calls to be made only by the contract itself.</span>
+<span id="L71"><span class="lineNum">      71</span>                 :             :      * @dev Reverts with CallerNotCurrentAddress if msg.sender is not address(this).</span>
+<span id="L72"><span class="lineNum">      72</span>                 :             :      */</span>
+<span id="L73"><span class="lineNum">      73</span>                 :<span class="tlaGNC">           7 :     modifier onlyCurrentAddress() {</span></span>
+<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">           7 :         if (msg.sender != address(this))</span></span>
+<span id="L75"><span class="lineNum">      75</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :             revert CallerNotCurrentAddress();</span></span>
+<span id="L76"><span class="lineNum">      76</span>                 :             :         _;</span>
+<span id="L77"><span class="lineNum">      77</span>                 :             :     }</span>
+<span id="L78"><span class="lineNum">      78</span>                 :             : </span>
+<span id="L79"><span class="lineNum">      79</span>                 :             :     /**</span>
+<span id="L80"><span class="lineNum">      80</span>                 :             :      * @notice Sets the maximum execution period for scheduled calls.</span>
+<span id="L81"><span class="lineNum">      81</span>                 :             :      * @dev Can only be called by the contract itself (via onlyCurrentAddress).</span>
+<span id="L82"><span class="lineNum">      82</span>                 :             :      *      Reverts if _maxExecutionPeriod is less than 7 days or more than 21 days.</span>
+<span id="L83"><span class="lineNum">      83</span>                 :             :      * @param _maxExecutionPeriod The maximum period (in seconds) during which a scheduled call remains valid.</span>
+<span id="L84"><span class="lineNum">      84</span>                 :             :      */</span>
+<span id="L85"><span class="lineNum">      85</span>                 :<span class="tlaGNC">           5 :     function setMaxExecutionPeriod(uint128 _maxExecutionPeriod) external onlyCurrentAddress {</span></span>
+<span id="L86"><span class="lineNum">      86</span>            [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span>]:<span class="tlaGNC">           4 :         if (_maxExecutionPeriod &lt; 7 days || _maxExecutionPeriod &gt; 21 days) {</span></span>
+<span id="L87"><span class="lineNum">      87</span>                 :<span class="tlaGNC">           2 :             revert OutOfMaxExecutionPeriodBounds(7 days, 21 days);</span></span>
+<span id="L88"><span class="lineNum">      88</span>                 :             :         }</span>
+<span id="L89"><span class="lineNum">      89</span>                 :<span class="tlaGNC">           2 :         maxExecutionPeriod = _maxExecutionPeriod;</span></span>
+<span id="L90"><span class="lineNum">      90</span>                 :<span class="tlaGNC">           2 :         emit SetMaxExecutionPeriod(_maxExecutionPeriod);</span></span>
+<span id="L91"><span class="lineNum">      91</span>                 :             :     }</span>
+<span id="L92"><span class="lineNum">      92</span>                 :             : </span>
+<span id="L93"><span class="lineNum">      93</span>                 :             :     /**</span>
+<span id="L94"><span class="lineNum">      94</span>                 :             :      * @notice Sets the role accounts for various roles.</span>
+<span id="L95"><span class="lineNum">      95</span>                 :             :      * @dev Can only be called by the contract itself (via onlyCurrentAddress).</span>
+<span id="L96"><span class="lineNum">      96</span>                 :             :      *      The input list allows addition (if prevAccount is address(0)) and removal (if newAccount is address(0)) of role accounts,</span>
+<span id="L97"><span class="lineNum">      97</span>                 :             :      *      otherwise replace prevAccount with newAccount.</span>
+<span id="L98"><span class="lineNum">      98</span>                 :             :      * @param _list An array of AddressRoleInput structs describing changes to role accounts.</span>
+<span id="L99"><span class="lineNum">      99</span>                 :             :      */</span>
+<span id="L100"><span class="lineNum">     100</span>                 :<span class="tlaGNC">           8 :     function setRoleAccounts(AddressRoleInput[] memory _list) external onlyCurrentAddress {</span></span>
+<span id="L101"><span class="lineNum">     101</span>                 :<span class="tlaGNC">           7 :         for (uint256 i = 0; i &lt; _list.length; i++) {</span></span>
+<span id="L102"><span class="lineNum">     102</span>         [<span class="tlaGBC" title="Branch 0 was taken 5 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">          10 :             if (_list[i].prevAccount == address(0)) {</span></span>
+<span id="L103"><span class="lineNum">     103</span>                 :<span class="tlaGNC">           5 :                 _addRoleAccount(_list[i].role, _list[i].newAccount);</span></span>
+<span id="L104"><span class="lineNum">     104</span>         [<span class="tlaGBC" title="Branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           5 :             } else if (_list[i].newAccount == address(0)) {</span></span>
+<span id="L105"><span class="lineNum">     105</span>                 :<span class="tlaGNC">           4 :                 _removeRoleAccount(_list[i].role, _list[i].prevAccount);</span></span>
+<span id="L106"><span class="lineNum">     106</span>                 :             :             } else {</span>
+<span id="L107"><span class="lineNum">     107</span>                 :<span class="tlaGNC">           1 :                 _removeRoleAccount(_list[i].role, _list[i].prevAccount);</span></span>
+<span id="L108"><span class="lineNum">     108</span>                 :<span class="tlaGNC">           1 :                 _addRoleAccount(_list[i].role, _list[i].newAccount);</span></span>
+<span id="L109"><span class="lineNum">     109</span>                 :             :             }</span>
+<span id="L110"><span class="lineNum">     110</span>                 :             :         }</span>
+<span id="L111"><span class="lineNum">     111</span>                 :             :     }</span>
+<span id="L112"><span class="lineNum">     112</span>                 :             : </span>
+<span id="L113"><span class="lineNum">     113</span>                 :             :     /**</span>
+<span id="L114"><span class="lineNum">     114</span>                 :             :      * @notice Adds a new account to a role.</span>
+<span id="L115"><span class="lineNum">     115</span>                 :             :      * @dev Internal function that reverts if the account already holds the role.</span>
+<span id="L116"><span class="lineNum">     116</span>                 :             :      *      It adds the account to the roleAccounts mapping and grants the role using AccessControl.</span>
+<span id="L117"><span class="lineNum">     117</span>                 :             :      * @param _role The role identifier.</span>
+<span id="L118"><span class="lineNum">     118</span>                 :             :      * @param _account The account address to add.</span>
+<span id="L119"><span class="lineNum">     119</span>                 :             :      */</span>
+<span id="L120"><span class="lineNum">     120</span>                 :<span class="tlaGNC">          17 :     function _addRoleAccount(bytes32 _role, address _account) internal {</span></span>
+<span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">          17 :         if (hasRole(_role, _account))</span></span>
+<span id="L122"><span class="lineNum">     122</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :             revert AlreadyHaveRole();</span></span>
+<span id="L123"><span class="lineNum">     123</span>                 :             : </span>
+<span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaGNC">          16 :         roleAccounts[_role].push(_account);</span></span>
+<span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">          16 :         _grantRole(_role, _account);</span></span>
+<span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">          16 :         emit AddRoleAccount(_role, _account);</span></span>
+<span id="L127"><span class="lineNum">     127</span>                 :             :     }</span>
+<span id="L128"><span class="lineNum">     128</span>                 :             : </span>
+<span id="L129"><span class="lineNum">     129</span>                 :             :     /**</span>
+<span id="L130"><span class="lineNum">     130</span>                 :             :      * @notice Internal helper that returns the index of an address in an array.</span>
+<span id="L131"><span class="lineNum">     131</span>                 :             :      * @dev Returns type(uint256).max if the address is not found.</span>
+<span id="L132"><span class="lineNum">     132</span>                 :             :      * @param _list The array of addresses.</span>
+<span id="L133"><span class="lineNum">     133</span>                 :             :      * @param _addr The address to search for.</span>
+<span id="L134"><span class="lineNum">     134</span>                 :             :      * @return index The index of _addr in _list.</span>
+<span id="L135"><span class="lineNum">     135</span>                 :             :      */</span>
+<span id="L136"><span class="lineNum">     136</span>                 :<span class="tlaGNC">          86 :     function _getAddressIndex(address[] memory _list, address _addr) internal pure returns(uint index){</span></span>
+<span id="L137"><span class="lineNum">     137</span>                 :<span class="tlaGNC">          86 :         index = type(uint256).max;</span></span>
+<span id="L138"><span class="lineNum">     138</span>                 :<span class="tlaGNC">          86 :         for (uint256 i = 0; i &lt; _list.length; i++) {</span></span>
+<span id="L139"><span class="lineNum">     139</span>            [<span class="tlaGBC" title="Branch 0 was taken 64 times"> + </span>]:<span class="tlaGNC">         403 :             if (_list[i] == _addr) {</span></span>
+<span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">          64 :                 index = i;</span></span>
+<span id="L141"><span class="lineNum">     141</span>                 :             :             }</span>
+<span id="L142"><span class="lineNum">     142</span>                 :             :         }</span>
+<span id="L143"><span class="lineNum">     143</span>                 :             :     }</span>
+<span id="L144"><span class="lineNum">     144</span>                 :             : </span>
+<span id="L145"><span class="lineNum">     145</span>                 :             :     /**</span>
+<span id="L146"><span class="lineNum">     146</span>                 :             :      * @notice Internal helper that returns the index of a bytes4 value in an array.</span>
+<span id="L147"><span class="lineNum">     147</span>                 :             :      * @dev Returns type(uint256).max if the value is not found.</span>
+<span id="L148"><span class="lineNum">     148</span>                 :             :      * @param _list The array of bytes4 values.</span>
+<span id="L149"><span class="lineNum">     149</span>                 :             :      * @param _hash The bytes4 value to search for.</span>
+<span id="L150"><span class="lineNum">     150</span>                 :             :      * @return index The index of _hash in _list.</span>
+<span id="L151"><span class="lineNum">     151</span>                 :             :      */</span>
+<span id="L152"><span class="lineNum">     152</span>                 :<span class="tlaGNC">           3 :     function _getBytes4Index(bytes4[] memory _list, bytes4 _hash) internal pure returns(uint index){</span></span>
+<span id="L153"><span class="lineNum">     153</span>                 :<span class="tlaGNC">           3 :         index = type(uint256).max;</span></span>
+<span id="L154"><span class="lineNum">     154</span>                 :<span class="tlaGNC">           3 :         for (uint256 i = 0; i &lt; _list.length; i++) {</span></span>
+<span id="L155"><span class="lineNum">     155</span>            [<span class="tlaGBC" title="Branch 0 was taken 3 times"> + </span>]:<span class="tlaGNC">           4 :             if (_list[i] == _hash) {</span></span>
+<span id="L156"><span class="lineNum">     156</span>                 :<span class="tlaGNC">           3 :                 index = i;</span></span>
+<span id="L157"><span class="lineNum">     157</span>                 :             :             }</span>
+<span id="L158"><span class="lineNum">     158</span>                 :             :         }</span>
+<span id="L159"><span class="lineNum">     159</span>                 :             :     }</span>
+<span id="L160"><span class="lineNum">     160</span>                 :             : </span>
+<span id="L161"><span class="lineNum">     161</span>                 :             :     /**</span>
+<span id="L162"><span class="lineNum">     162</span>                 :             :      * @notice Removes an account from a role.</span>
+<span id="L163"><span class="lineNum">     163</span>                 :             :      * @dev Reverts if the account does not have the role.</span>
+<span id="L164"><span class="lineNum">     164</span>                 :             :      *      Removes the account from the roleAccounts mapping and revokes the role.</span>
+<span id="L165"><span class="lineNum">     165</span>                 :             :      * @param _role The role identifier.</span>
+<span id="L166"><span class="lineNum">     166</span>                 :             :      * @param _account The account address to remove.</span>
+<span id="L167"><span class="lineNum">     167</span>                 :             :      */</span>
+<span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">           5 :     function _removeRoleAccount(bytes32 _role, address _account) internal {</span></span>
+<span id="L169"><span class="lineNum">     169</span>                 :<span class="tlaGNC">           5 :         if (!hasRole(_role, _account))</span></span>
+<span id="L170"><span class="lineNum">     170</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :             revert DoesntHaveRole();</span></span>
+<span id="L171"><span class="lineNum">     171</span>                 :<span class="tlaGNC">           4 :         uint256 removeIndex = _getAddressIndex(roleAccounts[_role], _account);</span></span>
+<span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">           4 :         if (roleAccounts[_role][removeIndex] != _account)</span></span>
+<span id="L173"><span class="lineNum">     173</span>            [<span class="tlaUNC" title="Branch 0 was not executed"> # </span>]:<span class="tlaUNC tlaBgUNC">           0 :             revert IncorrectRoleIndex();</span></span>
+<span id="L174"><span class="lineNum">     174</span>                 :             : </span>
+<span id="L175"><span class="lineNum">     175</span>                 :<span class="tlaGNC tlaBgGNC">           4 :         uint256 lastIndex = roleAccounts[_role].length - 1;</span></span>
+<span id="L176"><span class="lineNum">     176</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           4 :         if (removeIndex != lastIndex) {</span></span>
+<span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaGNC">           1 :             roleAccounts[_role][removeIndex] = roleAccounts[_role][lastIndex];</span></span>
+<span id="L178"><span class="lineNum">     178</span>                 :             :         }</span>
+<span id="L179"><span class="lineNum">     179</span>                 :<span class="tlaGNC">           4 :         roleAccounts[_role].pop();</span></span>
+<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">           4 :         _revokeRole(_role, _account);</span></span>
+<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">           4 :         emit RemoveRoleAccount(_role, _account);</span></span>
+<span id="L182"><span class="lineNum">     182</span>                 :             :     }</span>
+<span id="L183"><span class="lineNum">     183</span>                 :             : </span>
+<span id="L184"><span class="lineNum">     184</span>                 :             :     /**</span>
+<span id="L185"><span class="lineNum">     185</span>                 :             :      * @notice Adds signature roles for a list of target functions.</span>
+<span id="L186"><span class="lineNum">     186</span>                 :             :      * @dev Can only be called by the contract itself (via onlyCurrentAddress).</span>
+<span id="L187"><span class="lineNum">     187</span>                 :             :      * @param _sigs An array of SignatureToAdd structs containing target, signature, role, and timelock.</span>
+<span id="L188"><span class="lineNum">     188</span>                 :             :      */</span>
+<span id="L189"><span class="lineNum">     189</span>                 :<span class="tlaGNC">           7 :     function addSignatureRoleList(SignatureToAdd[] memory _sigs) external onlyCurrentAddress {</span></span>
+<span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">           6 :         for (uint256 i = 0; i &lt; _sigs.length; i++) {</span></span>
+<span id="L191"><span class="lineNum">     191</span>                 :<span class="tlaGNC">           7 :             _addSignatureRole(_sigs[i].target, _sigs[i].signature, _sigs[i].role, _sigs[i].timelock);</span></span>
+<span id="L192"><span class="lineNum">     192</span>                 :             :         }</span>
+<span id="L193"><span class="lineNum">     193</span>                 :             :     }</span>
+<span id="L194"><span class="lineNum">     194</span>                 :             : </span>
+<span id="L195"><span class="lineNum">     195</span>                 :             :     /**</span>
+<span id="L196"><span class="lineNum">     196</span>                 :             :      * @notice Internal function to add a signature role for a given target and function selector.</span>
+<span id="L197"><span class="lineNum">     197</span>                 :             :      * @dev Reverts if the role does not exist, the signature already exists, or the timelock exceeds MAX_TIMELOCK_DURATION.</span>
+<span id="L198"><span class="lineNum">     198</span>                 :             :      *      If _timelock is 0, it is set to 1.</span>
+<span id="L199"><span class="lineNum">     199</span>                 :             :      * @param _target The target contract address.</span>
+<span id="L200"><span class="lineNum">     200</span>                 :             :      * @param _signature The function selector.</span>
+<span id="L201"><span class="lineNum">     201</span>                 :             :      * @param _role The required role for this signature.</span>
+<span id="L202"><span class="lineNum">     202</span>                 :             :      * @param _timelock The timelock duration in seconds.</span>
+<span id="L203"><span class="lineNum">     203</span>                 :             :      */</span>
+<span id="L204"><span class="lineNum">     204</span>                 :<span class="tlaGNC">          84 :     function _addSignatureRole(address _target, bytes4 _signature, bytes32 _role, uint128 _timelock) internal {</span></span>
+<span id="L205"><span class="lineNum">     205</span>                 :<span class="tlaGNC">          84 :         if (roleAccounts[_role].length == 0)</span></span>
+<span id="L206"><span class="lineNum">     206</span>            [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span>]:<span class="tlaGNC">           2 :             revert RoleDontExist();</span></span>
+<span id="L207"><span class="lineNum">     207</span>                 :             : </span>
+<span id="L208"><span class="lineNum">     208</span>                 :<span class="tlaGNC">          82 :         if (signatureRoles[_target][_signature].role != bytes32(0))</span></span>
+<span id="L209"><span class="lineNum">     209</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :             revert SignatureAlreadyExists();</span></span>
+<span id="L210"><span class="lineNum">     210</span>                 :             : </span>
+<span id="L211"><span class="lineNum">     211</span>                 :<span class="tlaGNC">          81 :         if (_timelock &gt; MAX_TIMELOCK_DURATION)</span></span>
+<span id="L212"><span class="lineNum">     212</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :             revert OutOfTimelockBounds(MAX_TIMELOCK_DURATION);</span></span>
+<span id="L213"><span class="lineNum">     213</span>                 :             : </span>
+<span id="L214"><span class="lineNum">     214</span>                 :<span class="tlaGNC">          80 :         if(_timelock == 0)</span></span>
+<span id="L215"><span class="lineNum">     215</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :             _timelock = 1;</span></span>
+<span id="L216"><span class="lineNum">     216</span>                 :             : </span>
+<span id="L217"><span class="lineNum">     217</span>                 :<span class="tlaGNC">          80 :         signatureRoles[_target][_signature] = SignatureAttr(_role, _timelock);</span></span>
+<span id="L218"><span class="lineNum">     218</span>                 :<span class="tlaGNC">          80 :         targetSigs[_target].push(_signature);</span></span>
+<span id="L219"><span class="lineNum">     219</span>                 :<span class="tlaGNC">          80 :         uint256 targetIndex = _getAddressIndex(targets, _target);</span></span>
+<span id="L220"><span class="lineNum">     220</span>            [<span class="tlaGBC" title="Branch 0 was taken 22 times"> + </span>]:<span class="tlaGNC">          80 :         if (targetIndex == type(uint256).max) {</span></span>
+<span id="L221"><span class="lineNum">     221</span>                 :<span class="tlaGNC">          22 :             targets.push(_target);</span></span>
+<span id="L222"><span class="lineNum">     222</span>                 :<span class="tlaGNC">          22 :             emit AddTarget(_target);</span></span>
+<span id="L223"><span class="lineNum">     223</span>                 :             :         }</span>
+<span id="L224"><span class="lineNum">     224</span>                 :<span class="tlaGNC">          80 :         emit AddSignatureRole(_target, _signature, _role, _timelock);</span></span>
+<span id="L225"><span class="lineNum">     225</span>                 :             :     }</span>
+<span id="L226"><span class="lineNum">     226</span>                 :             : </span>
+<span id="L227"><span class="lineNum">     227</span>                 :             :     /**</span>
+<span id="L228"><span class="lineNum">     228</span>                 :             :      * @notice Removes signature roles for a list of target functions.</span>
+<span id="L229"><span class="lineNum">     229</span>                 :             :      * @dev Can only be called by the contract itself (via onlyCurrentAddress).</span>
+<span id="L230"><span class="lineNum">     230</span>                 :             :      * @param _sigsToRemove An array of SignatureToRemove structs containing target and signature.</span>
+<span id="L231"><span class="lineNum">     231</span>                 :             :      */</span>
+<span id="L232"><span class="lineNum">     232</span>                 :<span class="tlaGNC">           3 :     function removeSignatureRoleList(SignatureToRemove[] memory _sigsToRemove) external onlyCurrentAddress {</span></span>
+<span id="L233"><span class="lineNum">     233</span>                 :<span class="tlaGNC">           3 :         for (uint256 i = 0; i &lt; _sigsToRemove.length; i++) {</span></span>
+<span id="L234"><span class="lineNum">     234</span>                 :<span class="tlaGNC">           3 :             _removeSignatureRole(_sigsToRemove[i].target, _sigsToRemove[i].signature);</span></span>
+<span id="L235"><span class="lineNum">     235</span>                 :             :         }</span>
+<span id="L236"><span class="lineNum">     236</span>                 :             :     }</span>
+<span id="L237"><span class="lineNum">     237</span>                 :             : </span>
+<span id="L238"><span class="lineNum">     238</span>                 :             :     /**</span>
+<span id="L239"><span class="lineNum">     239</span>                 :             :      * @notice Internal function to remove a signature role from a target.</span>
+<span id="L240"><span class="lineNum">     240</span>                 :             :      * @dev Deletes the signature role and removes the selector from the targetSigs array.</span>
+<span id="L241"><span class="lineNum">     241</span>                 :             :      *      If the target has no more signature selectors, it is removed from the targets array.</span>
+<span id="L242"><span class="lineNum">     242</span>                 :             :      * @param _target The target contract address.</span>
+<span id="L243"><span class="lineNum">     243</span>                 :             :      * @param _signature The function selector to remove.</span>
+<span id="L244"><span class="lineNum">     244</span>                 :             :      */</span>
+<span id="L245"><span class="lineNum">     245</span>                 :<span class="tlaGNC">           3 :     function _removeSignatureRole(address _target, bytes4 _signature) internal {</span></span>
+<span id="L246"><span class="lineNum">     246</span>                 :<span class="tlaGNC">           3 :         delete signatureRoles[_target][_signature];</span></span>
+<span id="L247"><span class="lineNum">     247</span>                 :<span class="tlaGNC">           3 :         uint256 signatureIndex = _getBytes4Index(targetSigs[_target], _signature);</span></span>
+<span id="L248"><span class="lineNum">     248</span>                 :<span class="tlaGNC">           3 :         if (targetSigs[_target][signatureIndex] != _signature)</span></span>
+<span id="L249"><span class="lineNum">     249</span>            [<span class="tlaUNC" title="Branch 0 was not executed"> # </span>]:<span class="tlaUNC tlaBgUNC">           0 :             revert IncorrectSignatureIndex();</span></span>
+<span id="L250"><span class="lineNum">     250</span>                 :             : </span>
+<span id="L251"><span class="lineNum">     251</span>                 :<span class="tlaGNC tlaBgGNC">           3 :         uint256 lastIndex = targetSigs[_target].length - 1;</span></span>
+<span id="L252"><span class="lineNum">     252</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           3 :         if (signatureIndex != lastIndex) {</span></span>
+<span id="L253"><span class="lineNum">     253</span>                 :<span class="tlaGNC">           1 :             targetSigs[_target][signatureIndex] = targetSigs[_target][lastIndex];</span></span>
+<span id="L254"><span class="lineNum">     254</span>                 :             :         }</span>
+<span id="L255"><span class="lineNum">     255</span>                 :<span class="tlaGNC">           3 :         targetSigs[_target].pop();</span></span>
+<span id="L256"><span class="lineNum">     256</span>                 :             : </span>
+<span id="L257"><span class="lineNum">     257</span>            [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span>]:<span class="tlaGNC">           3 :         if (targetSigs[_target].length == 0) {</span></span>
+<span id="L258"><span class="lineNum">     258</span>                 :<span class="tlaGNC">           2 :             uint256 targetIndex = _getAddressIndex(targets, _target);</span></span>
+<span id="L259"><span class="lineNum">     259</span>                 :<span class="tlaGNC">           2 :             uint256 lastTargetIndex = targets.length - 1;</span></span>
+<span id="L260"><span class="lineNum">     260</span>            [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span>]:<span class="tlaGNC">           2 :             if (targetIndex != lastTargetIndex) {</span></span>
+<span id="L261"><span class="lineNum">     261</span>                 :<span class="tlaGNC">           2 :                 targets[targetIndex] = targets[lastTargetIndex];</span></span>
+<span id="L262"><span class="lineNum">     262</span>                 :             :             }</span>
+<span id="L263"><span class="lineNum">     263</span>                 :<span class="tlaGNC">           2 :             targets.pop();</span></span>
+<span id="L264"><span class="lineNum">     264</span>                 :<span class="tlaGNC">           2 :             emit RemoveTarget(_target);</span></span>
+<span id="L265"><span class="lineNum">     265</span>                 :             :         }</span>
+<span id="L266"><span class="lineNum">     266</span>                 :<span class="tlaGNC">           3 :         emit RemoveSignatureRole(_target, _signature);</span></span>
+<span id="L267"><span class="lineNum">     267</span>                 :             :     }</span>
+<span id="L268"><span class="lineNum">     268</span>                 :             : </span>
+<span id="L269"><span class="lineNum">     269</span>                 :             :     /**</span>
+<span id="L270"><span class="lineNum">     270</span>                 :             :      * @notice Schedules a batch of calls by storing their required execution time and data.</span>
+<span id="L271"><span class="lineNum">     271</span>                 :             :      * @dev If `_executeAfter` is not yet reached, the calls remain pending. The calls can be canceled before execution or executed later.</span>
+<span id="L272"><span class="lineNum">     272</span>                 :             :      * @param _calls An array of CallToAdd, each specifying target and encoded call data.</span>
+<span id="L273"><span class="lineNum">     273</span>                 :             :      * @return callIds An array of identifiers for the scheduled calls.</span>
+<span id="L274"><span class="lineNum">     274</span>                 :             :      */</span>
+<span id="L275"><span class="lineNum">     275</span>                 :<span class="tlaGNC">          22 :     function scheduleCallList(CallToAdd[] calldata _calls) external nonReentrant returns(bytes32[] memory callIds) {</span></span>
+<span id="L276"><span class="lineNum">     276</span>                 :<span class="tlaGNC">          22 :         callIds = new bytes32[](_calls.length);</span></span>
+<span id="L277"><span class="lineNum">     277</span>                 :<span class="tlaGNC">          22 :         for (uint256 i = 0; i &lt; _calls.length; i++) {</span></span>
+<span id="L278"><span class="lineNum">     278</span>                 :<span class="tlaGNC">          22 :             bytes4 sig = bytes4(_calls[i].data[:4]);</span></span>
+<span id="L279"><span class="lineNum">     279</span>                 :<span class="tlaGNC">          22 :             callIds[i] = _scheduleCall(_calls[i].target, sig, _calls[i].data);</span></span>
+<span id="L280"><span class="lineNum">     280</span>                 :             :         }</span>
+<span id="L281"><span class="lineNum">     281</span>                 :             :     }</span>
+<span id="L282"><span class="lineNum">     282</span>                 :             : </span>
+<span id="L283"><span class="lineNum">     283</span>                 :             :     /**</span>
+<span id="L284"><span class="lineNum">     284</span>                 :             :      * @notice Internal function to check that the caller holds the required role.</span>
+<span id="L285"><span class="lineNum">     285</span>                 :             :      * @param _role The required role identifier.</span>
+<span id="L286"><span class="lineNum">     286</span>                 :             :      */</span>
+<span id="L287"><span class="lineNum">     287</span>                 :<span class="tlaGNC">          24 :     function _checkRole(bytes32 _role) internal view override {</span></span>
+<span id="L288"><span class="lineNum">     288</span>                 :<span class="tlaGNC">          24 :         if (!hasRole(_role, msg.sender))</span></span>
+<span id="L289"><span class="lineNum">     289</span>            [<span class="tlaGBC" title="Branch 0 was taken 6 times"> + </span>]:<span class="tlaGNC">           6 :             revert CallerHaveNoRequiredRole(_role);</span></span>
+<span id="L290"><span class="lineNum">     290</span>                 :             :     }</span>
+<span id="L291"><span class="lineNum">     291</span>                 :             : </span>
+<span id="L292"><span class="lineNum">     292</span>                 :             :     /**</span>
+<span id="L293"><span class="lineNum">     293</span>                 :             :      * @notice Internal function to schedule a call with a timelock.</span>
+<span id="L294"><span class="lineNum">     294</span>                 :             :      * @dev Checks that a signature timelock is set and that the caller holds the required role.</span>
+<span id="L295"><span class="lineNum">     295</span>                 :             :      *      Computes an executeAfter timestamp and creates a call request stored in pendingCalls.</span>
+<span id="L296"><span class="lineNum">     296</span>                 :             :      * @param _target The target contract address.</span>
+<span id="L297"><span class="lineNum">     297</span>                 :             :      * @param _sig The function selector.</span>
+<span id="L298"><span class="lineNum">     298</span>                 :             :      * @param _data The call data.</span>
+<span id="L299"><span class="lineNum">     299</span>                 :             :      * @return callId The identifier for the scheduled call.</span>
+<span id="L300"><span class="lineNum">     300</span>                 :             :      */</span>
+<span id="L301"><span class="lineNum">     301</span>                 :<span class="tlaGNC">          22 :     function _scheduleCall(address _target, bytes4 _sig, bytes memory _data) internal returns(bytes32 callId) {</span></span>
+<span id="L302"><span class="lineNum">     302</span>                 :<span class="tlaGNC">          22 :         SignatureAttr storage signAttr = signatureRoles[_target][_sig];</span></span>
+<span id="L303"><span class="lineNum">     303</span>                 :             : </span>
+<span id="L304"><span class="lineNum">     304</span>                 :<span class="tlaGNC">          22 :         if (signAttr.timelock == 0)</span></span>
+<span id="L305"><span class="lineNum">     305</span>            [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span>]:<span class="tlaGNC">           2 :             revert SignatureTimeLockNotSet(_sig);</span></span>
+<span id="L306"><span class="lineNum">     306</span>                 :             : </span>
+<span id="L307"><span class="lineNum">     307</span>                 :<span class="tlaGNC">          20 :         _checkRole(signAttr.role);</span></span>
+<span id="L308"><span class="lineNum">     308</span>                 :             : </span>
+<span id="L309"><span class="lineNum">     309</span>                 :<span class="tlaGNC">          15 :         uint128 executeAfter = uint128(block.timestamp) + signAttr.timelock;</span></span>
+<span id="L310"><span class="lineNum">     310</span>                 :<span class="tlaGNC">          15 :         callId = keccak256(abi.encode(_target, _data, msg.sender, executeAfter));</span></span>
+<span id="L311"><span class="lineNum">     311</span>                 :             : </span>
+<span id="L312"><span class="lineNum">     312</span>                 :<span class="tlaGNC">          15 :         if (pendingCalls[callId].executeAfter != 0)</span></span>
+<span id="L313"><span class="lineNum">     313</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :             revert CallAlreadyScheduled();</span></span>
+<span id="L314"><span class="lineNum">     314</span>                 :             : </span>
+<span id="L315"><span class="lineNum">     315</span>                 :<span class="tlaGNC">          14 :         pendingCalls[callId] = CallRequest({</span></span>
+<span id="L316"><span class="lineNum">     316</span>                 :             :             caller: msg.sender,</span>
+<span id="L317"><span class="lineNum">     317</span>                 :             :             target: _target,</span>
+<span id="L318"><span class="lineNum">     318</span>                 :             :             data: _data,</span>
+<span id="L319"><span class="lineNum">     319</span>                 :             :             executeAfter: executeAfter,</span>
+<span id="L320"><span class="lineNum">     320</span>                 :             :             executeBefore: executeAfter + maxExecutionPeriod,</span>
+<span id="L321"><span class="lineNum">     321</span>                 :             :             pending: true</span>
+<span id="L322"><span class="lineNum">     322</span>                 :             :         });</span>
+<span id="L323"><span class="lineNum">     323</span>                 :<span class="tlaGNC">          14 :         callsIds.push(callId);</span></span>
+<span id="L324"><span class="lineNum">     324</span>                 :             : </span>
+<span id="L325"><span class="lineNum">     325</span>                 :<span class="tlaGNC">          14 :         emit CallScheduled(callId, msg.sender, _target, _sig, executeAfter);</span></span>
+<span id="L326"><span class="lineNum">     326</span>                 :             :     }</span>
+<span id="L327"><span class="lineNum">     327</span>                 :             : </span>
+<span id="L328"><span class="lineNum">     328</span>                 :             :     /**</span>
+<span id="L329"><span class="lineNum">     329</span>                 :             :      * @notice Executes a list of calls that have satisfied their timelock period.</span>
+<span id="L330"><span class="lineNum">     330</span>                 :             :      * @dev Iterates over `_callIds` and calls `_executeCall` for each.</span>
+<span id="L331"><span class="lineNum">     331</span>                 :             :      * @param _callIds An array of call IDs previously scheduled.</span>
+<span id="L332"><span class="lineNum">     332</span>                 :             :      */</span>
+<span id="L333"><span class="lineNum">     333</span>                 :<span class="tlaGNC">          18 :     function executeCallList(bytes32[] memory _callIds) external nonReentrant {</span></span>
+<span id="L334"><span class="lineNum">     334</span>                 :<span class="tlaGNC">          18 :         for (uint256 i = 0; i &lt; _callIds.length; i++) {</span></span>
+<span id="L335"><span class="lineNum">     335</span>                 :<span class="tlaGNC">          18 :             _executeCall(_callIds[i]);</span></span>
+<span id="L336"><span class="lineNum">     336</span>                 :             :         }</span>
+<span id="L337"><span class="lineNum">     337</span>                 :             :     }</span>
+<span id="L338"><span class="lineNum">     338</span>                 :             : </span>
+<span id="L339"><span class="lineNum">     339</span>                 :             :     /**</span>
+<span id="L340"><span class="lineNum">     340</span>                 :             :      * @notice Internal function that executes a scheduled call.</span>
+<span id="L341"><span class="lineNum">     341</span>                 :             :      * @dev Verifies that the call is scheduled, pending, and that the timelock period has passed.</span>
+<span id="L342"><span class="lineNum">     342</span>                 :             :      *      The call is executed via a low-level call; revert reasons are bubbled up.</span>
+<span id="L343"><span class="lineNum">     343</span>                 :             :      * @param callId The identifier of the call to execute.</span>
+<span id="L344"><span class="lineNum">     344</span>                 :             :      */</span>
+<span id="L345"><span class="lineNum">     345</span>                 :<span class="tlaGNC">          18 :     function _executeCall(bytes32 callId) internal {</span></span>
+<span id="L346"><span class="lineNum">     346</span>                 :<span class="tlaGNC">          18 :         CallRequest storage request = pendingCalls[callId];</span></span>
+<span id="L347"><span class="lineNum">     347</span>                 :             : </span>
+<span id="L348"><span class="lineNum">     348</span>                 :<span class="tlaGNC">          18 :         if (request.executeAfter == 0)</span></span>
+<span id="L349"><span class="lineNum">     349</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :             revert CallNotScheduled();</span></span>
+<span id="L350"><span class="lineNum">     350</span>                 :             : </span>
+<span id="L351"><span class="lineNum">     351</span>                 :<span class="tlaGNC">          17 :         if (!request.pending)</span></span>
+<span id="L352"><span class="lineNum">     352</span>            [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span>]:<span class="tlaGNC">           2 :             revert NotPending();</span></span>
+<span id="L353"><span class="lineNum">     353</span>                 :             : </span>
+<span id="L354"><span class="lineNum">     354</span>                 :<span class="tlaGNC">          15 :         if (block.timestamp &lt; request.executeAfter)</span></span>
+<span id="L355"><span class="lineNum">     355</span>            [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span>]:<span class="tlaGNC">           2 :             revert TimelockActive();</span></span>
+<span id="L356"><span class="lineNum">     356</span>                 :             : </span>
+<span id="L357"><span class="lineNum">     357</span>                 :<span class="tlaGNC">          13 :         if (block.timestamp &gt; request.executeBefore)</span></span>
+<span id="L358"><span class="lineNum">     358</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :             revert TimelockExpired();</span></span>
+<span id="L359"><span class="lineNum">     359</span>                 :             : </span>
+<span id="L360"><span class="lineNum">     360</span>                 :<span class="tlaGNC">          12 :         request.pending = false;</span></span>
+<span id="L361"><span class="lineNum">     361</span>                 :             : </span>
+<span id="L362"><span class="lineNum">     362</span>                 :<span class="tlaGNC">          12 :         (bool success, bytes memory returnData) = request.target.call(request.data);</span></span>
+<span id="L363"><span class="lineNum">     363</span>                 :<span class="tlaGNC">          12 :         if (!success)</span></span>
+<span id="L364"><span class="lineNum">     364</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :             revert CallFailed(returnData);</span></span>
+<span id="L365"><span class="lineNum">     365</span>                 :             : </span>
+<span id="L366"><span class="lineNum">     366</span>                 :<span class="tlaGNC">          11 :         emit CallExecuted(callId, msg.sender, returnData);</span></span>
+<span id="L367"><span class="lineNum">     367</span>                 :             :     }</span>
+<span id="L368"><span class="lineNum">     368</span>                 :             : </span>
+<span id="L369"><span class="lineNum">     369</span>                 :             :     /**</span>
+<span id="L370"><span class="lineNum">     370</span>                 :             :      * @notice Cancels a set of scheduled calls, preventing them from being executed later.</span>
+<span id="L371"><span class="lineNum">     371</span>                 :             :      * @dev Only ADMIN_ROLE can cancel. Calls `_cancelCall` on each ID.</span>
+<span id="L372"><span class="lineNum">     372</span>                 :             :      * @param _callIds An array of call IDs to cancel.</span>
+<span id="L373"><span class="lineNum">     373</span>                 :             :      */</span>
+<span id="L374"><span class="lineNum">     374</span>                 :<span class="tlaGNC">           4 :     function cancelCallList(bytes32[] memory _callIds) external onlyRole(ADMIN_ROLE) nonReentrant {</span></span>
+<span id="L375"><span class="lineNum">     375</span>                 :<span class="tlaGNC">           3 :         for (uint256 i = 0; i &lt; _callIds.length; i++) {</span></span>
+<span id="L376"><span class="lineNum">     376</span>                 :<span class="tlaGNC">           3 :             _cancelCall(_callIds[i]);</span></span>
+<span id="L377"><span class="lineNum">     377</span>                 :             :         }</span>
+<span id="L378"><span class="lineNum">     378</span>                 :             :     }</span>
+<span id="L379"><span class="lineNum">     379</span>                 :             : </span>
+<span id="L380"><span class="lineNum">     380</span>                 :             :     /**</span>
+<span id="L381"><span class="lineNum">     381</span>                 :             :      * @notice Internal function that cancels a scheduled call.</span>
+<span id="L382"><span class="lineNum">     382</span>                 :             :      * @dev Verifies that the call is scheduled and pending before canceling it.</span>
+<span id="L383"><span class="lineNum">     383</span>                 :             :      * @param callId The identifier of the call to cancel.</span>
+<span id="L384"><span class="lineNum">     384</span>                 :             :      */</span>
+<span id="L385"><span class="lineNum">     385</span>                 :<span class="tlaGNC">           3 :     function _cancelCall(bytes32 callId) internal {</span></span>
+<span id="L386"><span class="lineNum">     386</span>                 :<span class="tlaGNC">           3 :         CallRequest storage request = pendingCalls[callId];</span></span>
+<span id="L387"><span class="lineNum">     387</span>                 :             : </span>
+<span id="L388"><span class="lineNum">     388</span>                 :<span class="tlaGNC">           3 :         if (request.executeAfter == 0)</span></span>
+<span id="L389"><span class="lineNum">     389</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :             revert CallNotScheduled();</span></span>
+<span id="L390"><span class="lineNum">     390</span>                 :<span class="tlaGNC">           2 :         if (!request.pending)</span></span>
+<span id="L391"><span class="lineNum">     391</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :             revert NotPending();</span></span>
+<span id="L392"><span class="lineNum">     392</span>                 :             : </span>
+<span id="L393"><span class="lineNum">     393</span>                 :<span class="tlaGNC">           1 :         request.pending = false;</span></span>
+<span id="L394"><span class="lineNum">     394</span>                 :             : </span>
+<span id="L395"><span class="lineNum">     395</span>                 :<span class="tlaGNC">           1 :         emit CallCanceled(callId, msg.sender);</span></span>
+<span id="L396"><span class="lineNum">     396</span>                 :             :     }</span>
+<span id="L397"><span class="lineNum">     397</span>                 :             : </span>
+<span id="L398"><span class="lineNum">     398</span>                 :             :     /**</span>
+<span id="L399"><span class="lineNum">     399</span>                 :             :      * @notice Returns the list of accounts assigned to a role.</span>
+<span id="L400"><span class="lineNum">     400</span>                 :             :      * @param _role The role identifier.</span>
+<span id="L401"><span class="lineNum">     401</span>                 :             :      * @return An array of addresses holding the role.</span>
+<span id="L402"><span class="lineNum">     402</span>                 :             :      */</span>
+<span id="L403"><span class="lineNum">     403</span>                 :<span class="tlaGNC">          15 :     function getRoleAccounts(bytes32 _role) external view returns(address[] memory) {</span></span>
+<span id="L404"><span class="lineNum">     404</span>                 :<span class="tlaGNC">          15 :         return roleAccounts[_role];</span></span>
+<span id="L405"><span class="lineNum">     405</span>                 :             :     }</span>
+<span id="L406"><span class="lineNum">     406</span>                 :             : </span>
+<span id="L407"><span class="lineNum">     407</span>                 :             :     /**</span>
+<span id="L408"><span class="lineNum">     408</span>                 :             :      * @notice Returns the list of targets that have signature roles assigned.</span>
+<span id="L409"><span class="lineNum">     409</span>                 :             :      * @return An array of target contract addresses.</span>
+<span id="L410"><span class="lineNum">     410</span>                 :             :      */</span>
+<span id="L411"><span class="lineNum">     411</span>                 :<span class="tlaGNC">           7 :     function getTargets() external view returns(address[] memory) {</span></span>
+<span id="L412"><span class="lineNum">     412</span>                 :<span class="tlaGNC">           7 :         return targets;</span></span>
+<span id="L413"><span class="lineNum">     413</span>                 :             :     }</span>
+<span id="L414"><span class="lineNum">     414</span>                 :             : </span>
+<span id="L415"><span class="lineNum">     415</span>                 :             :     /**</span>
+<span id="L416"><span class="lineNum">     416</span>                 :             :      * @notice Returns signature role details for a given target contract.</span>
+<span id="L417"><span class="lineNum">     417</span>                 :             :      * @param _target The target contract address.</span>
+<span id="L418"><span class="lineNum">     418</span>                 :             :      * @return result An array of TargetSigRes structs containing each function selector, its required role, and timelock.</span>
+<span id="L419"><span class="lineNum">     419</span>                 :             :      */</span>
+<span id="L420"><span class="lineNum">     420</span>                 :<span class="tlaGNC">           8 :     function getTargetSigs(address _target) external view returns(TargetSigRes[] memory result) {</span></span>
+<span id="L421"><span class="lineNum">     421</span>                 :<span class="tlaGNC">           8 :         bytes4[] memory sigs = targetSigs[_target];</span></span>
+<span id="L422"><span class="lineNum">     422</span>                 :<span class="tlaGNC">           8 :         result = new TargetSigRes[](sigs.length);</span></span>
+<span id="L423"><span class="lineNum">     423</span>                 :<span class="tlaGNC">           8 :         for (uint256 i = 0; i &lt; sigs.length; i++) {</span></span>
+<span id="L424"><span class="lineNum">     424</span>                 :<span class="tlaGNC">           7 :             result[i] = TargetSigRes(sigs[i], signatureRoles[_target][sigs[i]].role, signatureRoles[_target][sigs[i]].timelock);</span></span>
+<span id="L425"><span class="lineNum">     425</span>                 :             :         }</span>
+<span id="L426"><span class="lineNum">     426</span>                 :             :     }</span>
+<span id="L427"><span class="lineNum">     427</span>                 :             : </span>
+<span id="L428"><span class="lineNum">     428</span>                 :             :     /**</span>
+<span id="L429"><span class="lineNum">     429</span>                 :             :      * @notice Helper function to compute a call ID based on target, call data, caller, and execution time.</span>
+<span id="L430"><span class="lineNum">     430</span>                 :             :      * @param target The target contract.</span>
+<span id="L431"><span class="lineNum">     431</span>                 :             :      * @param data The call data.</span>
+<span id="L432"><span class="lineNum">     432</span>                 :             :      * @param caller The account scheduling the call.</span>
+<span id="L433"><span class="lineNum">     433</span>                 :             :      * @param executeAfter The timestamp after which the call can be executed.</span>
+<span id="L434"><span class="lineNum">     434</span>                 :             :      * @return The computed call ID.</span>
+<span id="L435"><span class="lineNum">     435</span>                 :             :      */</span>
+<span id="L436"><span class="lineNum">     436</span>                 :<span class="tlaUNC tlaBgUNC">           0 :     function getCallId(address target, bytes calldata data, address caller, uint256 executeAfter) public pure returns (bytes32) {</span></span>
+<span id="L437"><span class="lineNum">     437</span>                 :<span class="tlaUNC">           0 :         return keccak256(abi.encode(target, data, caller, executeAfter));</span></span>
+<span id="L438"><span class="lineNum">     438</span>                 :             :     }</span>
+<span id="L439"><span class="lineNum">     439</span>                 :             : </span>
+<span id="L440"><span class="lineNum">     440</span>                 :             :     /**</span>
+<span id="L441"><span class="lineNum">     441</span>                 :             :      * @notice Returns the details of a scheduled call.</span>
+<span id="L442"><span class="lineNum">     442</span>                 :             :      * @param _callId The call ID.</span>
+<span id="L443"><span class="lineNum">     443</span>                 :             :      * @return The CallRequest struct containing call details.</span>
+<span id="L444"><span class="lineNum">     444</span>                 :             :      */</span>
+<span id="L445"><span class="lineNum">     445</span>                 :<span class="tlaGNC tlaBgGNC">          10 :     function getCall(bytes32 _callId) external view returns(CallRequest memory){</span></span>
+<span id="L446"><span class="lineNum">     446</span>                 :<span class="tlaGNC">          10 :         return pendingCalls[_callId];</span></span>
+<span id="L447"><span class="lineNum">     447</span>                 :             :     }</span>
+<span id="L448"><span class="lineNum">     448</span>                 :             : </span>
+<span id="L449"><span class="lineNum">     449</span>                 :             :     /**</span>
+<span id="L450"><span class="lineNum">     450</span>                 :             :      * @notice Returns a list of scheduled call IDs and their details starting from an offset.</span>
+<span id="L451"><span class="lineNum">     451</span>                 :             :      * @param _offset The starting index.</span>
+<span id="L452"><span class="lineNum">     452</span>                 :             :      * @param _limit The maximum number of calls to return.</span>
+<span id="L453"><span class="lineNum">     453</span>                 :             :      * @return ids An array of call IDs.</span>
+<span id="L454"><span class="lineNum">     454</span>                 :             :      * @return resCalls An array of CallRequest structs.</span>
+<span id="L455"><span class="lineNum">     455</span>                 :             :      */</span>
+<span id="L456"><span class="lineNum">     456</span>                 :<span class="tlaGNC">           3 :     function getCallsList(uint256 _offset, uint256 _limit) external view returns(bytes32[] memory ids, CallRequest[] memory resCalls){</span></span>
+<span id="L457"><span class="lineNum">     457</span>                 :<span class="tlaGNC">           3 :         resCalls = new CallRequest[](_limit);</span></span>
+<span id="L458"><span class="lineNum">     458</span>                 :<span class="tlaGNC">           3 :         ids = new bytes32[](_limit);</span></span>
+<span id="L459"><span class="lineNum">     459</span>                 :<span class="tlaGNC">           3 :         for (uint256 i = 0; i &lt; _limit; i++) {</span></span>
+<span id="L460"><span class="lineNum">     460</span>                 :<span class="tlaGNC">           8 :             ids[i] = callsIds[_offset + i];</span></span>
+<span id="L461"><span class="lineNum">     461</span>                 :<span class="tlaGNC">           8 :             resCalls[i] = pendingCalls[ids[i]];</span></span>
+<span id="L462"><span class="lineNum">     462</span>                 :             :         }</span>
+<span id="L463"><span class="lineNum">     463</span>                 :             :     }</span>
+<span id="L464"><span class="lineNum">     464</span>                 :             : </span>
+<span id="L465"><span class="lineNum">     465</span>                 :             :     /**</span>
+<span id="L466"><span class="lineNum">     466</span>                 :             :      * @notice Returns all scheduled call IDs.</span>
+<span id="L467"><span class="lineNum">     467</span>                 :             :      * @return An array of all call IDs.</span>
+<span id="L468"><span class="lineNum">     468</span>                 :             :      */</span>
+<span id="L469"><span class="lineNum">     469</span>                 :<span class="tlaGNC">           1 :     function getCallIds() external view returns(bytes32[] memory){</span></span>
+<span id="L470"><span class="lineNum">     470</span>                 :<span class="tlaGNC">           1 :         return callsIds;</span></span>
+<span id="L471"><span class="lineNum">     471</span>                 :             :     }</span>
+<span id="L472"><span class="lineNum">     472</span>                 :             : </span>
+<span id="L473"><span class="lineNum">     473</span>                 :             :     /**</span>
+<span id="L474"><span class="lineNum">     474</span>                 :             :      * @notice Returns the number of scheduled calls.</span>
+<span id="L475"><span class="lineNum">     475</span>                 :             :      * @return The length of the callsIds array.</span>
+<span id="L476"><span class="lineNum">     476</span>                 :             :      */</span>
+<span id="L477"><span class="lineNum">     477</span>                 :<span class="tlaGNC">           1 :     function getCallsLength() external view returns(uint256){</span></span>
+<span id="L478"><span class="lineNum">     478</span>                 :<span class="tlaGNC">           1 :         return callsIds.length;</span></span>
+<span id="L479"><span class="lineNum">     479</span>                 :             :     }</span>
+<span id="L480"><span class="lineNum">     480</span>                 :             : }</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com//linux-test-project/lcov" target="_parent">LCOV version 2.0-1</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>
