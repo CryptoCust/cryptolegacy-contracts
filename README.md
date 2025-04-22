@@ -1,6 +1,15 @@
 # CryptoLegacy – Secure On-Chain Inheritance & Recovery
 
-[![cov](https://CryptoCust.github.io/cryptolegacy-contracts/badges/coverage.svg)](https://github.com/CryptoCust/cryptolegacy-contracts/actions)
+[![test][test-badge]][test] [![cov][codecov-badge]][codecov] [![Foundry][foundry-badge]][foundry] [![Twitter][twitter-badge]][twitter]
+
+[codecov-badge]: https://CryptoCust.github.io/cryptolegacy-contracts/badges/coverage.svg
+[codecov]: https://CryptoCust.github.io/cryptolegacy-contracts/report/
+[foundry-badge]: https://img.shields.io/badge/Built%20with-Foundry-FFDB1C.svg
+[foundry]: https://getfoundry.sh
+[test-badge]: https://github.com/CryptoCust/cryptolegacy-contracts/actions/workflows/test.yml/badge.svg
+[test]: https://github.com/CryptoCust/cryptolegacy-contracts/actions/workflows/test.yml
+[twitter-badge]: https://img.shields.io/twitter/follow/0xcust
+[twitter]: https://x.com/0xcust
 
 **CryptoLegacy** is a modular, EIP-2535 Diamond-based smart contract system built using **Foundry**. It enables decentralized **inheritance**, **asset recovery**, and **estate planning** for crypto users, ensuring privacy, flexibility, and cross-chain support.
 

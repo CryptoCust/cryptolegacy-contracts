@@ -32,7 +32,8 @@ jobs:
 
       - name: Generate coverage report
         run: |
-          npm run coverage-json
+          npm run coverage-json && npm run generate-html
+          cp -R report $RUNNER_TEMP/report
 
       - name: Report code coverage
         uses: zgosalvez/github-actions-report-lcov@v4
@@ -48,3 +49,14 @@ jobs:
         # https://stackoverflow.com/questions/64781462/github-actions-default-branch-variable
         if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         uses: we-cli/coverage-badge-action@main
+
+      - name: Deploy Coverage Report HTML
+        uses: Wandalen/wretry.action@master
+        if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        with:
+          attempt_limit: 3
+          attempt_delay: 2000
+          command: |
+            git checkout gh-pages
+            cp -R $RUNNER_TEMP/report report 
+            git add report && git commit -m 'Upload coverage report html [skip ci]' && git push
