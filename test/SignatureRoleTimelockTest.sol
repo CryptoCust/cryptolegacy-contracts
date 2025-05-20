@@ -408,7 +408,7 @@ contract SignatureRoleTimelockTest is AbstractTestHelper {
         vm.startPrank(owner);
 
         LegacyMessenger lm = new LegacyMessenger(owner);
-        srt = LibDeploy._deploySignatureRoleTimelock(salt, buildManager, proxyBuilder, lm, msig1, msig2, msig3);
+        srt = LibDeploy._deploySignatureRoleTimelock(create3Factory, salt, buildManager, proxyBuilder, lm, msig1, msig2, msig3);
         LibDeploy._transferOwnershipWithLm(address(srt), buildManager, proxyBuilder, lm);
 
         vm.stopPrank();
@@ -423,6 +423,9 @@ contract SignatureRoleTimelockTest is AbstractTestHelper {
         _checkOwner(address(lm), sigTimelock);
         _checkOwner(address(proxyBuilder), sigTimelock);
         _checkOwner(address(proxyBuilder.proxyAdmin()), sigTimelock);
+
+        vm.expectRevert(ISignatureRoleTimelock.DisabledFunction.selector);
+        srt.renounceRole(bytes32(0), address(0));
 
         CryptoLegacyExternalLens newExternalLens = new CryptoLegacyExternalLens();
         bytes memory setExternalBytes = abi.encodeWithSelector(buildManager.setExternalLens.selector, address(newExternalLens));
@@ -477,7 +480,7 @@ contract SignatureRoleTimelockTest is AbstractTestHelper {
         vm.startPrank(owner);
 
         LegacyMessenger lm = new LegacyMessenger(owner);
-        srt = LibDeploy._deploySignatureRoleTimelock(salt, buildManager, proxyBuilder, lm, msig1, msig2, msig3);
+        srt = LibDeploy._deploySignatureRoleTimelock(create3Factory, salt, buildManager, proxyBuilder, lm, msig1, msig2, msig3);
         LibDeploy._transferOwnershipWithLm(address(srt), buildManager, proxyBuilder, lm);
 
         vm.stopPrank();
@@ -567,9 +570,9 @@ contract SignatureRoleTimelockTest is AbstractTestHelper {
         assertEq(targets[3], address(buildManager));
         assertEq(targets[4], address(factory));
         assertEq(targets[5], address(feeRegistry));
-        assertEq(targets[6], address(lifetimeNft));
-        assertEq(targets[7], address(pluginsRegistry));
-        assertEq(targets[8], address(proxyBuilder.proxyAdmin()));
+        assertEq(targets[6], address(pluginsRegistry));
+        assertEq(targets[7], address(proxyBuilder.proxyAdmin()));
+        assertEq(targets[8], address(lifetimeNft));
 
         ISignatureRoleTimelock.TargetSigRes[] memory resSigs = srt.getTargetSigs(address(lm));
         assertEq(resSigs.length, 1);
@@ -589,12 +592,12 @@ contract SignatureRoleTimelockTest is AbstractTestHelper {
         assertEq(targets.length, 8);
         assertEq(targets[0], address(srt));
         assertEq(targets[1], address(beneficiaryRegistry));
-        assertEq(targets[2], address(proxyBuilder.proxyAdmin()));
+        assertEq(targets[2], address(lifetimeNft));
         assertEq(targets[3], address(buildManager));
         assertEq(targets[4], address(factory));
         assertEq(targets[5], address(feeRegistry));
-        assertEq(targets[6], address(lifetimeNft));
-        assertEq(targets[7], address(pluginsRegistry));
+        assertEq(targets[6], address(pluginsRegistry));
+        assertEq(targets[7], address(proxyBuilder.proxyAdmin()));
     }
 
     function _checkOwner(address _contract, address _owner) internal view {
