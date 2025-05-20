@@ -78,7 +78,7 @@ contract CryptoLegacyExternalLens {
     function getTokensDistribution(address _cryptoLegacy, address[] calldata _tokens)
     external
     view
-    returns (ICryptoLegacy.TokenDistribution[] memory list)
+    returns (ICryptoLegacyLens.LensTokenDistribution[] memory list)
     {
         return LensPlugin(_cryptoLegacy).getTokensDistribution(_tokens);
     }

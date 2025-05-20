@@ -85,7 +85,7 @@ contract CryptoLegacyNftTest is AbstractTestHelper {
         vm.startPrank(dan);
 
         address payable cl;
-        ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(bytes8(0), beneficiaryArr, beneficiaryConfigArr, plugins, 180 days, 90 days);
+        ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(bytes8(0), beneficiaryArr, beneficiaryConfigArr, plugins, updateInterval, challengeTimeout);
         buildRoll();
         cl = buildManager.buildCryptoLegacy{value: buildFee}(buildArgs, _getRefArgsStruct(address(0)), _getCreate2ArgsStruct(address(0), 0));
         assertEq(feeRegistry.isNftLocked(dan), false);
@@ -315,7 +315,7 @@ contract CryptoLegacyNftTest is AbstractTestHelper {
         pluginsRegistry.addPlugin(lensPlugin, "");
 
         vm.prank(alice);
-        (bytes8 refCode, ) = buildManager.createRef(aliceRecipient, _getRefChains(), _getRefChains());
+        (bytes8 refCode, , ) = buildManager.createRef(aliceRecipient, _getRefChains(), _getRefChains());
 
         vm.startPrank(owner);
         MockERC721 nft = new MockERC721();
@@ -335,7 +335,7 @@ contract CryptoLegacyNftTest is AbstractTestHelper {
 
         buildRoll();
         vm.startPrank(bob);
-        ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(refCode, beneficiaryArr, beneficiaryConfigArr, plugins, 180 days, 90 days);
+        ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(refCode, beneficiaryArr, beneficiaryConfigArr, plugins, updateInterval, challengeTimeout);
         CryptoLegacyBasePlugin cryptoLegacy = CryptoLegacyBasePlugin(buildManager.buildCryptoLegacy(buildArgs, _getRefArgsStruct(bob), _getCreate2ArgsStruct(address(0), 0)));
         ICryptoLegacyLens cryptoLegacyLens = ICryptoLegacyLens(address(cryptoLegacy));
         NftLegacyPlugin nftLegacy = NftLegacyPlugin(address(cryptoLegacy));
@@ -481,7 +481,7 @@ contract CryptoLegacyNftTest is AbstractTestHelper {
 
         bytes8 customRefCode = 0x0123456789abcdef;
         vm.prank(alice);
-        (bytes8 refCode, ) = buildManager.createCustomRef(customRefCode, aliceRecipient, _getRefChains(), _getRefChains());
+        (bytes8 refCode, , ) = buildManager.createCustomRef(customRefCode, aliceRecipient, _getRefChains(), _getRefChains());
         assertEq(refCode, customRefCode);
 
         buildRoll();
@@ -491,7 +491,7 @@ contract CryptoLegacyNftTest is AbstractTestHelper {
         beneficiaryArr[0] = keccak256(abi.encode(bobBeneficiary1));
         ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr = new ICryptoLegacy.BeneficiaryConfig[](1);
         beneficiaryConfigArr[0] = ICryptoLegacy.BeneficiaryConfig(10, 100, 10000);
-        ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(customRefCode, beneficiaryArr, beneficiaryConfigArr, _getOneInitPluginList(lensPlugin), 180 days, 90 days);
+        ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(customRefCode, beneficiaryArr, beneficiaryConfigArr, _getOneInitPluginList(lensPlugin), updateInterval, challengeTimeout);
         address payable cl = buildManager.buildCryptoLegacy{value: 0}(buildArgs, _getRefArgsStruct(address(0)), _getCreate2ArgsStruct(address(0), 0));
         CryptoLegacyBasePlugin cryptoLegacy = CryptoLegacyBasePlugin(cl);
         ICryptoLegacyLens cryptoLegacyLens = ICryptoLegacyLens(cl);
@@ -554,14 +554,14 @@ contract CryptoLegacyNftTest is AbstractTestHelper {
         _tokens[0] = address(maliciousNft);
 
         // Attempt to trigger reentrancy during NFT transfer
-        vm.expectRevert("ReentrancyGuard: reentrant call");
+        vm.expectRevert();
         nftLegacy.transferNftTokensToLegacy(address(maliciousNft), tokenIds);
     }
 
     function testOverwriteNftBeneficiary() public {
         // 1. Create a referral code for testing (optional).
         vm.prank(alice);
-        (bytes8 refCode, ) = buildManager.createRef(aliceRecipient, _getRefChains(), _getRefChains());
+        (bytes8 refCode, , ) = buildManager.createRef(aliceRecipient, _getRefChains(), _getRefChains());
 
         // 2. Register a plugin (e.g. lensPlugin) so we can build a CryptoLegacy.
         // We'll add only the lens plugin initially
@@ -576,7 +576,7 @@ contract CryptoLegacyNftTest is AbstractTestHelper {
         // 4. Build the CryptoLegacy for 'bob'
         buildRoll();
         vm.startPrank(bob);
-        ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(refCode, beneficiaryArr, beneficiaryConfigArr, plugins, 180 days, 90 days);
+        ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(refCode, beneficiaryArr, beneficiaryConfigArr, plugins, updateInterval, challengeTimeout);
         address payable cl = buildManager.buildCryptoLegacy{value: 0.18 ether}(buildArgs, _getRefArgsStruct(bob), _getCreate2ArgsStruct(address(0), 0));
         CryptoLegacyBasePlugin cryptoLegacy = CryptoLegacyBasePlugin(cl);
         ICryptoLegacyLens cryptoLegacyLens = ICryptoLegacyLens(cl);

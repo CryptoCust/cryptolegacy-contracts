@@ -72,7 +72,7 @@ contract LifetimeNft is ILifetimeNft, ERC721Enumerable, Ownable {
       revert NotTheMinter();
     }
     uint256 tokenId = totalSupply() + 1;
-    _mint(_tokenOwner, tokenId);
+    _safeMint(_tokenOwner, tokenId);
     return tokenId;
   }
 
