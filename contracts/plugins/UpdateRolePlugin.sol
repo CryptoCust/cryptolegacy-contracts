@@ -9,14 +9,14 @@ import "../interfaces/ICryptoLegacyPlugin.sol";
 import "../interfaces/ICryptoLegacyUpdaterPlugin.sol";
 import "../libraries/LibCryptoLegacy.sol";
 import "../libraries/LibDiamond.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 /**
  * @title UpdateRolePlugin
  * @notice Enables decentralized update management by allowing designated updaters (beyond the contract owner) to trigger state updates. It includes role assignment, verification, and secure update execution to maintain continuous system operation.
 */
-contract UpdateRolePlugin is ICryptoLegacyPlugin, ReentrancyGuard {
+contract UpdateRolePlugin is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     bytes32 public constant PLUGIN_POSITION = keccak256("update_role.plugin.storage");
@@ -26,21 +26,21 @@ contract UpdateRolePlugin is ICryptoLegacyPlugin, ReentrancyGuard {
      * @dev These selectors correspond to the externally callable functions of the UpdateRolePlugin.
      * @return sigs An array of function selectors.
      */
-    function getSigs() external view returns (bytes4[] memory sigs) {
+    function getSigs() external pure returns (bytes4[] memory sigs) {
         sigs = new bytes4[](4);
-        sigs[0] = UpdateRolePlugin(address(this)).setUpdater.selector;
-        sigs[1] = UpdateRolePlugin(address(this)).updateByUpdater.selector;
-        sigs[2] = UpdateRolePlugin(address(this)).isUpdater.selector;
-        sigs[3] = UpdateRolePlugin(address(this)).getUpdaterList.selector;
+        sigs[0] = this.setUpdater.selector;
+        sigs[1] = this.updateByUpdater.selector;
+        sigs[2] = this.isUpdater.selector;
+        sigs[3] = this.getUpdaterList.selector;
     }
 
     /**
      * @notice Returns the setup function selectors for this plugin.
      * @return sigs An array containing the setup function selector.
      */
-    function getSetupSigs() external view returns (bytes4[] memory sigs) {
+    function getSetupSigs() external pure returns (bytes4[] memory sigs) {
         sigs = new bytes4[](1);
-        sigs[0] = UpdateRolePlugin(address(this)).isUpdater.selector;
+        sigs[0] = this.isUpdater.selector;
     }
 
     /**
