@@ -4,17 +4,15 @@
 
 pragma solidity 0.8.24;
 
-import "../libraries/LibDiamond.sol";
 import "../interfaces/ICryptoLegacy.sol";
 import "../libraries/LibCryptoLegacy.sol";
 import "../interfaces/ICryptoLegacyPlugin.sol";
 import "../libraries/LibSafeMinimalMultisig.sol";
 import "../libraries/LibCryptoLegacyPlugins.sol";
 import "../libraries/LibTrustedGuardiansPlugin.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
-contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuard {
+contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
     bytes32 public constant PLUGIN_MULTISIG_POSITION = keccak256("legacy_recovery.multisig.plugin.storage");
@@ -24,17 +22,18 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuard {
      * @dev These selectors identify the externally callable recovery functions.
      * @return sigs An array of function selectors.
      */
-    function getSigs() external view returns (bytes4[] memory sigs) {
-        sigs = new bytes4[](9);
-        sigs[0] = LegacyRecoveryPlugin(address(this)).lrSetMultisigConfig.selector;
-        sigs[1] = LegacyRecoveryPlugin(address(this)).lrPropose.selector;
-        sigs[2] = LegacyRecoveryPlugin(address(this)).lrConfirm.selector;
-        sigs[3] = LegacyRecoveryPlugin(address(this)).lrTransferTreasuryTokensToLegacy.selector;
-        sigs[4] = LegacyRecoveryPlugin(address(this)).lrWithdrawTokensFromLegacy.selector;
-        sigs[5] = LegacyRecoveryPlugin(address(this)).lrResetGuardianVoting.selector;
-        sigs[6] = LegacyRecoveryPlugin(address(this)).lrGetInitializationStatus.selector;
-        sigs[7] = LegacyRecoveryPlugin(address(this)).lrGetProposalWithStatus.selector;
-        sigs[8] = LegacyRecoveryPlugin(address(this)).lrGetProposalListWithStatuses.selector;
+    function getSigs() external pure returns (bytes4[] memory sigs) {
+        sigs = new bytes4[](10);
+        sigs[0] = this.lrSetMultisigConfig.selector;
+        sigs[1] = this.lrPropose.selector;
+        sigs[2] = this.lrConfirm.selector;
+        sigs[3] = this.lrCancel.selector;
+        sigs[4] = this.lrTransferTreasuryTokensToLegacy.selector;
+        sigs[5] = this.lrWithdrawTokensFromLegacy.selector;
+        sigs[6] = this.lrResetGuardianVoting.selector;
+        sigs[7] = this.lrGetInitializationStatus.selector;
+        sigs[8] = this.lrGetProposalWithStatus.selector;
+        sigs[9] = this.lrGetProposalListWithStatuses.selector;
     }
 
     /**
@@ -51,11 +50,11 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuard {
      * @dev These allowed methods include treasury token transfers and resetting guardian voting.
      * @return sigs An array containing the allowed function selectors.
      */
-    function getMultisigAllowedMethods() public view returns (bytes4[] memory sigs) {
+    function getMultisigAllowedMethods() public pure returns (bytes4[] memory sigs) {
         sigs = new bytes4[](3);
-        sigs[0] = LegacyRecoveryPlugin(address(this)).lrTransferTreasuryTokensToLegacy.selector;
-        sigs[1] = LegacyRecoveryPlugin(address(this)).lrWithdrawTokensFromLegacy.selector;
-        sigs[2] = LegacyRecoveryPlugin(address(this)).lrResetGuardianVoting.selector;
+        sigs[0] = this.lrTransferTreasuryTokensToLegacy.selector;
+        sigs[1] = this.lrWithdrawTokensFromLegacy.selector;
+        sigs[2] = this.lrResetGuardianVoting.selector;
     }
 
     /**
@@ -103,7 +102,7 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuard {
      * @param _voters An array of voter identifiers (bytes32) to be used for multisig proposals.
      * @param _requiredConfirmations The number of confirmations required to execute a proposal.
      */
-    function lrSetMultisigConfig(bytes32[] memory _voters, uint256 _requiredConfirmations) external onlyOwner {
+    function lrSetMultisigConfig(bytes32[] memory _voters, uint8 _requiredConfirmations) external onlyOwner {
         ISafeMinimalMultisig.Storage storage pluginStorage = getPluginMultisigStorage();
         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
         LibCryptoLegacy._setCryptoLegacyListToBeneficiaryRegistry(cls, pluginStorage.voters, _voters, IBeneficiaryRegistry.EntityType.RECOVERY);
@@ -116,20 +115,33 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuard {
      *      Automatically executes the proposal if only one confirmation is required.
      * @param _selector The function selector targeted by the proposal.
      * @param _params The ABI-encoded parameters to be passed when executing the proposal.
+     * @param _salt Secret salt to improve address hash security. Optional, can be zero.
      */
-    function lrPropose(bytes4 _selector, bytes memory _params) external {
+    function lrPropose(bytes4 _selector, bytes memory _params, bytes32 _salt) external returns(uint256 proposalId) {
         ISafeMinimalMultisig.Storage storage pluginStorage = getPluginMultisigStorage();
-        LibSafeMinimalMultisig._propose(pluginStorage, pluginStorage.voters, getMultisigAllowedMethods(), _selector, _params);
+        return LibSafeMinimalMultisig._propose(pluginStorage, _salt, pluginStorage.voters, getMultisigAllowedMethods(), _selector, _params);
     }
 
     /**
      * @notice Confirms an existing multisig proposal.
      * @dev Records a confirmation from the caller and executes the proposal if the confirmations threshold is met.
      * @param _proposalId The identifier of the proposal to confirm.
+     * @param _salt Secret salt to improve address hash security. Optional, can be zero.
      */
-    function lrConfirm(uint256 _proposalId) external {
+    function lrConfirm(uint256 _proposalId, bytes32 _salt) external {
         ISafeMinimalMultisig.Storage storage pluginStorage = getPluginMultisigStorage();
-        LibSafeMinimalMultisig._confirm(pluginStorage, pluginStorage.voters, _proposalId);
+        LibSafeMinimalMultisig._confirm(pluginStorage, _salt, pluginStorage.voters, _proposalId);
+    }
+
+    /**
+     * @notice Cancels a previously confirmed proposal, removing the caller’s confirmation and possibly voiding it.
+     * @dev Condition check: The proposal must not be executed or canceled; the caller must have confirmed it previously.
+     * @param _proposalId The ID of the proposal to cancel confirmation for.
+     * @param _salt Secret salt to improve address hash security. Optional, can be zero.
+     */
+    function lrCancel(uint256 _proposalId, bytes32 _salt) external {
+        ISafeMinimalMultisig.Storage storage pluginStorage = getPluginMultisigStorage();
+        LibSafeMinimalMultisig._cancel(pluginStorage, _salt, pluginStorage.voters, _proposalId);
     }
 
     /**
@@ -158,7 +170,7 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuard {
      * @dev Only callable by a multisig executor. Ensures that distribution has not yet started.
      *      Calls LibTrustedGuardiansPlugin._resetGuardianVoting to clear guardian votes and reset distribution start time.
      */
-    function lrResetGuardianVoting() external nonReentrant {
+    function lrResetGuardianVoting() external payable nonReentrant {
         LibSafeMinimalMultisig._checkIsMultisigExecutor();
         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
         LibCryptoLegacy._checkDistributionStart(cls);
@@ -184,7 +196,7 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuard {
      */
     function lrGetProposalWithStatus(uint256 _proposalId) external view returns(
         bytes32[] memory voters,
-        uint256 requiredConfirmations,
+        uint8 requiredConfirmations,
         ISafeMinimalMultisig.ProposalWithStatus memory proposalWithStatus
     ) {
         ISafeMinimalMultisig.Storage storage pluginStorage = getPluginMultisigStorage();
@@ -204,7 +216,7 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuard {
      */
     function lrGetProposalListWithStatuses() external view returns(
         bytes32[] memory voters,
-        uint256 requiredConfirmations,
+        uint8 requiredConfirmations,
         ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses
     ) {
         return LibSafeMinimalMultisig._getProposalListWithStatusesAndStorageVoters(getPluginMultisigStorage());
