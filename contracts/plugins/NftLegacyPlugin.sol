@@ -9,13 +9,13 @@ import "../interfaces/ICryptoLegacy.sol";
 import "../libraries/LibCryptoLegacy.sol";
 import "../interfaces/ICryptoLegacyPlugin.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 /**
  * @title NftLegacyPlugin
  * @notice Extends CryptoLegacy functionality to support NFT asset inheritance. It allows setting NFT beneficiaries, transferring NFTs into the inheritance contract, and claiming them after specified delays, seamlessly integrating NFTs into legacy plans.
 */
-contract NftLegacyPlugin is ICryptoLegacyPlugin, ReentrancyGuard {
+contract NftLegacyPlugin is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable {
     bytes32 public constant PLUGIN_POSITION = keccak256("nft_legacy.plugin.storage");
 
     event SetNftBeneficiary(address indexed nftContract, uint256 indexed tokenId, bytes32 indexed beneficiaryHash);
@@ -27,11 +27,11 @@ contract NftLegacyPlugin is ICryptoLegacyPlugin, ReentrancyGuard {
      * @dev These selectors represent the externally callable functions of the NFT plugin.
      * @return sigs An array of function selectors.
      */
-    function getSigs() external view returns (bytes4[] memory sigs) {
+    function getSigs() external pure returns (bytes4[] memory sigs) {
         sigs = new bytes4[](3);
-        sigs[0] = NftLegacyPlugin(address(this)).setNftBeneficiary.selector;
-        sigs[1] = NftLegacyPlugin(address(this)).transferNftTokensToLegacy.selector;
-        sigs[2] = NftLegacyPlugin(address(this)).beneficiaryClaimNft.selector;
+        sigs[0] = this.setNftBeneficiary.selector;
+        sigs[1] = this.transferNftTokensToLegacy.selector;
+        sigs[2] = this.beneficiaryClaimNft.selector;
     }
 
     /**

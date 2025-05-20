@@ -160,14 +160,15 @@ library LibCryptoLegacyPlugins {
      * @return facetAddress The facet address that provides the function matching _selector.
      * If no match is found, returns the zero address.
      */
-    function _findFacetBySelector(LibDiamond.DiamondStorage storage ds, bytes4 _selector) internal view returns(address facetAddress) {
+    function _findFacetBySelector(LibDiamond.DiamondStorage storage ds, bytes4 _selector) internal view returns(address) {
         for (uint256 i = 0; i < ds.facetAddresses.length; i++) {
             bytes4[] memory sigs = ICryptoLegacyPlugin(ds.facetAddresses[i]).getSigs();
             for (uint256 j = 0; j < sigs.length; j++) {
                 if (_selector == sigs[j]) {
-                    facetAddress = ds.facetAddresses[i];
+                    return ds.facetAddresses[i];
                 }
             }
         }
+        return address(0);
     }
 }
