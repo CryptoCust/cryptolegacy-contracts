@@ -12,14 +12,26 @@ interface ICryptoLegacy {
     event PauseSet(bool indexed isPaused);
     event Update(uint256 updateFee, bytes32 indexed byPlugin);
     event FeePaidByLifetime(bytes8 indexed refCode, bool indexed initial, address factory, uint64 lastFeePaidAt);
-    event FeePaidByDefault(bytes8 indexed refCode, bool indexed initial, uint256 value, address factory, uint64 lastFeePaidAt);
+    event FeePaidByDefault(bytes8 indexed refCode, bool indexed initial, uint256 value, uint256 returnedValue, address factory, uint64 lastFeePaidAt);
     event FeePaidByTransfer(bytes8 indexed refCode, bool indexed initial, uint256 value, address factory, uint64 lastFeePaidAt);
     event FeeSentToRefByTransfer(bytes8 indexed refCode, uint256 value, address referral);
     event BeneficiaryClaim(address indexed token, uint256 amount, bytes32 indexed beneficiary);
     event TransferTreasuryTokensToLegacy(address[] holders, address[] tokens);
     event TransferTokensFromLegacy(ICryptoLegacy.TokenTransferTo[] transfers);
+    event SetGasLimitMultiplier(uint gasLimitMultiplier);
     event AddFunctions(address _facetAddress, bytes4[] _functionSelectors, uint16 selectorPosition);
     event RemoveFunctions(address _facetAddress, bytes4[] _functionSelectors);
+
+    event SkipSendFeeByTransfer(address buildManagerAddress, uint256 value);
+    event IsLifetimeNftLockedAndUpdateCatch(bytes reason);
+    event GetUpdateFeeCatch(bytes reason);
+    event PayFeeCatch(bytes reason);
+    event SetCryptoLegacyOwnerCatch(bytes reason);
+    event SetCryptoLegacyBeneficiaryCatch(bytes reason);
+    event SetCryptoLegacyGuardianCatch(bytes reason);
+    event SetCryptoLegacyRecoveryAddressesCatch(bytes reason);
+    event BeneficiaryRegistryCatch(bytes reason);
+    event BeneficiaryRegistryNotDefined();
 
     struct BeneficiaryConfig {
         uint64 claimDelay;
@@ -30,8 +42,8 @@ interface ICryptoLegacy {
         mapping(address => uint256) tokenAmountClaimed; // token => claimedAmount
     }
     struct TokenDistribution {
-        uint256 amountToDistribute;
-        uint256 totalClaimedAmount;
+        uint128 amountToDistribute;
+        uint128 lastBalance;
     }
     struct CryptoLegacyStorage {
         bool isPaused;
@@ -42,12 +54,15 @@ interface ICryptoLegacy {
         uint64 lastFeePaidAt;
         uint64 lastUpdateAt;
         uint64 distributionStartAt;
+        address pendingOwner;
         bytes8 invitedByRefCode;
         uint8 defaultFuncDisabled; // 1 - beneficiaryClaim
+        uint8 gasLimitMultiplier;
         ICryptoLegacyBuildManager buildManager;
         EnumerableSet.Bytes32Set beneficiaries;
         mapping(bytes32 => BeneficiaryConfig) beneficiaryConfig;
         mapping(bytes32 => bytes32) originalBeneficiaryHash;
+        mapping(bytes32 => uint64) beneficiarySwitchTimelock; // originalHash => timelock
         mapping(bytes32 => BeneficiaryVesting) beneficiaryVesting; // originalHash => BeneficiaryVesting
 
         mapping(address => TokenDistribution) tokenDistribution;
@@ -66,11 +81,14 @@ interface ICryptoLegacy {
 
     function owner() external view returns(address);
 
+    error BeneficiarySwitchTimelock();
+    error ArrayLengthMismatch();
     error DisabledFunc();
     error NotTheOwner();
     error NotTheBeneficiary();
     error BeneficiaryNotExist();
     error TooEarly();
+    error IncorrectRefShare();
     error NoValueAllowed();
     error TooLongArray(uint256 maxLength);
     error IncorrectFee(uint256 requiredFee);
@@ -82,6 +100,7 @@ interface ICryptoLegacy {
     error AlreadyInit();
     error LengthMismatch();
     error ShareSumDoesntMatchBase();
+    error OriginalHashDuplicate();
     error DistributionStarted();
     error DistributionStartAlreadySet();
     error DistributionDelay();
@@ -101,4 +120,5 @@ interface ICryptoLegacy {
     error InitAddressZeroButCalldataIsNot();
     error InitCalldataZeroButAddressIsNot();
     error PluginNotRegistered();
+    error TransferFeeFailed(bytes response);
 }
