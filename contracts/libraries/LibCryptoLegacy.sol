@@ -4,6 +4,7 @@
 pragma solidity 0.8.24;
 
 import "./LibDiamond.sol";
+import "../interfaces/IFeeRegistry.sol";
 import "../interfaces/ICryptoLegacy.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -13,8 +14,12 @@ library LibCryptoLegacy {
     using SafeERC20 for IERC20;
 
     uint256 constant internal SHARE_BASE = 10000;
+    uint256 constant internal MAX_CHAINS_ARRAY_LENGTH = 100;
+    uint64 constant internal BENEFICIARY_SWITCH_TIMELOCK_DURATION = 1 days;
     uint8 constant internal CLAIM_FUNC_FLAG = 1;
     bytes32 constant internal CRYPTO_LEGACY_STORAGE_POSITION = keccak256("crypto_legacy.storage");
+    bytes4 constant internal transferValueSelector = bytes4(uint32(1));
+    bytes4 constant internal lockNftSelector = ILockChainGate(address(0)).lockLifetimeNft.selector;
 
     /**
      * @notice Retrieves the CryptoLegacy storage structure.
@@ -145,8 +150,7 @@ library LibCryptoLegacy {
      * @param cls The CryptoLegacy storage structure.
      */
     function _checkDistributionReady(ICryptoLegacy.CryptoLegacyStorage storage cls) internal view {
-        uint64 now64 = uint64(block.timestamp);
-        if (cls.distributionStartAt == 0 || now64 < cls.distributionStartAt + 1) {
+        if (!_isDistributionStarted(cls)) {
             revert ICryptoLegacy.TooEarly();
         }
     }
@@ -168,9 +172,18 @@ library LibCryptoLegacy {
      * @return isNftLocked True if lifetime NFT is locked, false otherwise.
      */
     function _isLifetimeActiveAndUpdate(ICryptoLegacy.CryptoLegacyStorage storage cls, address _owner) internal returns(bool isNftLocked) {
-        try cls.buildManager.isLifetimeNftLockedAndUpdate{gas: 6e5}(_owner) returns(bool _isNftLocked) {
+        ICryptoLegacyBuildManager bm = cls.buildManager;
+        try bm.isLifetimeNftLockedAndUpdate{gas: _gasBySelector(cls, bm.isLifetimeNftLockedAndUpdate.selector)}(_owner) returns(bool _isNftLocked) {
             isNftLocked = _isNftLocked;
-        } catch {}
+        } catch (bytes memory reason) {
+            if (bytes4(reason) == ICryptoLegacyBuildManager.NotRegisteredCryptoLegacy.selector) {
+                revert ICryptoLegacyBuildManager.NotRegisteredCryptoLegacy();
+            }
+            if (bytes4(reason) == ICryptoLegacyBuildManager.NotOwnerOfCryptoLegacy.selector) {
+                revert ICryptoLegacyBuildManager.NotOwnerOfCryptoLegacy();
+            }
+            emit ICryptoLegacy.IsLifetimeNftLockedAndUpdateCatch(reason);
+        }
     }
 
     /**
@@ -193,11 +206,11 @@ library LibCryptoLegacy {
      * @param _crossChainFees Array of fee amounts for each corresponding chain in _lockToChainIds.
      */
     function _takeFee(ICryptoLegacy.CryptoLegacyStorage storage cls, address _owner, address _ref, uint256 _refShare, uint256[] memory _lockToChainIds, uint256[] memory _crossChainFees) internal {
-        address buildManagerAddress = address(cls.buildManager);
+        ICryptoLegacyBuildManager bm = cls.buildManager;
         if (_isLifetimeActiveAndUpdate(cls, _owner)) {
             _checkNoFee();
             cls.lastFeePaidAt = uint64(block.timestamp);
-            emit ICryptoLegacy.FeePaidByLifetime(cls.invitedByRefCode, false, buildManagerAddress, cls.lastFeePaidAt);
+            emit ICryptoLegacy.FeePaidByLifetime(cls.invitedByRefCode, false, address(bm), cls.lastFeePaidAt);
             return;
         }
         uint64 mul;
@@ -209,27 +222,31 @@ library LibCryptoLegacy {
         }
         if (_isDistributionStarted(cls)) {
             cls.lastFeePaidAt += mul * cls.updateInterval;
-            return _sendFeeByTransfer(cls, buildManagerAddress, _ref, _refShare);
+            return _sendFeeByTransfer(cls, address(bm), _ref, _refShare);
         }
         if (mul >= uint64(1) || msg.value != 0) {
             cls.lastFeePaidAt += mul * cls.updateInterval;
 
-            try cls.buildManager.getUpdateFee{gas: 6e5}(cls.invitedByRefCode) returns(uint256 fee) {
+            try bm.getUpdateFee{gas: _gasBySelector(cls, bm.getUpdateFee.selector)}(cls.invitedByRefCode) returns(uint256 fee) {
                 if (cls.updateFee != uint128(fee)) {
                     cls.updateFee = uint128(fee);
                 }
-            } catch {}
-
-            if (_lockToChainIds.length > 100) {
-                revert ICryptoLegacy.TooLongArray(100);
+            } catch (bytes memory reason) {
+                emit ICryptoLegacy.GetUpdateFeeCatch(reason);
             }
 
-            uint256 gasLimit = 12e5 + _lockToChainIds.length * 4e5;
-            try cls.buildManager.payFee{value: msg.value, gas: gasLimit}(cls.invitedByRefCode, _owner, uint256(mul), _lockToChainIds, _crossChainFees) {
-                emit ICryptoLegacy.FeePaidByDefault(cls.invitedByRefCode, false, msg.value, buildManagerAddress, cls.lastFeePaidAt);
-            } catch {
+            if (_lockToChainIds.length > MAX_CHAINS_ARRAY_LENGTH) {
+                revert ICryptoLegacy.TooLongArray(MAX_CHAINS_ARRAY_LENGTH);
+            }
+
+            uint256 gasLimit = _gasBySelector(cls, bm.payFee.selector) + _lockToChainIds.length * _gasBySelector(cls, lockNftSelector);
+            try bm.payFee{value: msg.value, gas: gasLimit}(cls.invitedByRefCode, _owner, uint256(mul), _lockToChainIds, _crossChainFees) returns(uint256 returned) {
+                _transferFee(cls, msg.sender, returned);
+                emit ICryptoLegacy.FeePaidByDefault(cls.invitedByRefCode, false, msg.value, returned, address(bm), cls.lastFeePaidAt);
+            } catch (bytes memory reason) {
                 _checkFee(uint256(cls.updateFee) * uint256(mul));
-                _sendFeeByTransfer(cls, buildManagerAddress, address(0), 0);
+                _sendFeeByTransfer(cls, address(bm), address(0), 0);
+                emit ICryptoLegacy.PayFeeCatch(reason);
             }
         }
     }
@@ -268,17 +285,28 @@ library LibCryptoLegacy {
      */
     function _sendFeeByTransfer(ICryptoLegacy.CryptoLegacyStorage storage cls, address _buildManagerAddress, address _ref, uint256 _refShare) internal {
         if (msg.value == 0) {
+            emit ICryptoLegacy.SkipSendFeeByTransfer(_buildManagerAddress, msg.value);
             return;
+        }
+        if (_refShare > SHARE_BASE) {
+            revert ICryptoLegacy.IncorrectRefShare();
         }
         uint256 value = msg.value;
         if (_ref != address(0)) {
             uint256 refValue = (value * _refShare) / SHARE_BASE;
             value -= refValue;
-            payable(_ref).transfer(refValue);
+            _transferFee(cls, _ref, refValue);
             emit ICryptoLegacy.FeeSentToRefByTransfer(cls.invitedByRefCode, refValue, _ref);
         }
-        payable(_buildManagerAddress).transfer(value);
+        _transferFee(cls, _buildManagerAddress, value);
         emit ICryptoLegacy.FeePaidByTransfer(cls.invitedByRefCode, false, value, _buildManagerAddress, cls.lastFeePaidAt);
+    }
+
+    function _transferFee(ICryptoLegacy.CryptoLegacyStorage storage cls, address _recipient, uint256 _value) internal {
+        (bool success, bytes memory data) = payable(_recipient).call{value: _value, gas: _gasBySelector(cls, transferValueSelector)}(new bytes(0));
+        if (!success) {
+            revert ICryptoLegacy.TransferFeeFailed(data);
+        }
     }
 
     /**
@@ -295,13 +323,47 @@ library LibCryptoLegacy {
     function _tokenPrepareToDistribute(ICryptoLegacy.CryptoLegacyStorage storage cls, address _token) internal returns(ICryptoLegacy.TokenDistribution storage td) {
         td = cls.tokenDistribution[_token];
 
-        uint256 bal = IERC20(_token).balanceOf(address(this));
+        uint bal = IERC20(_token).balanceOf(address(this));
+        uint totalClaimed = _getTotalClaimed(cls, _token);
         if (td.amountToDistribute == 0) {
-            td.amountToDistribute = bal;
-        } else if (bal > td.amountToDistribute - td.totalClaimedAmount) {
-            td.amountToDistribute += bal - (td.amountToDistribute - td.totalClaimedAmount);
-        } else if (bal < td.amountToDistribute - td.totalClaimedAmount) {
-            td.amountToDistribute = bal + td.totalClaimedAmount;
+            td.amountToDistribute = uint128(bal);
+            return td;
+        }
+        uint balanceDiff;
+        bool negativeRebase = bal < td.amountToDistribute - totalClaimed;
+        if (negativeRebase) {
+            balanceDiff = (td.amountToDistribute - totalClaimed) - bal;
+        } else {
+            balanceDiff = bal - (td.amountToDistribute - totalClaimed);
+        }
+        if (bal == 0 || (balanceDiff * 1 gwei / bal) < 1e3) {
+            return td;
+        }
+        
+        if (negativeRebase) {
+            uint balanceRatio = bal * 1 ether / td.lastBalance;
+            bytes32[] memory beneficiaries = cls.beneficiaries.values();
+            totalClaimed = 0;
+            for (uint i = 0; i < beneficiaries.length; i++) {
+                uint newClaimed = balanceRatio * _getBeneficiaryClaimed(cls, beneficiaries[i], _token) / 1 ether;
+                _setBeneficiaryClaimed(cls, beneficiaries[i], _token, newClaimed);
+                totalClaimed += newClaimed;
+            }
+        }
+        td.amountToDistribute = uint128(bal + totalClaimed);
+    }
+
+    function _getBeneficiaryClaimed(ICryptoLegacy.CryptoLegacyStorage storage cls, bytes32 _hash, address _token) internal view returns(uint claimed) {
+        return cls.beneficiaryVesting[cls.originalBeneficiaryHash[_hash]].tokenAmountClaimed[_token];
+    }
+    function _setBeneficiaryClaimed(ICryptoLegacy.CryptoLegacyStorage storage cls, bytes32 _hash, address _token, uint _amount) internal {
+        cls.beneficiaryVesting[cls.originalBeneficiaryHash[_hash]].tokenAmountClaimed[_token] = _amount;
+    }
+
+    function _getTotalClaimed(ICryptoLegacy.CryptoLegacyStorage storage cls, address _token) internal view returns(uint totalClaimed) {
+        bytes32[] memory beneficiaries = cls.beneficiaries.values();
+        for (uint i = 0; i < beneficiaries.length; i++) {
+            totalClaimed += _getBeneficiaryClaimed(cls, beneficiaries[i], _token);
         }
     }
 
@@ -333,11 +395,11 @@ library LibCryptoLegacy {
      * @param _token The token address.
      * @param _startDate The timestamp marking the start of vesting.
      * @param _endDate The timestamp marking the end of vesting.
-     * @return vestedAmount The amount of tokens that have vested so far.
-     * @return claimedAmount The amount of tokens that have already been claimed.
      * @return totalAmount The total amount of tokens allocated for the beneficiary.
+     * @return claimedAmount The amount of tokens that have already been claimed.
+     * @return vestedAmount The amount of tokens that have vested so far.
      */
-    function _getVestedAndClaimedAmount(ICryptoLegacy.TokenDistribution storage td, ICryptoLegacy.BeneficiaryConfig storage bc, ICryptoLegacy.BeneficiaryVesting storage bv, address _token, uint64 _startDate, uint64 _endDate) internal view returns(uint256 vestedAmount, uint256 claimedAmount, uint256 totalAmount) {
+    function _getVestedAndClaimedAmount(ICryptoLegacy.TokenDistribution storage td, ICryptoLegacy.BeneficiaryConfig storage bc, ICryptoLegacy.BeneficiaryVesting storage bv, address _token, uint64 _startDate, uint64 _endDate) internal view returns (uint256 totalAmount, uint256 claimedAmount, uint256 vestedAmount) {
         uint256 vestingBps;
         if (_startDate > uint64(block.timestamp)) {
             vestingBps = 0;
@@ -346,7 +408,7 @@ library LibCryptoLegacy {
         }
         totalAmount = td.amountToDistribute * bc.shareBps / LibCryptoLegacy.SHARE_BASE;
         vestedAmount = totalAmount * vestingBps / LibCryptoLegacy.SHARE_BASE;
-        claimedAmount = bv.tokenAmountClaimed[_token];
+        claimedAmount = vestedAmount - bv.tokenAmountClaimed[_token];
     }
 
     /**
@@ -384,20 +446,23 @@ library LibCryptoLegacy {
      * @param _isAdd True to add the entity, false to remove.
      */
     function _setCryptoLegacyToBeneficiaryRegistry(ICryptoLegacy.CryptoLegacyStorage storage cls, bytes32 _hash, IBeneficiaryRegistry.EntityType _entityType, bool _isAdd) internal {
-        IBeneficiaryRegistry br;
-        try cls.buildManager.beneficiaryRegistry{gas: 2e5}() returns(IBeneficiaryRegistry _br) {
-            br = _br;
-        } catch { }
-
+        IBeneficiaryRegistry br = _getBeneficiaryRegistry(cls);
         if (address(br) == address(0)) {
+            emit ICryptoLegacy.BeneficiaryRegistryNotDefined();
             return;
         }
         if (_entityType == IBeneficiaryRegistry.EntityType.OWNER) {
-            try br.setCryptoLegacyOwner{gas: 4e5}(_hash, _isAdd) {} catch {}
+            try br.setCryptoLegacyOwner{gas: _gasBySelector(cls, br.setCryptoLegacyOwner.selector)}(_hash, _isAdd) {} catch (bytes memory reason) {
+                emit ICryptoLegacy.SetCryptoLegacyOwnerCatch(reason);
+            }
         } else if (_entityType == IBeneficiaryRegistry.EntityType.BENEFICIARY) {
-            try br.setCryptoLegacyBeneficiary{gas: 4e5}(_hash, _isAdd) {} catch {}
+            try br.setCryptoLegacyBeneficiary{gas: _gasBySelector(cls, br.setCryptoLegacyBeneficiary.selector)}(_hash, _isAdd) {} catch (bytes memory reason) {
+                emit ICryptoLegacy.SetCryptoLegacyBeneficiaryCatch(reason);
+            }
         } else if (_entityType == IBeneficiaryRegistry.EntityType.GUARDIAN) {
-            try br.setCryptoLegacyGuardian{gas: 4e5}(_hash, _isAdd) {} catch {}
+            try br.setCryptoLegacyGuardian{gas: _gasBySelector(cls, br.setCryptoLegacyGuardian.selector)}(_hash, _isAdd) {} catch (bytes memory reason) {
+                emit ICryptoLegacy.SetCryptoLegacyGuardianCatch(reason);
+            }
         }
     }
 
@@ -411,18 +476,65 @@ library LibCryptoLegacy {
      * @param _entityType The entity type; for this operation it should be RECOVERY.
      */
     function _setCryptoLegacyListToBeneficiaryRegistry(ICryptoLegacy.CryptoLegacyStorage storage cls, bytes32[] memory _oldHashes, bytes32[] memory _newHashes, IBeneficiaryRegistry.EntityType _entityType) internal {
-        IBeneficiaryRegistry br;
-        try cls.buildManager.beneficiaryRegistry{gas: 2e5}() returns(IBeneficiaryRegistry _br) {
-            br = _br;
-        } catch { }
-
+        IBeneficiaryRegistry br = _getBeneficiaryRegistry(cls);
         if (address(br) == address(0)) {
+            emit ICryptoLegacy.BeneficiaryRegistryNotDefined();
             return;
         }
         if (_entityType == IBeneficiaryRegistry.EntityType.RECOVERY) {
-            uint256 gasLimit = 2e5 * (_oldHashes.length + _newHashes.length + 1);
-            try br.setCryptoLegacyRecoveryAddresses{gas: gasLimit}(_oldHashes, _newHashes) {} catch {}
+            uint256 gasLimit = _gasBySelector(cls, br.setCryptoLegacyRecoveryAddresses.selector) * (_oldHashes.length + _newHashes.length + 1);
+            try br.setCryptoLegacyRecoveryAddresses{gas: gasLimit}(_oldHashes, _newHashes) {} catch (bytes memory reason) {
+                emit ICryptoLegacy.SetCryptoLegacyRecoveryAddressesCatch(reason);
+            }
         }
+    }
+
+    function _getBeneficiaryRegistry(ICryptoLegacy.CryptoLegacyStorage storage cls) internal returns(IBeneficiaryRegistry br) {
+        ICryptoLegacyBuildManager bm = cls.buildManager;
+        try bm.beneficiaryRegistry{gas: _gasBySelector(cls, bm.beneficiaryRegistry.selector)}() returns(IBeneficiaryRegistry _br) {
+            br = _br;
+        } catch (bytes memory reason) {
+            emit ICryptoLegacy.BeneficiaryRegistryCatch(reason);
+        }
+    }
+
+    function _gasBySelector(ICryptoLegacy.CryptoLegacyStorage storage cls, bytes4 _selector) internal view returns(uint) {
+        return _gasWithoutMultiplierBySelector(cls, _selector) * uint(cls.gasLimitMultiplier == 0 ? 1 : cls.gasLimitMultiplier);
+    }
+
+    /**
+    * @notice Determines a base gas amount for a given function selector, before applying any multiplier.
+    * @dev Returns a preset gas value in wei units, depending on which function selector is matched.
+    *      - If `payFee` selector, returns 1,200,000 (12e5).
+    *      - If `getUpdateFee` selector, returns 600,000 (6e5).
+    *      - If `transferValueSelector`, returns 40,000 (4e4).
+    *      - If any of `lockNftSelector`, `setCryptoLegacyOwner.selector`, `setCryptoLegacyGuardian.selector`, 
+    *        or `setCryptoLegacyBeneficiary.selector`, returns 400,000 (4e5).
+    *      - Otherwise, returns 200,000 (2e5).
+    * @param cls Reference to the CryptoLegacy storage, used mainly to read build manager’s function selectors.
+    * @param _selector The function selector for which we want a preset base gas limit.
+    * @return The base gas limit (in units) for that function selector, before any multiplier is applied.
+    */
+    function _gasWithoutMultiplierBySelector(ICryptoLegacy.CryptoLegacyStorage storage cls, bytes4 _selector) internal view returns(uint) {
+        if (cls.buildManager.payFee.selector == _selector) {
+            return 12e5;
+        }
+        if (cls.buildManager.getUpdateFee.selector == _selector) {
+            return 6e5;
+        }
+        if (transferValueSelector == _selector) {
+            return 4e4;
+        }
+        IBeneficiaryRegistry br = IBeneficiaryRegistry(address(0));
+        if (
+            lockNftSelector == _selector ||
+            br.setCryptoLegacyOwner.selector == _selector ||
+            br.setCryptoLegacyGuardian.selector == _selector ||
+            br.setCryptoLegacyBeneficiary.selector == _selector
+        ) {
+            return 4e5;
+        }
+        return 2e5;
     }
 
     /**
@@ -459,9 +571,13 @@ library LibCryptoLegacy {
                 if (availableBalance > allowance) {
                     availableBalance = allowance;
                 }
+                if (availableBalance == 0) {
+                    continue;
+                }
                 t.safeTransferFrom(_holders[j], address(this), availableBalance);
             }
-            LibCryptoLegacy._tokenPrepareToDistribute(cls, _tokens[i]);
+            ICryptoLegacy.TokenDistribution storage td = LibCryptoLegacy._tokenPrepareToDistribute(cls, _tokens[i]);
+            td.lastBalance = uint128(IERC20(_tokens[i]).balanceOf(address(this)));
         }
         emit ICryptoLegacy.TransferTreasuryTokensToLegacy(_holders, _tokens);
         cls.transfersGotByBlockNumber.push(uint64(block.number));
@@ -494,5 +610,9 @@ library LibCryptoLegacy {
      */
     function _addressToHash(address _addr) internal pure returns(bytes32) {
         return keccak256(abi.encode(_addr));
+    }
+
+    function _addressWithSaltToHash(address _addr, bytes32 _salt) internal pure returns(bytes32) {
+        return keccak256(abi.encodePacked(_addr, _salt));
     }
 }

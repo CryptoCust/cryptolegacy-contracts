@@ -5,13 +5,15 @@
 pragma solidity 0.8.24;
 
 import "./libraries/LibDiamond.sol";
+import "./interfaces/ICryptoLegacy.sol";
+import "./libraries/LibCryptoLegacy.sol";
 import "./libraries/DiamondLoupeFacet.sol";
 import "./libraries/LibCryptoLegacyPlugins.sol";
 import "./interfaces/ICryptoLegacyDiamondBase.sol";
 
 /**
  * @title CryptoLegacyDiamondBase
- * @notice Base contract that implements a fallback function to delegate calls via the Diamond Standard.
+ * @notice Base contract implementing a fallback function for delegate-calls to facets, per EIP-2535 Diamond Standard.
  */
 contract CryptoLegacyDiamondBase is ICryptoLegacyDiamondBase, DiamondLoupeFacet {
 
@@ -39,8 +41,10 @@ contract CryptoLegacyDiamondBase is ICryptoLegacyDiamondBase, DiamondLoupeFacet 
 
         address facet = ds.selectorToFacetAndPosition[msg.sig].facetAddress;
         if (facet == address(0)) {
+            ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
+
             bool isStaticCall = false;
-            try this.staticCallChecker{gas: 1e5}() {} catch {
+            try this.staticCallChecker{gas: 1e5 * uint(cls.gasLimitMultiplier == 0 ? 1 : cls.gasLimitMultiplier)}() {} catch {
                 isStaticCall = true;
             }
             facet = LibCryptoLegacyPlugins._findFacetBySelector(ds, msg.sig);
