@@ -1,12 +1,12 @@
-/*
+/*f
 * Copyright (c) 2024 CryptoCustoms. All Rights Reserved.
 */
 
 pragma solidity 0.8.24;
 
 import "./CryptoLegacy.sol";
-import "./libraries/LibCreate2Deploy.sol";
 import "./interfaces/ICryptoLegacyFactory.sol";
+import "./libraries/LibCryptoLegacyDeploy.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
@@ -60,9 +60,10 @@ contract CryptoLegacyFactory is ICryptoLegacyFactory, Ownable {
     if (!buildOperators.contains(msg.sender)) {
       revert NotBuildOperator();
     }
-    address clAddress = LibCreate2Deploy._deployByCreate2(
-      _create2Args.create2Address,
+    address clAddress = LibCryptoLegacyDeploy._deployByCreate3(
+      _owner,
       _create2Args.create2Salt,
+      _create2Args.create2Address,
       cryptoLegacyBytecode(msg.sender, _owner, _plugins)
     );
     return payable(clAddress);
@@ -90,10 +91,10 @@ contract CryptoLegacyFactory is ICryptoLegacyFactory, Ownable {
   /**
    * @notice Computes the deterministic address of a contract deployed via CREATE2.
    * @param _salt The salt used during deployment.
-   * @param _bytecodeHash The hash of the contract's bytecode.
+   * @param _contractOwner The address of the new CryptoLegacy's owner.
    * @return The computed contract address.
    */
-  function computeAddress(bytes32 _salt, bytes32 _bytecodeHash) public view returns (address) {
-    return LibCreate2Deploy._computeAddress(_salt, _bytecodeHash);
+  function computeAddress(bytes32 _salt, address _contractOwner) public view returns (address) {
+    return LibCryptoLegacyDeploy._computeAddress(_salt, _contractOwner);
   }
 }

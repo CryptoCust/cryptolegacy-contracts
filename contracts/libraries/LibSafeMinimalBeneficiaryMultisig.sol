@@ -41,32 +41,11 @@ library LibSafeMinimalBeneficiaryMultisig {
      * @param s The multisig storage structure.
      * @return A tuple containing:
      *  - An array of voter identifiers (bytes32[]).
-     *  - The number of required confirmations (uint256).
+     *  - The number of required confirmations (uint8).
      */
-    function _getVotersAndConfirmations(ISafeMinimalMultisig.Storage storage s) internal view returns(bytes32[] memory, uint256) {
+    function _getVotersAndConfirmations(ISafeMinimalMultisig.Storage storage s) internal view returns(bytes32[] memory, uint8) {
         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
         return (_getVoters(cls), _getRequiredConfirmations(s, cls));
-    }
-
-    /**
-     * @notice Retrieves the entire list of proposals submitted to the multisig.
-     * @dev Returns an array of proposals stored in the multisig storage.
-     * @param s The multisig storage structure.
-     * @return An array of ISafeMinimalMultisig.Proposal.
-     */
-    function _getProposalList(ISafeMinimalMultisig.Storage storage s) internal view returns(ISafeMinimalMultisig.Proposal[] memory) {
-        return s.proposals;
-    }
-
-    /**
-     * @notice Retrieves a specific proposal by its proposal ID.
-     * @dev Accesses the proposals array at the given index.
-     * @param s The multisig storage structure.
-     * @param _proposalId The index of the proposal.
-     * @return The ISafeMinimalMultisig.Proposal corresponding to _proposalId.
-     */
-    function _getProposal(ISafeMinimalMultisig.Storage storage s, uint256 _proposalId) internal view returns(ISafeMinimalMultisig.Proposal memory) {
-        return s.proposals[_proposalId];
     }
 
     /**
@@ -83,7 +62,7 @@ library LibSafeMinimalBeneficiaryMultisig {
         ISafeMinimalMultisig.Storage storage s
     ) internal view returns(
         bytes32[] memory voters,
-        uint256 requiredConfirmations,
+        uint8 requiredConfirmations,
         ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses
     ) {
         voters = _getVoters(cls);
@@ -111,7 +90,7 @@ library LibSafeMinimalBeneficiaryMultisig {
         uint256 _proposalId
     ) internal view returns(
         bytes32[] memory voters,
-        uint256 requiredConfirmations,
+        uint8 requiredConfirmations,
         ISafeMinimalMultisig.ProposalWithStatus memory proposalWithStatus
     ) {
         voters = _getVoters(cls);
@@ -127,7 +106,7 @@ library LibSafeMinimalBeneficiaryMultisig {
      * @param cls The CryptoLegacy storage structure.
      * @return The number of required confirmations.
      */
-    function _getRequiredConfirmations(ISafeMinimalMultisig.Storage storage s, ICryptoLegacy.CryptoLegacyStorage storage cls) internal view returns(uint256) {
+    function _getRequiredConfirmations(ISafeMinimalMultisig.Storage storage s, ICryptoLegacy.CryptoLegacyStorage storage cls) internal view returns(uint8) {
         if (LibSafeMinimalMultisig._initializationStatus(s) != ISafeMinimalMultisig.InitializationStatus.INITIALIZED) {
             return _getDefaultRequiredConfirmations(cls);
         }
@@ -150,8 +129,8 @@ library LibSafeMinimalBeneficiaryMultisig {
      * @param cls The CryptoLegacy storage structure.
      * @return The default required confirmations.
      */
-    function _getDefaultRequiredConfirmations(ICryptoLegacy.CryptoLegacyStorage storage cls) internal view returns(uint256) {
-        return LibSafeMinimalMultisig._calcDefaultConfirmations(LibCryptoLegacy._getBeneficiariesCount(cls));
+    function _getDefaultRequiredConfirmations(ICryptoLegacy.CryptoLegacyStorage storage cls) internal view returns(uint8) {
+        return LibSafeMinimalMultisig._calcDefaultConfirmations(uint8(LibCryptoLegacy._getBeneficiariesCount(cls)));
     }
 
     /**
@@ -162,7 +141,7 @@ library LibSafeMinimalBeneficiaryMultisig {
      * @param _voters An array of voter identifiers.
      * @param _requiredConfirmations The new number of required confirmations.
      */
-    function _setConfirmations(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _voters, uint256 _requiredConfirmations) internal {
+    function _setConfirmations(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _voters, uint8 _requiredConfirmations) internal {
         if (_requiredConfirmations > _voters.length || _requiredConfirmations == 0) {
             revert ISafeMinimalMultisig.MultisigIncorrectRequiredConfirmations();
         }
@@ -192,11 +171,11 @@ library LibSafeMinimalBeneficiaryMultisig {
      * @param _selector The function selector representing the action proposed.
      * @param _params The ABI-encoded parameters for the proposal.
      */
-    function _propose(ISafeMinimalMultisig.Storage storage s, bytes4[] memory _allowedMethods, bytes4 _selector, bytes memory _params) internal {
+    function _propose(ISafeMinimalMultisig.Storage storage s, bytes4[] memory _allowedMethods, bytes4 _selector, bytes memory _params) internal returns(uint256 proposalId) {
         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
         bytes32[] memory voters = _getVoters(cls);
         _initializeIfNot(s, voters);
-        LibSafeMinimalMultisig._propose(s, voters, _allowedMethods, _selector, _params);
+        return LibSafeMinimalMultisig._propose(s, bytes32(0), voters, _allowedMethods, _selector, _params);
     }
 
     /**
@@ -210,6 +189,17 @@ library LibSafeMinimalBeneficiaryMultisig {
         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
         bytes32[] memory voters = _getVoters(cls);
         _initializeIfNot(s, voters);
-        LibSafeMinimalMultisig._confirm(s, voters, _proposalId);
+        LibSafeMinimalMultisig._confirm(s, bytes32(0), voters, _proposalId);
+    }
+
+    /**
+     * @notice Allows a voter to remove their confirmation from an existing proposal,
+     *         potentially causing the proposal to become canceled if no other confirmations remain.
+     * @param s The multisig storage struct referencing the proposals array and confirmations mapping.
+     * @param _proposalId The index of the proposal to remove caller's confirmation from.
+     */
+    function _cancel(ISafeMinimalMultisig.Storage storage s, uint256 _proposalId) internal {
+        ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
+        LibSafeMinimalMultisig._cancel(s, bytes32(0), _getVoters(cls), _proposalId);
     }
 }

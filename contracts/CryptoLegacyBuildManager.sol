@@ -13,8 +13,9 @@ import "./interfaces/ICryptoLegacyFactory.sol";
 import "./interfaces/IBeneficiaryRegistry.sol";
 import "./interfaces/ICryptoLegacyBuildManager.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-contract CryptoLegacyBuildManager is ICryptoLegacyBuildManager, Ownable {
+contract CryptoLegacyBuildManager is ICryptoLegacyBuildManager, IERC721Receiver, Ownable {
   using EnumerableSet for EnumerableSet.AddressSet;
 
   /// @notice The fee registry contract used to determine and collect fees.
@@ -67,20 +68,21 @@ contract CryptoLegacyBuildManager is ICryptoLegacyBuildManager, Ownable {
   }
 
   /**
-   * @notice Sets the registry contracts.
-   * @param _feeRegistry Fee registry contract.
-   * @param _pluginsRegistry Plugins registry contract.
-   * @param _beneficiaryRegistry Beneficiary registry contract.
+   * @notice Sets the main registry contracts (FeeRegistry, PluginsRegistry, BeneficiaryRegistry).
+   * @param _feeRegistry The fee registry contract.
+   * @param _pluginsRegistry The plugins registry contract.
+   * @param _beneficiaryRegistry The beneficiary registry contract.
    */
   function setRegistries(IFeeRegistry _feeRegistry, IPluginsRegistry _pluginsRegistry, IBeneficiaryRegistry _beneficiaryRegistry) external onlyOwner {
     _setRegistries(_feeRegistry, _pluginsRegistry, _beneficiaryRegistry);
   }
+  
   /**
-   * @notice Internal function to update the registry contracts.
-   * @dev Updates state variables and emits a SetRegistries event.
-   * @param _feeRegistry The fee registry contract.
-   * @param _pluginsRegistry The plugins registry contract.
-   * @param _beneficiaryRegistry The beneficiary registry contract.
+   * @notice Internal function to assign new registry contracts, updating storage and emitting SetRegistries.
+   * @dev Called internally from setRegistries and constructor.
+   * @param _feeRegistry The fee registry contract address.
+   * @param _pluginsRegistry The plugins registry contract address.
+   * @param _beneficiaryRegistry The beneficiary registry contract address.
    */
   function _setRegistries(IFeeRegistry _feeRegistry, IPluginsRegistry _pluginsRegistry, IBeneficiaryRegistry _beneficiaryRegistry) internal {
     feeRegistry = _feeRegistry;
@@ -135,38 +137,41 @@ contract CryptoLegacyBuildManager is ICryptoLegacyBuildManager, Ownable {
    * @param _amount The amount of fees to transfer, in wei.
    */
   function withdrawFee(address payable _recipient, uint256 _amount) external onlyOwner {
-    _recipient.transfer(_amount);
+    (bool success, bytes memory data) = _recipient.call{value: _amount}(new bytes(0));
+    if (!success) {
+      revert WithdrawFeeFailed(data);
+    }
     emit WithdrawFee(_recipient, _amount);
   }
 
   /**
-   * @notice Pays the fee or buy nft and lock it.
-   * @dev The function calls `_payFee` with default case of REGISTRY_UPDATE_CASE.
-   *      Condition checks ensure the correct fee is passed.
-   * @param _code The referral code to use or register.
-   * @param _toHolder The referral beneficiary address.
-   * @param _mul A multiplier for repeated fee payments.
-   * @param _lockToChainIds An array of chain IDs for optional cross-chain locking.
-   * @param _crossChainFees An array of fees corresponding to each chain ID, using the same index.
+   * @notice Forwards fee payment for an update, or mints/buys a lifetime NFT if enough is paid.
+   * @dev See `_payFee` for the logic. Condition checks ensure correct fee is passed.
+   * @param _code The referral code used for discount or tracking.
+   * @param _toHolder The address to receive referral benefits or an NFT.
+   * @param _mul Multiplier for repeated fee payments, if any.
+   * @param _lockToChainIds List of chain IDs for cross-chain NFT locking.
+   * @param _crossChainFees Fees for each corresponding chain ID.
+   * @return returnValue Surplus or remainder from the paid amount, returned to msg.sender.
    */
-  function payFee(bytes8 _code, address _toHolder, uint256 _mul, uint256[] memory _lockToChainIds, uint256[] memory _crossChainFees) external payable {
-    _payFee(_code, _toHolder, REGISTRY_UPDATE_CASE, _mul, 0, _lockToChainIds, _crossChainFees);
+  function payFee(bytes8 _code, address _toHolder, uint256 _mul, uint256[] memory _lockToChainIds, uint256[] memory _crossChainFees) external payable returns(uint256 returnValue) {
+    return _payFee(_code, _toHolder, REGISTRY_UPDATE_CASE, _mul, 0, _lockToChainIds, _crossChainFees);
   }
 
   /**
   * @notice Internal function to calculate and take fee based on provided parameters.
-   * @dev Determines the fee by comparing update fee and lifetime fee. If lifetime fee is applicable and msg.value covers it,
+   * @dev Determines the fee by comparing build fee, update fee and lifetime fee. If lifetime fee is applicable and msg.value covers it,
    *      uses REGISTRY_LIFETIME_CASE. Verifies sufficient fee via _checkFee and then calls feeRegistry.takeFee.
    *      If the lifetime fee case applies, calls _mintAndLockLifetimeNft to mint and lock a lifetime NFT.
    * @param _code The referral code.
    * @param _toHolder The address to receive referral benefits (or the NFT in lifetime case).
-   * @param _feeCase The fee case (REGISTRY_UPDATE_CASE or REGISTRY_LIFETIME_CASE).
+   * @param _feeCase The fee case (REGISTRY_BUILD_CASE, REGISTRY_UPDATE_CASE or REGISTRY_LIFETIME_CASE).
    * @param _mul Multiplier for fee calculation.
    * @param _subValue A value to subtract from msg.value (if applicable).
    * @param _chainIds Array of chain IDs for locking tokens.
    * @param _crossChainFees Array of corresponding cross-chain fees.
    */
-  function _payFee(bytes8 _code, address _toHolder, uint8 _feeCase, uint256 _mul, uint256 _subValue, uint256[] memory _chainIds, uint256[] memory _crossChainFees) internal {
+  function _payFee(bytes8 _code, address _toHolder, uint8 _feeCase, uint256 _mul, uint256 _subValue, uint256[] memory _chainIds, uint256[] memory _crossChainFees) internal returns(uint256 restValue) {
     uint256 curValue = msg.value - _subValue;
     uint256 feeToTake = feeRegistry.getContractCaseFeeForCode(address(this), _feeCase, _code);
     uint256 lifetimeFee = feeRegistry.getContractCaseFeeForCode(address(this), REGISTRY_LIFETIME_CASE, _code);
@@ -177,16 +182,26 @@ contract CryptoLegacyBuildManager is ICryptoLegacyBuildManager, Ownable {
     }
     _checkFee(curValue, feeToTake);
     feeRegistry.takeFee{value: feeToTake}(address(this), _feeCase, _code, _mul);
+    restValue = curValue - feeToTake;
     if (_feeCase == REGISTRY_LIFETIME_CASE) {
-      _mintAndLockLifetimeNft(_toHolder, _chainIds, _crossChainFees, curValue - feeToTake);
+      restValue = _mintAndLockLifetimeNft(_toHolder, _chainIds, _crossChainFees, restValue);
+    }
+    _returnFee(restValue);
+  }
+
+  function _returnFee(uint256 _returnValue) internal {
+    if (_returnValue > 0) {
+      (bool success, bytes memory data) = payable(msg.sender).call{value: _returnValue}(new bytes(0));
+      if (!success) {
+        revert ICryptoLegacyBuildManager.TransferFeeFailed(data);
+      }
     }
   }
 
   /**
-   * @notice Verifies that the provided fee value is sufficient.
-   * @dev Reverts with IncorrectFee if _value is less than _fee.
-   * @param _value The fee value received.
-   * @param _fee The expected fee amount.
+   * @notice Internal function to verify a fee is sufficient and revert if not.
+   * @param _value The fee value passed in.
+   * @param _fee The required fee amount.
    */
   function _checkFee(uint256 _value, uint256 _fee) internal pure {
     if (_value < _fee) {
@@ -201,10 +216,10 @@ contract CryptoLegacyBuildManager is ICryptoLegacyBuildManager, Ownable {
    * @param _crossChainFees Array of fees corresponding to each chain.
    * @param _valueToSend The amount of value to send with the transaction.
    */
-  function _mintAndLockLifetimeNft(address _tokenOwner, uint256[] memory _chainIds, uint256[] memory _crossChainFees, uint256 _valueToSend) internal {
+  function _mintAndLockLifetimeNft(address _tokenOwner, uint256[] memory _chainIds, uint256[] memory _crossChainFees, uint256 _valueToSend) internal returns(uint256 returnValue) {
     uint256 tokenId = lifetimeNft.mint(address(this));
     lifetimeNft.approve(address(feeRegistry), tokenId);
-    ILockChainGate(address(feeRegistry)).lockLifetimeNft{value: _valueToSend}(tokenId, _tokenOwner, _chainIds, _crossChainFees);
+    return ILockChainGate(address(feeRegistry)).lockLifetimeNft{value: _valueToSend}(tokenId, _tokenOwner, _chainIds, _crossChainFees);
   }
 
   /**
@@ -214,8 +229,8 @@ contract CryptoLegacyBuildManager is ICryptoLegacyBuildManager, Ownable {
    * @param _lockToChainIds Array of chain IDs for cross-chain locking.
    * @param _crossChainFees Corresponding fees for each chain.
    */
-  function payInitialFee(bytes8 _code, address _toHolder, uint256[] memory _lockToChainIds, uint256[] memory _crossChainFees) public payable {
-    _payFee(_code, _toHolder, REGISTRY_BUILD_CASE, 1, 0, _lockToChainIds, _crossChainFees);
+  function payInitialFee(bytes8 _code, address _toHolder, uint256[] memory _lockToChainIds, uint256[] memory _crossChainFees) public payable returns(uint256 returnValue) {
+    return _payFee(_code, _toHolder, REGISTRY_BUILD_CASE, 1, 0, _lockToChainIds, _crossChainFees);
   }
 
   /**
@@ -250,7 +265,6 @@ contract CryptoLegacyBuildManager is ICryptoLegacyBuildManager, Ownable {
     emit PaidForMultipleNft(msg.sender, _code, msg.value, totalAmount);
   }
 
-
   /**
    * @notice Creates a custom referral code in the current chain, optionally locking it cross-chain if `_chainIds` is non-empty.
    * @dev If `_chainIds` is non-empty, user must supply the required native fees in `_crossChainFees`.
@@ -261,11 +275,17 @@ contract CryptoLegacyBuildManager is ICryptoLegacyBuildManager, Ownable {
    * @return refCode The created or assigned code.
    * @return crossChainFee The total cross-chain fee used.
    */
-  function createCustomRef(bytes8 _customRefCode, address _recipient, uint256[] memory _chainIds, uint256[] memory _crossChainFees) public payable returns(bytes8 refCode, uint256 crossChainFee) {
+  function createCustomRef(bytes8 _customRefCode, address _recipient, uint256[] memory _chainIds, uint256[] memory _crossChainFees) public payable returns(bytes8 refCode, uint256 crossChainFee, uint256 returnValue) {
+    (refCode, crossChainFee, returnValue) = _createCustomRef(_customRefCode, _recipient, _chainIds, _crossChainFees);
+    _returnFee(returnValue);
+  }
+
+  function _createCustomRef(bytes8 _customRefCode, address _recipient, uint256[] memory _chainIds, uint256[] memory _crossChainFees) internal returns(bytes8 refCode, uint256 crossChainFee, uint256 returnValue) {
     uint256 valueToSend = calculateCrossChainCreateRefFee(_chainIds, _crossChainFees);
     _checkFee(msg.value, valueToSend);
-    (refCode, crossChainFee) = feeRegistry.createCustomCode{value: valueToSend}(msg.sender, _recipient, _customRefCode, _chainIds, _crossChainFees);
+    (refCode, crossChainFee, returnValue) = feeRegistry.createCustomCode{value: valueToSend}(msg.sender, _recipient, _customRefCode, _chainIds, _crossChainFees);
     emit CreateCustomRef(msg.sender, refCode, _recipient, _chainIds);
+    returnValue = msg.value - valueToSend + returnValue;
   }
 
   /**
@@ -277,11 +297,18 @@ contract CryptoLegacyBuildManager is ICryptoLegacyBuildManager, Ownable {
    * @return refCode The newly created short referral code.
    * @return crossChainFee The total cross-chain fee used.
    */
-  function createRef(address _recipient, uint256[] memory _chainIds, uint256[] memory _crossChainFees) public payable returns(bytes8 refCode, uint256 crossChainFee) {
+  function createRef(address _recipient, uint256[] memory _chainIds, uint256[] memory _crossChainFees) public payable returns(bytes8 refCode, uint256 crossChainFee, uint256 returnValue) {
+    (refCode, crossChainFee, returnValue) = _createRef(_recipient, _chainIds, _crossChainFees);
+    _returnFee(returnValue);
+  }
+
+  function _createRef(address _recipient, uint256[] memory _chainIds, uint256[] memory _crossChainFees) internal returns(bytes8 refCode, uint256 crossChainFee, uint256 returnValue) {
     uint256 valueToSend = calculateCrossChainCreateRefFee(_chainIds, _crossChainFees);
     _checkFee(msg.value, valueToSend);
-    (refCode, crossChainFee) = feeRegistry.createCode{value: valueToSend}(msg.sender, _recipient, _chainIds, _crossChainFees);
+    (refCode, crossChainFee, returnValue) = feeRegistry.createCode{value: valueToSend}(msg.sender, _recipient, _chainIds, _crossChainFees);
     emit CreateRef(msg.sender, refCode, _recipient, _chainIds);
+
+    returnValue = msg.value - valueToSend + returnValue;
   }
 
   /**
@@ -291,11 +318,14 @@ contract CryptoLegacyBuildManager is ICryptoLegacyBuildManager, Ownable {
    * @param _crossChainFees Corresponding fees for each chain ID.
    * @return crossChainFee The total cross-chain fee used.
    */
-  function updateCrossChainsRef(uint256[] memory _chainIds, uint256[] memory _crossChainFees) external payable returns(uint256 crossChainFee) {
+  function updateCrossChainsRef(uint256[] memory _chainIds, uint256[] memory _crossChainFees) external payable returns(uint256 crossChainFee, uint256 returnValue) {
     uint256 valueToSend = calculateCrossChainCreateRefFee(_chainIds, _crossChainFees);
     _checkFee(msg.value, valueToSend);
-    crossChainFee = feeRegistry.updateCrossChainsRef{value: valueToSend}(msg.sender, _chainIds, _crossChainFees);
+    (crossChainFee, returnValue) = feeRegistry.updateCrossChainsRef{value: valueToSend}(msg.sender, _chainIds, _crossChainFees);
     emit SetCrossChainsRef(msg.sender, _chainIds);
+  
+    returnValue = msg.value - valueToSend + returnValue;
+    _returnFee(returnValue);
   }
 
   /**
@@ -311,9 +341,9 @@ contract CryptoLegacyBuildManager is ICryptoLegacyBuildManager, Ownable {
     uint256 subValue;
     if (_refArgs.createRefRecipient != address(0)) {
       if (_refArgs.createRefCustomCode == bytes8(0)) {
-        (, subValue) = createRef(_refArgs.createRefRecipient, _refArgs.createRefChains, _refArgs.crossChainFees);
+        (, subValue, ) = _createRef(_refArgs.createRefRecipient, _refArgs.createRefChains, _refArgs.crossChainFees);
       } else {
-        (, subValue) = createCustomRef(_refArgs.createRefCustomCode, _refArgs.createRefRecipient, _refArgs.createRefChains, _refArgs.crossChainFees);
+        (, subValue, ) = _createCustomRef(_refArgs.createRefCustomCode, _refArgs.createRefRecipient, _refArgs.createRefChains, _refArgs.crossChainFees);
       }
     }
     (initialFeeToPay, updateFee) = _getAndPayBuildFee(_buildArgs.invitedByRefCode, subValue, _refArgs.createRefChains, _refArgs.crossChainFees);
@@ -351,8 +381,9 @@ contract CryptoLegacyBuildManager is ICryptoLegacyBuildManager, Ownable {
   }
 
   /**
-   * @notice Checks if `_buildArgs.updateInterval` and `_buildArgs.challengeTimeout` meet the required constants.
-   * @param _buildArgs The build arguments including interval config.
+   * @notice Validates the build arguments for updateInterval and challengeTimeout to ensure they match default requirements.
+   * @dev Reverts if the intervals do not match 180 days for updateInterval or 90 days for challengeTimeout.
+   * @param _buildArgs The build arguments containing the intervals.
    */
   function _checkBuildArgs(BuildArgs memory _buildArgs) internal virtual {
     if (_buildArgs.updateInterval != 180 days || _buildArgs.challengeTimeout != 90 days) {
@@ -380,7 +411,7 @@ contract CryptoLegacyBuildManager is ICryptoLegacyBuildManager, Ownable {
       initialFeeToPay = feeRegistry.getContractCaseFeeForCode(address(this), REGISTRY_BUILD_CASE, _invitedByRefCode);
     }
     // check for lock
-    if (isLifetimeNftLockedAndUpdate(msg.sender)) {
+    if (ILockChainGate(address(feeRegistry)).isNftLockedAndUpdate(msg.sender)) {
       initialFeeToPay = 0;
     }
     updateFee = feeRegistry.getContractCaseFeeForCode(address(this), REGISTRY_UPDATE_CASE, _invitedByRefCode);
@@ -397,22 +428,45 @@ contract CryptoLegacyBuildManager is ICryptoLegacyBuildManager, Ownable {
   }
 
   /**
-   * @notice Calculate the initial build and update fee for provided ref code.
-   * @param _invitedByRefCode The referral code, if any.
+   * @notice Retrieves the build fee data for a given referral code. May optionally pay it if msg.value is passed.
+   * @param _invitedByRefCode The referral code used by the user.
    * @return initialFeeToPay The initial build fee.
-   * @return updateFee The fee for future updates.
+   * @return updateFee The subsequent update fee.
    */
   function getAndPayBuildFee(bytes8 _invitedByRefCode) external payable returns(uint256 initialFeeToPay, uint256 updateFee) {
     uint256[] memory chainIds = new uint256[](0);
     return _getAndPayBuildFee(_invitedByRefCode, 0, chainIds, chainIds);
   }
+  
+  /**
+   * @notice Transfers an ERC721 token out of this contract if stuck, e.g. a LifetimeNFT.
+   * @dev Only the owner can call.
+   * @param to The recipient address.
+   * @param tokenId The token ID to transfer.
+   */
+  function transferStuckNft(address to, uint256 tokenId) external onlyOwner {
+    IERC721(address(lifetimeNft)).safeTransferFrom(address(this), to, tokenId);
+  }
 
   /**
-   * @notice Calculates the total native fee required for cross-chain referral creation.
+   * @notice Callback for receiving ERC721 tokens safely. Required by IERC721Receiver.
+   * @dev Returns a constant indicating success if the NFT is from lifetimeNft, else zero.
+   */
+  function onERC721Received(
+    address,
+    address,
+    uint256,
+    bytes calldata
+  ) external view override returns (bytes4) {
+    return address(lifetimeNft) == msg.sender ? this.onERC721Received.selector : bytes4(0);
+  }
+
+  /**
+   * @notice Calculates the total cross-chain fees required for creating a referral code on multiple chains.
    * @dev Iterates through `_chainIds` and sums or fetches the fee from the lockChainGate.
-   * @param _chainIds Destination chain IDs.
-   * @param _crossChainFees Pre-supplied or zeroed fees array.
-   * @return totalFee The total computed native fee.
+   * @param _chainIds Array of chain IDs targeted.
+   * @param _crossChainFees Fees for each chain ID if user-supplied, or zero array to auto-check from registry.
+   * @return totalFee The total required native fee across all chains.
    */
   function calculateCrossChainCreateRefFee(uint256[] memory _chainIds, uint256[] memory _crossChainFees) public view returns(uint256 totalFee) {
     bool toCallRegistry = _crossChainFees.length == 0;
@@ -431,8 +485,8 @@ contract CryptoLegacyBuildManager is ICryptoLegacyBuildManager, Ownable {
   }
 
   /**
-   * @notice Returns the address of the factory contract.
-   * @return The factory contract address.
+   * @notice Returns the address of the current factory used to deploy new CryptoLegacy contracts.
+   * @return The factory’s address.
    */
   function getFactoryAddress() external override view returns(address) {
     return address(factory);
@@ -453,6 +507,12 @@ contract CryptoLegacyBuildManager is ICryptoLegacyBuildManager, Ownable {
    * @return True if the lifetime NFT is locked, false otherwise.
    */
   function isLifetimeNftLockedAndUpdate(address _owner) public returns(bool) {
+    if (!cryptoLegacyBuilt[msg.sender]) {
+      revert NotRegisteredCryptoLegacy();
+    }
+    if (ICryptoLegacy(msg.sender).owner() != _owner) {
+      revert NotOwnerOfCryptoLegacy();
+    }
     return ILockChainGate(address(feeRegistry)).isNftLockedAndUpdate(_owner);
   }
 
