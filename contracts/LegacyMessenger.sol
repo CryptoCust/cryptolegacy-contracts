@@ -39,8 +39,8 @@ contract LegacyMessenger is ILegacyMessenger, BuildManagerOwnable {
     _checkBuildManagerValid(_cryptoLegacy, msg.sender);
 
     for (uint256 i = 0; i < _recipientList.length; i++) {
-      emit LegacyMessage(_recipientList[i], _messageHashList[i], _messageList[i], _messageType);
-      emit LegacyMessageCheck(_recipientList[i], _messageHashList[i], _messageCheckList[i], _messageType);
+      emit LegacyMessage(_cryptoLegacy, _recipientList[i], _messageHashList[i], _messageList[i], _messageType);
+      emit LegacyMessageCheck(_cryptoLegacy, _recipientList[i], _messageHashList[i], _messageCheckList[i], _messageType);
       messagesGotByBlockNumber[_recipientList[i]].push(uint64(block.number));
     }
   }

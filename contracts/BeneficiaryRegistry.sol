@@ -139,26 +139,44 @@ contract BeneficiaryRegistry is IBeneficiaryRegistry, BuildManagerOwnable {
     return cryptoLegacyByOwner[_hash].values();
   }
 
+  /**
+   * @notice Returns the list of CryptoLegacy contract addresses for a given guardian.
+   * @dev Simply returns all addresses stored in the `cryptoLegacyByGuardian` set for the specified `_hash`.
+   * @param _hash The keccak256 hash representing the guardian.
+   * @return An array of CryptoLegacy contract addresses.
+   */
   function getCryptoLegacyListByGuardian(bytes32 _hash) external view returns(address[] memory) {
     return cryptoLegacyByGuardian[_hash].values();
   }
 
+  /**
+   * @notice Returns the list of CryptoLegacy contract addresses for a given recovery hash.
+   * @dev Simply returns all addresses stored in the `cryptoLegacyByRecovery` set for the specified `_hash`.
+   * @param _hash The keccak256 hash representing the recovery address.
+   * @return An array of CryptoLegacy contract addresses.
+   */
   function getCryptoLegacyListByRecovery(bytes32 _hash) external view returns(address[] memory) {
     return cryptoLegacyByRecovery[_hash].values();
   }
 
+  /**
+   * @notice Retrieves the list of block numbers at which changes occurred for a given CryptoLegacy contract.
+   * @dev Looks up the recorded history of block numbers in `blockNumberChangesByCryptoLegacy`.
+   * @param _cryptoLegacy The address of the CryptoLegacy contract to query.
+   * @return An array of block numbers.
+   */
   function getCryptoLegacyBlockNumberChanges(address _cryptoLegacy) external view returns(uint256[] memory) {
     return blockNumberChangesByCryptoLegacy[_cryptoLegacy];
   }
 
-  /**
-   * @notice Returns the list of CryptoLegacy contracts corresponding to `_hash` in a single call.
-   * @dev Aggregates results for beneficiary, owner, guardian, and recovery roles.
-   * @param _hash The keccak256 hash representing the user or role.
-   * @return listByBeneficiary Array of CryptoLegacy addresses set under beneficiary role.
-   * @return listByOwner Array of CryptoLegacy addresses set under owner role.
-   * @return listByGuardian Array of CryptoLegacy addresses set under guardian role.
-   * @return listByRecovery Array of CryptoLegacy addresses set under recovery role.
+   /**
+   * @notice Returns a combined set of CryptoLegacy contract addresses for each of the four roles by a single hash.
+   * @dev Aggregates results for the beneficiary, owner, guardian, and recovery roles in one function call.
+   * @param _hash The identifier hash to lookup.
+   * @return listByBeneficiary CryptoLegacy addresses with beneficiary role.
+   * @return listByOwner CryptoLegacy addresses with owner role.
+   * @return listByGuardian CryptoLegacy addresses with guardian role.
+   * @return listByRecovery CryptoLegacy addresses with recovery role.
    */
   function getAllCryptoLegacyListByRoles(bytes32 _hash) external view returns(
     address[] memory listByBeneficiary,
