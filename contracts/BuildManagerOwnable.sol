@@ -46,15 +46,15 @@ contract BuildManagerOwnable is IBuildManagerOwnable, Ownable {
      * @param _clOwner If non-zero, the verified contract owner must match this address.
      */
     function _checkBuildManagerValid(address _cryptoLegacy, address _clOwner) internal view {
-        ICryptoLegacy cl = ICryptoLegacy(_cryptoLegacy);
+        ICryptoLegacyBuildManager buildManager = ICryptoLegacy(_cryptoLegacy).buildManager();
 
-        if (_clOwner != address(0) && cl.owner() != _clOwner) {
+        if (_clOwner != address(0) && ICryptoLegacy(_cryptoLegacy).owner() != _clOwner) {
             revert NotTheOwnerOfCryptoLegacy();
         }
-        if (!cl.buildManager().isCryptoLegacyBuilt(_cryptoLegacy)) {
+        if (!buildManager.isCryptoLegacyBuilt(_cryptoLegacy)) {
             revert CryptoLegacyNotRegistered();
         }
-        if (!buildManagerAdded.contains(address(cl.buildManager()))) {
+        if (!buildManagerAdded.contains(address(buildManager))) {
             revert BuildManagerNotAdded();
         }
     }
