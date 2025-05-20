@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "../contracts/CryptoLegacyBuildManager.sol";
-import "../contracts/CryptoLegacyFactory.sol";
-import "../contracts/LegacyMessenger.sol";
 import "../contracts/LifetimeNft.sol";
-import "../contracts/mocks/MockERC20Faucet.sol";
+import "../contracts/FeeRegistry.sol";
+import "../contracts/PluginsRegistry.sol";
+import "../contracts/mocks/MockERC20.sol";
+import "../contracts/LegacyMessenger.sol";
+import "../contracts/plugins/LensPlugin.sol";
+import "../contracts/CryptoLegacyFactory.sol";
 import "../contracts/mocks/MockERC20Rebase.sol";
-import "../contracts/mocks/MockERC20TransferBurn.sol";
+import "../contracts/mocks/MockERC20Faucet.sol";
+import "../contracts/CryptoLegacyBuildManager.sol";
 import "../contracts/mocks/MockERC20TransferFee.sol";
-import {FeeRegistry} from "../contracts/FeeRegistry.sol";
-import {LensPlugin} from "../contracts/plugins/LensPlugin.sol";
-import {MockERC20} from "../contracts/mocks/MockERC20.sol";
-import {PluginsRegistry} from "../contracts/PluginsRegistry.sol";
-import {Script} from "forge-std/Script.sol";
+import "../contracts/mocks/MockERC20TransferBurn.sol";
+import "forge-std/Script.sol";
 
 contract DeployMockERC20Faucet is Script {
     function run() external {

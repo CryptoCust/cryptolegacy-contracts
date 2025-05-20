@@ -7,6 +7,7 @@ via_ir = false
 
 # Enables or disables the optimizer
 # The number of optimizer runs
+optimizer = true
 optimizer_runs = 200
 gas_price = 30_000_000_000
 block_base_fee_per_gas = 25_000_000_000
@@ -17,11 +18,15 @@ block_timestamp = 1600000000
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
 
 [rpc_endpoints]
+mainnet = "${MAINNET_RPC_URL}"
 arbitrum = "${ARBITRUM_RPC_URL}"
 base = "${BASE_RPC_URL}"
 optimism = "${OPTIMISM_RPC_URL}"
+linea = "${LINEA_RPC_URL}"
 
 [etherscan]
+mainnet = { key = "${MAINNET_ETHERSCAN_API_KEY}" }
 arbitrum = { key = "${ARBITRUM_ETHERSCAN_API_KEY}" }
 base = { key = "${BASE_ETHERSCAN_API_KEY}" }
 optimism = { key = "${OPTIMISM_ETHERSCAN_API_KEY}" }
+linea = { key = "${LINEA_ETHERSCAN_API_KEY}" }
