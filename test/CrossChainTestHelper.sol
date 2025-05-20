@@ -36,15 +36,15 @@ abstract contract CrossChainTestHelper is AbstractTestHelper {
     feeRegistry.setLockOperator(address(buildManager), true);
 
     mainLock.setCustomChainId(MAIN_CHAIN_ID);
-    sideLock1 = LibDeploy._deployFeeRegistry(bytes32(uint256(2)), bytes32(uint256(2)), owner, proxyBuilder, uint32(0), uint32(0), lifetimeNft, 60);
+    sideLock1 = LibDeploy._deployFeeRegistry(create3Factory, bytes32(uint256(2)), bytes32(uint256(2)), owner, proxyBuilder, uint32(0), uint32(0), lifetimeNft, 60, 10);
     sideLock1.setCustomChainId(SIDE_CHAIN_ID_1);
     sideLock1.setDefaultPct(uint32(refDiscountPct), uint32(refSharePct));
 
-    sideLock2 = LibDeploy._deployFeeRegistry(bytes32(uint256(3)), bytes32(uint256(3)), owner, proxyBuilder, uint32(0), uint32(0), lifetimeNft, 60);
+    sideLock2 = LibDeploy._deployFeeRegistry(create3Factory, bytes32(uint256(3)), bytes32(uint256(3)), owner, proxyBuilder, uint32(0), uint32(0), lifetimeNft, 60, 10);
     sideLock2.setCustomChainId(SIDE_CHAIN_ID_2);
     sideLock2.setDefaultPct(uint32(refDiscountPct), uint32(refSharePct));
 
-    sideLock3 = LibDeploy._deployFeeRegistry(bytes32(uint256(4)), bytes32(uint256(4)), owner, proxyBuilder, uint32(0), uint32(0), lifetimeNft, 60);
+    sideLock3 = LibDeploy._deployFeeRegistry(create3Factory, bytes32(uint256(4)), bytes32(uint256(4)), owner, proxyBuilder, uint32(0), uint32(0), lifetimeNft, 60, 10);
     sideLock3.setCustomChainId(SIDE_CHAIN_ID_3);
     sideLock3.setDefaultPct(uint32(refDiscountPct), uint32(refSharePct));
 
