@@ -10,14 +10,15 @@ import "./interfaces/IFeeRegistry.sol";
 import "./interfaces/ILifetimeNft.sol";
 import "./interfaces/IDeBridgeGate.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 /**
  * @title LockChainGate
  * @notice Handles cross-chain locking, unlocking, and transfer of lifetime NFTs.
  */
-contract LockChainGate is Ownable, ILockChainGate, Initializable {
+contract LockChainGate is Ownable, ReentrancyGuardUpgradeable, ILockChainGate {
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableSet for EnumerableSet.AddressSet;
     using Flags for uint256;
@@ -49,12 +50,15 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
      * @dev Sets the LifetimeNft contract, NFT lock period, and transfers ownership.
      * @param _lifetimeNft The LifetimeNft contract address.
      * @param _lockPeriod The NFT lock period in seconds.
+     * @param _transferTimeout The timeout between lock and transfer.
      * @param _owner The address to become the owner.
      */
-    function _initializeLockChainGate(ILifetimeNft _lifetimeNft, uint256 _lockPeriod, address _owner) internal {
+    function _initializeLockChainGate(ILifetimeNft _lifetimeNft, uint64 _lockPeriod, uint64 _transferTimeout, address _owner) internal {
         LCGStorage storage ls = lockChainGateStorage();
         ls.lifetimeNft = _lifetimeNft;
         ls.lockPeriod = _lockPeriod;
+        ls.transferTimeout = _transferTimeout;
+        emit SetLockPeriodConfig(_lockPeriod, _transferTimeout);
         _transferOwnership(_owner);
     }
 
@@ -64,7 +68,7 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
      * @param _operator The address to add or remove.
      * @param _isAdd True to add the operator; false to remove.
      */
-    function setLockOperator(address _operator, bool _isAdd) public onlyOwner {
+    function setLockOperator(address _operator, bool _isAdd) external onlyOwner {
         LCGStorage storage ls = lockChainGateStorage();
         if (_isAdd) {
             ls.lockOperators.add(_operator);
@@ -150,11 +154,13 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
     /**
      * @notice Sets the NFT lock period.
      * @param _lockPeriod The new lock period.
+     * @param _transferTimeout The timeout between lock and transfer.
      */
-    function setLockPeriod(uint256 _lockPeriod) external onlyOwner {
+    function setLockPeriod(uint64 _lockPeriod, uint64 _transferTimeout) external onlyOwner {
         LCGStorage storage ls = lockChainGateStorage();
         ls.lockPeriod = _lockPeriod;
-        emit SetLockPeriod(_lockPeriod);
+        ls.transferTimeout = _transferTimeout;
+        emit SetLockPeriodConfig(_lockPeriod, _transferTimeout);
     }
 
     /**
@@ -198,14 +204,39 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
      * @param _lockToChainIds (Optional) Array of chain IDs to which the NFT is to be locked.
      * @param _crossChainFees (Optional) Array of fees corresponding to each chain for additional cross-chain locking.
      */
-    function lockLifetimeNft(uint256 _tokenId, address _holder, uint256[] memory _lockToChainIds, uint256[] memory _crossChainFees) external payable {
+    function lockLifetimeNft(uint256 _tokenId, address _holder, uint256[] memory _lockToChainIds, uint256[] memory _crossChainFees) external payable nonReentrant returns(uint256 returnValue) {
         LCGStorage storage ls = lockChainGateStorage();
         IERC721(address(ls.lifetimeNft)).transferFrom(msg.sender, address(this), _tokenId);
         _writeLockLifetimeNft(_holder, _tokenId);
 
-        _lockLifetimeNftToChains(ls, _holder, _lockToChainIds, _crossChainFees);
+        uint256 totalFee = _lockLifetimeNftToChains(ls, _holder, _lockToChainIds, _crossChainFees);
+        returnValue = _calcAndReturnFee(totalFee);
 
         emit LockNft(block.timestamp, _tokenId, _holder);
+    }
+
+    /**
+     * @notice Calculates the surplus (remaining value) after subtracting a total fee, then returns that surplus to the caller.
+     * @param _totalFee The total fee amount in wei that needs to be deducted from `msg.value`.
+     * @return returnValue The surplus amount returned to the caller (`msg.sender`).
+     */
+    function _calcAndReturnFee(uint256 _totalFee) internal returns(uint256 returnValue) {
+        returnValue = msg.value - _totalFee;
+        _returnFee(returnValue); 
+    }
+
+    /**
+     * @notice Returns a specified amount of ether back to the caller, if greater than zero.
+     * @dev Uses a low-level call to `msg.sender`. Reverts on failure with `TransferFeeFailed`.
+     * @param _returnValue The amount of ether to send to `msg.sender`.
+     */
+    function _returnFee(uint256 _returnValue) internal {
+        if (_returnValue > 0) {
+            (bool success, bytes memory data) = payable(msg.sender).call{value: _returnValue}(new bytes(0));
+            if (!success) {
+                revert ILockChainGate.TransferFeeFailed(data);
+            }
+        }
     }
 
     /**
@@ -214,7 +245,7 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
      * @param _tokenId The NFT token ID.
      * @param _holder The address for which the NFT is locked.
      */
-    function crossLockLifetimeNft(uint256 _fromChainID, uint256 _tokenId, address _holder) external {
+    function crossLockLifetimeNft(uint256 _fromChainID, uint256 _tokenId, address _holder) external nonReentrant {
         LCGStorage storage ls = lockChainGateStorage();
         _checkSource(ls, _fromChainID);
         _onlyCrossChain(ls, _fromChainID);
@@ -231,11 +262,16 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
      * @param _toChainIDs Array of destination chain IDs.
      * @param _crossChainFees Array of fees for each chain.
      */
-    function _lockLifetimeNftToChains(LCGStorage storage ls, address _holder, uint256[] memory _toChainIDs, uint256[] memory _crossChainFees) internal {
-        uint256 totalFee = 0;
+    function _lockLifetimeNftToChains(LCGStorage storage ls, address _holder, uint256[] memory _toChainIDs, uint256[] memory _crossChainFees) internal returns(uint256 totalFee) {
+        if (_toChainIDs.length != _crossChainFees.length) {
+            revert ArrayLengthMismatch();
+        }
+        uint256 tokenId = _checkTokenLocked(ls, _holder);
+        _checkCrossChainLock(ls, tokenId);
+
         for (uint256 i = 0; i < _toChainIDs.length; i++) {
             uint256 sendFee = _getDeBridgeChainNativeFee(ls, _toChainIDs[i], _crossChainFees[i]);
-            _lockLifetimeNftToChain(ls, _toChainIDs[i], _holder, sendFee);
+            _lockLifetimeNftToChain(ls, _toChainIDs[i], _holder, tokenId, sendFee);
             totalFee += sendFee;
         }
         _checkFee(totalFee);
@@ -252,8 +288,9 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
      * @param _toChainIDs Array of destination chain IDs.
      * @param _crossChainFees Array of fees for each chain.
      */
-    function lockLifetimeNftToChains(uint256[] memory _toChainIDs, uint256[] memory _crossChainFees) external payable {
-        _lockLifetimeNftToChains(lockChainGateStorage(), msg.sender, _toChainIDs, _crossChainFees);
+    function lockLifetimeNftToChains(uint256[] memory _toChainIDs, uint256[] memory _crossChainFees) external payable nonReentrant returns(uint256 returnValue) {
+        uint256 totalFee = _lockLifetimeNftToChains(lockChainGateStorage(), msg.sender, _toChainIDs, _crossChainFees);
+        returnValue = _calcAndReturnFee(totalFee);
     }
 
     /**
@@ -262,16 +299,17 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
      * @param _holder The NFT holder.
      * @param _sendFee The fee to send.
      */
-    function _lockLifetimeNftToChain(LCGStorage storage ls, uint256 _toChainID, address _holder, uint256 _sendFee) internal {
-        uint256 tokenId = _checkDestinationLockedChain(ls, _toChainID, _holder);
-        if (ls.lockedToChainsIds[tokenId].contains(_toChainID)) {
+    function _lockLifetimeNftToChain(LCGStorage storage ls, uint256 _toChainID, address _holder, uint256 _tokenId, uint256 _sendFee) internal {
+        _checkDestinationLockedChain(ls, _toChainID);
+
+        if (ls.lockedToChainsIds[_tokenId].contains(_toChainID)) {
             revert AlreadyLockedToChain();
         }
 
-        bytes memory dstTxCall = _encodeCrossLockCommand(ls, tokenId, _holder);
+        bytes memory dstTxCall = _encodeCrossLockCommand(ls, _tokenId, _holder);
         bytes32 submissionId = _send(ls, dstTxCall, _toChainID, _sendFee);
-        ls.lockedToChainsIds[tokenId].add(_toChainID);
-        emit LockToChain(_holder, tokenId, _toChainID, submissionId);
+        ls.lockedToChainsIds[_tokenId].add(_toChainID);
+        emit LockToChain(_holder, _tokenId, _toChainID, submissionId);
     }
 
     /**
@@ -283,7 +321,7 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
      *  - There must be no active cross-chain lock on the NFT (i.e., `_checkCrossChainLock` must pass).
      * @param _tokenId The NFT token ID to unlock.
      */
-    function unlockLifetimeNft(uint256 _tokenId) external {
+    function unlockLifetimeNft(uint256 _tokenId) external nonReentrant {
         LCGStorage storage ls = lockChainGateStorage();
         address holder = ls.ownerOfTokenId[_tokenId];
         if (holder != msg.sender && ls.lockedNftApprovedTo[_tokenId] != msg.sender) {
@@ -299,22 +337,20 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
 
         _deleteTokenData(holder, _tokenId);
 
-        emit UnlockNft(ls.lockedNft[msg.sender].lockedAt, _tokenId, holder, msg.sender);
+        emit UnlockNft(ls.lockedNft[holder].lockedAt, _tokenId, holder, msg.sender);
     }
 
     /**
      * @notice Unlocks an NFT from a cross-chain lock.
      * @param _tokenId The NFT token ID.
      */
-    function unlockLifetimeNftFromChain(uint256 _tokenId) external payable {
+    function unlockLifetimeNftFromChain(uint256 _tokenId) external payable nonReentrant {
         LCGStorage storage ls = lockChainGateStorage();
         uint256 fromChainID = ls.lockedNftFromChainId[_tokenId];
         if (fromChainID == 0) {
             revert NotLockedByChain();
         }
-        if (ls.destinationChainContracts[fromChainID] == address(0)) {
-            revert DestinationChainNotSpecified();
-        }
+        _checkDestinationLockedChain(ls, fromChainID);
         _checkTooEarly(msg.sender);
         _checkHolderTokenLock(ls, msg.sender, _tokenId);
 
@@ -332,7 +368,7 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
      * @param _tokenId The NFT token ID.
      * @param _holder The address of the NFT holder.
      */
-    function crossUnlockLifetimeNft(uint256 _fromChainID, uint256 _tokenId, address _holder) external {
+    function crossUnlockLifetimeNft(uint256 _fromChainID, uint256 _tokenId, address _holder) external nonReentrant {
         LCGStorage storage ls = lockChainGateStorage();
         _checkSource(ls, _fromChainID);
         _onlyCrossChain(ls, _fromChainID);
@@ -349,7 +385,7 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
      * @param _tokenId The NFT token ID.
      * @param _transferTo The address to transfer the NFT to.
      */
-    function crossUpdateNftOwner(uint256 _fromChainID, uint256 _tokenId, address _transferTo) external {
+    function crossUpdateNftOwner(uint256 _fromChainID, uint256 _tokenId, address _transferTo) external nonReentrant {
         LCGStorage storage ls = lockChainGateStorage();
         _checkSource(ls, _fromChainID);
         _onlyCrossChain(ls, _fromChainID);
@@ -425,7 +461,7 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
      * @param _tokenId The NFT token ID.
      * @param _approveTo The address to approve.
      */
-    function approveLifetimeNftTo(uint256 _tokenId, address _approveTo) external {
+    function approveLifetimeNftTo(uint256 _tokenId, address _approveTo) external nonReentrant {
         LCGStorage storage ls = lockChainGateStorage();
         _checkHolderTokenLock(ls, msg.sender, _tokenId);
         _checkCrossChainLock(ls, _tokenId);
@@ -447,6 +483,9 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
         if (ls.lockedNft[_transferTo].tokenId != 0) {
             revert RecipientLocked();
         }
+        if (ls.lockedNft[_holder].lockedAt + ls.transferTimeout > block.timestamp) {
+            revert TransferLockTimeout();
+        }
         ls.ownerOfTokenId[_tokenId] = _transferTo;
         ls.lockedNft[_transferTo].tokenId = _tokenId;
         ls.lockedNft[_transferTo].lockedAt = block.timestamp;
@@ -462,7 +501,7 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
      * @param _toChainIDs Array of destination chain IDs.
      * @param _crossChainFees Array of fees for each chain.
      */
-    function transferLifetimeNftTo(uint256 _tokenId, address _transferTo, uint256[] memory _toChainIDs, uint256[] memory _crossChainFees) external payable {
+    function transferLifetimeNftTo(uint256 _tokenId, address _transferTo, uint256[] memory _toChainIDs, uint256[] memory _crossChainFees) external payable nonReentrant {
         LCGStorage storage ls = lockChainGateStorage();
         address holder = ls.ownerOfTokenId[_tokenId];
         _checkCrossChainLock(ls, _tokenId);
@@ -481,7 +520,7 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
      * @param _toChainIDs Array of destination chain IDs.
      * @param _crossChainFees Array of fees for each chain.
      */
-    function updateNftOwnerOnChainList(uint256 _tokenId, uint256[] memory _toChainIDs, uint256[] memory _crossChainFees) external payable {
+    function updateNftOwnerOnChainList(uint256 _tokenId, uint256[] memory _toChainIDs, uint256[] memory _crossChainFees) external payable nonReentrant {
         LCGStorage storage ls = lockChainGateStorage();
         _checkCrossChainLock(ls, _tokenId);
         if (ls.ownerOfTokenId[_tokenId] != msg.sender) {
@@ -499,6 +538,9 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
      * @param _holder The NFT owner address.
      */
     function _updateNftOwnerOnChainList(LCGStorage storage ls, uint256 _tokenId, uint256[] memory _toChainIDs, uint256[] memory _crossChainFees, address _holder) internal {
+        if (_toChainIDs.length != _crossChainFees.length) {
+            revert ArrayLengthMismatch();
+        }
         uint256 totalFee = 0;
         for (uint256 i = 0; i < _toChainIDs.length; i++) {
             uint256 sendFee = _getDeBridgeChainNativeFee(ls, _toChainIDs[i], _crossChainFees[i]);
@@ -516,7 +558,8 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
      * @param _sendFee The fee to send.
      */
     function _updateLifetimeNftOwnerOnChain(LCGStorage storage ls, uint256 _tokenId, uint256 _toChainID, address _holder, uint256 _sendFee) internal returns(bytes32 submissionId) {
-        uint256 checkTokenId = _checkDestinationLockedChain(ls, _toChainID, _holder);
+        uint256 checkTokenId = _checkTokenLocked(ls, _holder);
+        _checkDestinationLockedChain(ls, _toChainID);
         if (checkTokenId != _tokenId) {
             revert TokenIdMismatch(checkTokenId);
         }
@@ -563,17 +606,25 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
     }
 
     /**
-     * @notice Checks that the destination chain for an NFT lock is properly configured and that the NFT is locked.
-     * @dev Reverts if no destination chain contract is specified or if the holder does not have a locked NFT.
+     * @notice Checks that the destination chain for an NFT lock is properly configured.
+     * @dev Reverts if no destination chain contract is specified.
      * @param ls The LockChainGate storage pointer.
      * @param _toChainID The destination chain ID.
-     * @param _holder The NFT holder.
-     * @return tokenId The token ID that is locked.
      */
-    function _checkDestinationLockedChain(LCGStorage storage ls, uint256 _toChainID, address _holder) internal view returns (uint256 tokenId) {
+    function _checkDestinationLockedChain(LCGStorage storage ls, uint256 _toChainID) internal view {
         if (ls.destinationChainContracts[_toChainID] == address(0)) {
             revert DestinationChainNotSpecified();
         }
+    }
+
+    /**
+     * @notice Checks that the NFT is locked.
+     * @dev Reverts if the holder does not have a locked NFT.
+     * @param ls The LockChainGate storage pointer.
+     * @param _holder The NFT holder.
+     * @return tokenId The token ID that is locked.
+     */
+    function _checkTokenLocked(LCGStorage storage ls, address _holder) internal view returns(uint256 tokenId) {
         tokenId = ls.lockedNft[_holder].tokenId;
         if (tokenId == 0) {
             revert TokenNotLocked();
@@ -663,7 +714,7 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
      * @return The timestamp until which the NFT remains locked.
      */
     function _getLockedUntil(LCGStorage storage ls, address _holder) internal view returns (uint256) {
-        return ls.lockedNft[_holder].lockedAt + ls.lockPeriod;
+        return ls.lockedNft[_holder].lockedAt + uint256(ls.lockPeriod);
     }
 
     /**
@@ -680,7 +731,11 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
      * @return The lock period in seconds.
      */
     function lockPeriod() external view returns (uint256) {
-        return lockChainGateStorage().lockPeriod;
+        return uint256(lockChainGateStorage().lockPeriod);
+    }
+
+    function transferTimeout() external view returns (uint256) {
+        return uint256(lockChainGateStorage().transferTimeout);
     }
 
     /**
@@ -819,7 +874,7 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
      * @param _addr The address to check.
      * @return True if the address is a lock operator, false otherwise.
      */
-    function isLockOperator(address _addr) public view returns(bool) {
+    function isLockOperator(address _addr) external view returns(bool) {
         return lockChainGateStorage().lockOperators.contains(_addr);
     }
 
@@ -829,7 +884,7 @@ contract LockChainGate is Ownable, ILockChainGate, Initializable {
      * @param _crossChainFees Array of cross-chain fees.
      * @return The total native fee.
      */
-    function calculateCrossChainCreateRefNativeFee(uint256[] memory _chainIds, uint256[] memory _crossChainFees) public view returns(uint256) {
+    function calculateCrossChainCreateRefNativeFee(uint256[] memory _chainIds, uint256[] memory _crossChainFees) external view returns(uint256) {
         LCGStorage storage ls = lockChainGateStorage();
         uint256 totalNativeFee = 0;
         for (uint256 i = 0; i < _chainIds.length; i++) {

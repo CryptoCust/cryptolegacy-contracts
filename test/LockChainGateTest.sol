@@ -16,12 +16,14 @@ contract LockChainGateCrosschainTest is CrossChainTestHelper {
 
     function testLockChainGateOwnerFunctions() public {
         vm.expectRevert("Ownable: caller is not the owner");
-        feeRegistry.setLockPeriod(1 days);
+        feeRegistry.setLockPeriod(1 days, 1 hours);
 
         assertEq(feeRegistry.lockPeriod(), 60);
+        assertEq(feeRegistry.transferTimeout(), 10);
         vm.prank(owner);
-        feeRegistry.setLockPeriod(1 days);
+        feeRegistry.setLockPeriod(1 days, 1 hours);
         assertEq(feeRegistry.lockPeriod(), 1 days);
+        assertEq(feeRegistry.transferTimeout(), 1 hours);
     }
 
     function testDebridgeGateRefCode() public {
@@ -59,7 +61,7 @@ contract LockChainGateCrosschainTest is CrossChainTestHelper {
         ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr = new ICryptoLegacy.BeneficiaryConfig[](1);
         beneficiaryConfigArr[0] = ICryptoLegacy.BeneficiaryConfig(10, 100, 10000);
         address[] memory plugins = _getOneInitPluginList(lensPlugin);
-        ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(customRefCode, beneficiaryArr, beneficiaryConfigArr, plugins, 180 days, 90 days);
+        ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(customRefCode, beneficiaryArr, beneficiaryConfigArr, plugins, updateInterval, challengeTimeout);
 
         buildRoll();
         address payable cl = buildManager.buildCryptoLegacy{value: deBridgeFee * 2 + 3}(buildArgs, refArgs, _getCreate2ArgsStruct(address(0), 0));
@@ -223,6 +225,8 @@ contract LockChainGateCrosschainTest is CrossChainTestHelper {
 
         vm.expectRevert(ILockChainGate.NotAvailable.selector);
         mainLock.transferLifetimeNftTo(tokenId, newHolder, chainIdsToLock, crossChainFees);
+        
+        vm.warp(block.timestamp + 10);
 
         vm.expectRevert(abi.encodeWithSelector(ILockChainGate.IncorrectFee.selector, deBridgeFee * 2 + 3));
         vm.prank(holder);
@@ -359,6 +363,10 @@ contract LockChainGateCrosschainTest is CrossChainTestHelper {
         mainLock.setDestinationChainContract(SIDE_CHAIN_ID_1, address(sideLock1));
 
         vm.prank(dan);
+        vm.expectRevert(ILockChainGate.ArrayLengthMismatch.selector);
+        mainLock.updateNftOwnerOnChainList{value: deBridgeFee * 2 + 3}(tokenId, _getEmptyUintList(), crossChainFees);
+
+        vm.prank(dan);
         mainLock.updateNftOwnerOnChainList{value: deBridgeFee * 2 + 3}(tokenId, chainIdsToLock, crossChainFees);
 
         mockCallProxy.setSourceChainIdAndContract(mainLock);
@@ -403,7 +411,7 @@ contract LockChainGateCrosschainTest is CrossChainTestHelper {
         vm.prank(holder);
         uint256[] memory tooLongChainIdsToLock = new uint256[](200);
         vm.expectRevert(abi.encodeWithSelector(ICryptoLegacy.TooLongArray.selector, 100));
-        cryptoLegacy.update{value: lifetimeFee - discount + deBridgeFee * 2 + 3}(tooLongChainIdsToLock, crossChainFees);
+        cryptoLegacy.update{value: lifetimeFee - discount + deBridgeFee * 2 + 3}(tooLongChainIdsToLock, tooLongChainIdsToLock);
 
         vm.prank(holder);
         cryptoLegacy.update{value: lifetimeFee - discount + deBridgeFee * 2 + 3}(chainIdsToLock, crossChainFees);
@@ -435,6 +443,9 @@ contract LockChainGateCrosschainTest is CrossChainTestHelper {
 
         assertEq(feeRegistry.ownerOfTokenId(lNft.tokenId), alice);
         assertEq(feeRegistry.lockedNftApprovedTo(lNft.tokenId), dan);
+
+        vm.warp(block.timestamp + 10);
+
         vm.prank(alice);
         feeRegistry.transferLifetimeNftTo{value: deBridgeFee + 1}(lNft.tokenId, bob, chainIdsToLock, crossChainFees);
         assertEq(feeRegistry.ownerOfTokenId(lNft.tokenId), bob);
@@ -475,6 +486,13 @@ contract LockChainGateCrosschainTest is CrossChainTestHelper {
         vm.prank(bob);
         vm.expectRevert(ILockChainGate.TooEarly.selector);
         sideLock1.unlockLifetimeNftFromChain(tokenId);
+
+        vm.prank(bob);
+        vm.expectRevert(ILockChainGate.CrossChainLock.selector);
+        sideLock1.lockLifetimeNftToChains(_getOneUintList(MAIN_CHAIN_ID), _getOneUintList(MAIN_CHAIN_ID));
+
+        vm.expectRevert(ILockChainGate.ArrayLengthMismatch.selector);
+        sideLock1.lockLifetimeNftToChains(_getEmptyUintList(), _getOneUintList(MAIN_CHAIN_ID));
 
         vm.warp(lNft.lockedAt + sideLock1.lockPeriod() + 1);
 
@@ -550,5 +568,44 @@ contract LockChainGateCrosschainTest is CrossChainTestHelper {
         vm.prank(alice);
         vm.expectRevert(ILockChainGate.NotLockedByChain.selector);
         feeRegistry.unlockLifetimeNftFromChain(tokenId);
+    }
+
+    function testLockTransferTimeout() public {
+        buildManager.payInitialFee{value: lifetimeFee}(bytes8(0), alice, _getEmptyUintList(), _getEmptyUintList());
+        assertEq(lifetimeNft.totalSupply(), 1);
+
+        uint256 tokenId = 1;
+
+        vm.prank(alice);
+        vm.expectRevert(ILockChainGate.TransferLockTimeout.selector);
+        mainLock.transferLifetimeNftTo(tokenId, bob, _getEmptyUintList(), _getEmptyUintList());
+
+        vm.warp(block.timestamp + 10);
+
+        vm.prank(alice);
+        mainLock.transferLifetimeNftTo(tokenId, bob, _getEmptyUintList(), _getEmptyUintList());
+
+        vm.prank(bob);
+        vm.expectRevert(ILockChainGate.TransferLockTimeout.selector);
+        mainLock.transferLifetimeNftTo(tokenId, dan, _getEmptyUintList(), _getEmptyUintList());
+
+        vm.warp(block.timestamp + 9);
+
+        vm.prank(bob);
+        vm.expectRevert(ILockChainGate.TransferLockTimeout.selector);
+        mainLock.transferLifetimeNftTo(tokenId, dan, _getEmptyUintList(), _getEmptyUintList());
+
+        vm.warp(block.timestamp + 2);
+
+        vm.prank(bob);
+        mainLock.transferLifetimeNftTo(tokenId, dan, _getEmptyUintList(), _getEmptyUintList());
+
+        ILockChainGate.LockedNft memory lNft = feeRegistry.lockedNft(dan);
+        assertEq(lNft.lockedAt, block.timestamp);
+        assertEq(lNft.tokenId, tokenId);
+
+        lNft = sideLock1.lockedNft(bob);
+        assertEq(lNft.lockedAt, 0);
+        assertEq(lNft.tokenId, 0);
     }
 }
