@@ -37,6 +37,10 @@ library LibTrustedGuardiansPlugin {
         pluginStorage.guardiansVoted = new bytes32[](0);
 
         cls.distributionStartAt = uint64(0);
+
+        uint256[] memory emptyArray = new uint256[](0);
+        LibCryptoLegacy._takeFee(cls, LibDiamond.contractOwner(), address(0), 0, emptyArray, emptyArray);
+
         emit ITrustedGuardiansPlugin.ResetGuardiansVoting();
     }
 }
