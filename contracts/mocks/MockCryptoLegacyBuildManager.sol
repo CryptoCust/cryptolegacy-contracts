@@ -18,7 +18,17 @@ contract MockCryptoLegacyBuildManager is CryptoLegacyBuildManager {
 
   }
 
-  function _checkBuildArgs(BuildArgs memory _buildArgs) internal override {
-    // Do not check build args
+  function _checkBuildArgs(BuildArgs memory _buildArgs) internal pure override {
+    if (_buildArgs.updateInterval != 15 minutes || _buildArgs.challengeTimeout != 5 minutes) {
+      revert NotValidTimeout();
+    }
+  }
+
+  function mockSetCryptoLegacyBuilt(address _cryptoLegacy, bool _built) external {
+    cryptoLegacyBuilt[_cryptoLegacy] = _built;
+  }
+
+  function mockSetBeneficiaryRegistry(address _beneficiaryRegistry) external {
+    beneficiaryRegistry = IBeneficiaryRegistry(_beneficiaryRegistry);
   }
 }

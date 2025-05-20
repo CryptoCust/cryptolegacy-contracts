@@ -8,12 +8,12 @@ import "../interfaces/ICryptoLegacyPlugin.sol";
 import "../libraries/LibCryptoLegacy.sol";
 import "../libraries/LibCryptoLegacyPlugins.sol";
 import "../libraries/LibDiamond.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "../interfaces/ICryptoLegacy.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
-contract MockClaimPlugin is ICryptoLegacyPlugin, ReentrancyGuard {
+contract MockClaimPlugin is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
     function getSigs() external view returns (bytes4[] memory sigs) {

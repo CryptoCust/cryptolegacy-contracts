@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "../contracts/libraries/LibSafeMinimalMultisig.sol";
 import "../contracts/plugins/CryptoLegacyBasePlugin.sol";
 import "../contracts/CryptoLegacyBuildManager.sol";
 import "../contracts/mocks/MockLifetimeNft.sol";
@@ -32,6 +33,7 @@ abstract contract AbstractTestHelper is Test {
   address payable constant internal custFeeRecipient2 = payable(0x3333333333333333333333333333333333333333);
   address payable constant internal treasury = payable(0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC);
 
+  Create3Factory internal create3Factory;
   FeeRegistry internal feeRegistry;
   ProxyBuilder internal proxyBuilder;
   CryptoLegacyFactory internal factory;
@@ -50,26 +52,34 @@ abstract contract AbstractTestHelper is Test {
   uint128 internal buildFee = 0.2 ether;
   uint128 internal updateFee = 0.1 ether;
 
-  uint64 internal updateInterval = 180 days;
-  uint64 internal challengeTimeout = 90 days;
+  uint64 internal updateInterval = 15 minutes;
+  uint64 internal challengeTimeout = 5 minutes;
 
   bytes32 internal salt = bytes32(uint256(1));
   uint256 internal buildRollNumber = 1;
 
+  receive() external payable {
+
+  }
+
   function setUp() public virtual {
     vm.startPrank(deployer);
+    create3Factory = LibDeploy._deployCreate3Factory(salt, deployer);
 
-    pluginsRegistry = LibDeploy._deployPluginsRegistry(salt, deployer);
-    lifetimeNft = LibMockDeploy._deployMockLifeTimeNft(salt, deployer);
+    pluginsRegistry = LibDeploy._deployPluginsRegistry(create3Factory, salt, deployer);
+    lifetimeNft = LibMockDeploy._deployMockLifeTimeNft(create3Factory, salt, deployer);
 
-    proxyBuilder = LibDeploy._deployProxyBuilder(salt, deployer);
-    feeRegistry = LibDeploy._deployFeeRegistry(salt, salt, deployer, proxyBuilder, uint32(0), uint32(0), lifetimeNft, 60);
+    proxyBuilder = LibDeploy._deployProxyBuilder(create3Factory, salt, deployer);
+    feeRegistry = LibDeploy._deployFeeRegistry(create3Factory, salt, salt, deployer, proxyBuilder, uint32(refDiscountPct), uint32(refSharePct), lifetimeNft, 60, 10);
 
-    (buildManager, beneficiaryRegistry, factory) = LibMockDeploy._deployMockBuildManager(salt, deployer, feeRegistry, pluginsRegistry, lifetimeNft);
+    (buildManager, beneficiaryRegistry, factory) = LibMockDeploy._deployMockBuildManager(create3Factory, salt, deployer, feeRegistry, pluginsRegistry, lifetimeNft);
 
-    LibMockDeploy._initFeeRegistry(feeRegistry, buildManager, lifetimeFee, buildFee, updateFee, refDiscountPct, refSharePct);
+    LibMockDeploy._initFeeRegistry(feeRegistry, buildManager, lifetimeFee, buildFee, updateFee);
+
+    (cryptoLegacyBasePlugin, lensPlugin, , ) = LibDeploy._deployPlugins(create3Factory, salt);
+
     LibDeploy._transferOwnership(owner, buildManager, proxyBuilder);
-
+    create3Factory.transferOwnership(owner);
     vm.stopPrank();
 
     alice.transfer(10 ether);
@@ -79,8 +89,6 @@ abstract contract AbstractTestHelper is Test {
     bobBeneficiary1.transfer(10 ether);
     bobBeneficiary2.transfer(10 ether);
     bobBeneficiary3.transfer(10 ether);
-
-    (cryptoLegacyBasePlugin, lensPlugin, , ) = LibDeploy._deployPlugins(salt);
   }
 
   function _addBasePluginsToRegistry() internal {
@@ -143,6 +151,19 @@ abstract contract AbstractTestHelper is Test {
     plugins[2] = _plugin2;
     plugins[3] = _plugin3;
     return plugins;
+  }
+
+  function _getOneUintList(uint _num) internal virtual returns(uint[] memory nums){
+    nums = new uint[](1);
+    nums[0] = _num;
+    return nums;
+  }
+
+  function _getTwoUintList(uint256 _one, uint256 _two) internal virtual returns(uint256[] memory list){
+    list = new uint256[](2);
+    list[0] = _one;
+    list[1] = _two;
+    return list;
   }
 
   function _getThreeUintList(uint256 _one, uint256 _two, uint256 _three) internal virtual returns(uint256[] memory list){
@@ -213,5 +234,13 @@ abstract contract AbstractTestHelper is Test {
 
   function addressToHash(address _addr) internal pure returns(bytes32) {
     return keccak256(abi.encode(_addr));
+  }
+
+  function addressWithSaltToHash(address _addr, bytes32 _salt) internal pure returns(bytes32) {
+    return keccak256(abi.encodePacked(_addr, _salt));
+  }
+
+  function assertProposalStatusEq(ISafeMinimalMultisig.ProposalStatus _status1, ISafeMinimalMultisig.ProposalStatus _status2) internal pure {
+    assertEq(uint(_status1), uint(_status2));
   }
 }
