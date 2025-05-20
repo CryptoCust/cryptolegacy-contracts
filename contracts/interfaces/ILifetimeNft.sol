@@ -21,5 +21,7 @@ interface ILifetimeNft is IERC721Enumerable {
 
     function setMinterOperator(address _minter, bool _isActive) external;
 
+    function setBaseUri(string memory baseURI_) external;
+
     error NotTheMinter();
 }

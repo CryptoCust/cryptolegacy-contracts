@@ -43,9 +43,9 @@ interface ICryptoLegacyBuildManager {
         uint256 amount;
     }
 
-    function payInitialFee(bytes8 _code, address _toHolder, uint256[] memory _lockToChainIds, uint256[] memory _crossChainFees) external payable;
+    function payInitialFee(bytes8 _code, address _toHolder, uint256[] memory _lockToChainIds, uint256[] memory _crossChainFees) external payable returns(uint256 returnValue);
 
-    function payFee(bytes8 _code, address _toHolder, uint256 _mul, uint256[] memory _lockToChainIds, uint256[] memory _crossChainFees) external payable;
+    function payFee(bytes8 _code, address _toHolder, uint256 _mul, uint256[] memory _lockToChainIds, uint256[] memory _crossChainFees) external payable returns(uint256 returnValue);
 
     function getUpdateFee(bytes8 _refCode) external returns(uint256);
 
@@ -66,7 +66,11 @@ interface ICryptoLegacyBuildManager {
     function externalLens() external view returns(address);
 
     error AlreadyLifetime();
+    error WithdrawFeeFailed(bytes reason);
     error NotValidTimeout();
     error IncorrectFee(uint256 feeToTake);
     error BellowMinimumSupply(uint256 supplyLimit);
+    error NotRegisteredCryptoLegacy();
+    error NotOwnerOfCryptoLegacy();
+    error TransferFeeFailed(bytes response);
 }

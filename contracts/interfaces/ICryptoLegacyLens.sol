@@ -11,7 +11,7 @@ interface ICryptoLegacyLens {
     function getMessagesBlockNumbersByRecipient(bytes32 _recipient) external view returns(uint64[] memory blockNumbers);
 
     struct BeneficiaryTokenData {
-        uint256 vestedAmount;
+        uint256 claimableAmount;
         uint256 claimedAmount;
         uint256 totalAmount;
     }
@@ -38,13 +38,18 @@ interface ICryptoLegacyLens {
     }
     function getCryptoLegacyBaseData() external view returns(CryptoLegacyBaseData memory data);
 
+    struct LensTokenDistribution {
+        uint128 amountToDistribute;
+        uint128 lastBalance;
+        uint128 totalClaimed;
+    }
     struct CryptoLegacyListData {
         bytes32[] beneficiaries;
         bytes32[] beneficiariesOriginalHashes;
         uint64[] transfersGotByBlockNumber;
         ICryptoLegacy.BeneficiaryConfig[] beneficiaryConfigArr;
         PluginInfo[] plugins;
-        ICryptoLegacy.TokenDistribution[] tokenDistributions;
+        LensTokenDistribution[] tokenDistributions;
     }
 
     function getCryptoLegacyListData(address[] memory _tokens) external view returns(CryptoLegacyListData memory data);
