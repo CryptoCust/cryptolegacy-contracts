@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - lcov.info - contracts/contracts/Create3Factory.sol</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">contracts/contracts</a> - Create3Factory.sol<span style="font-size: 80%;"> (source / <a href="Create3Factory.sol.func-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">lcov.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryLo">71.4&nbsp;%</td>
+            <td class="headerCovTableEntry">7</td>
+            <td class="headerCovTableEntry">5</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2025-05-22 13:12:18</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryLo">66.7&nbsp;%</td>
+            <td class="headerCovTableEntry">3</td>
+            <td class="headerCovTableEntry">2</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="headerItem">Branches:</td>
+            <td class="headerCovTableEntryHi">-</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+          </tr>
+                  <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">             Branch data     Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>                 :             : // SPDX-License-Identifier: MIT</span>
+<span id="L2"><span class="lineNum">       2</span>                 :             : </span>
+<span id="L3"><span class="lineNum">       3</span>                 :             : pragma solidity 0.8.24;</span>
+<span id="L4"><span class="lineNum">       4</span>                 :             : </span>
+<span id="L5"><span class="lineNum">       5</span>                 :             : import &quot;./libraries/LibCreate3.sol&quot;;</span>
+<span id="L6"><span class="lineNum">       6</span>                 :             : import &quot;@openzeppelin/contracts/access/Ownable.sol&quot;;</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : </span>
+<span id="L8"><span class="lineNum">       8</span>                 :             : /**</span>
+<span id="L9"><span class="lineNum">       9</span>                 :             :  * @title Create3Factory</span>
+<span id="L10"><span class="lineNum">      10</span>                 :             :  * @notice Deploys contracts deterministically using CREATE3, ensuring deterministic addresses and secure deployment.</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             :  */</span>
+<span id="L12"><span class="lineNum">      12</span>                 :             : contract Create3Factory is Ownable {</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             :     /**</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             :      * @notice Emitted after deploying a contract using CREATE3.</span>
+<span id="L15"><span class="lineNum">      15</span>                 :             :      */</span>
+<span id="L16"><span class="lineNum">      16</span>                 :             :     event Create3Contract(address contractAddress);</span>
+<span id="L17"><span class="lineNum">      17</span>                 :             : </span>
+<span id="L18"><span class="lineNum">      18</span>                 :             :     /**</span>
+<span id="L19"><span class="lineNum">      19</span>                 :             :      * @notice Constructor that sets the initial owner.</span>
+<span id="L20"><span class="lineNum">      20</span>                 :             :      * @param _owner The address to be assigned as the contract’s owner.</span>
+<span id="L21"><span class="lineNum">      21</span>                 :             :      */</span>
+<span id="L22"><span class="lineNum">      22</span>                 :<span class="tlaGNC tlaBgGNC">          77 :     constructor(address _owner) {</span></span>
+<span id="L23"><span class="lineNum">      23</span>                 :<span class="tlaGNC">          77 :         _transferOwnership(_owner);</span></span>
+<span id="L24"><span class="lineNum">      24</span>                 :             :     }</span>
+<span id="L25"><span class="lineNum">      25</span>                 :             : </span>
+<span id="L26"><span class="lineNum">      26</span>                 :             :     /**</span>
+<span id="L27"><span class="lineNum">      27</span>                 :             :      * @notice Builds (deploys) a new contract using CREATE3 with a given salt and contract bytecode.</span>
+<span id="L28"><span class="lineNum">      28</span>                 :             :      * @dev Only the contract owner can invoke this. Uses the LibCreate3 library for the deterministic address.</span>
+<span id="L29"><span class="lineNum">      29</span>                 :             :      * @param _create3Salt The salt used to derive the deterministic address.</span>
+<span id="L30"><span class="lineNum">      30</span>                 :             :      * @param _contractBytecode The bytecode of the contract to deploy.</span>
+<span id="L31"><span class="lineNum">      31</span>                 :             :      * @return result The address of the deployed contract.</span>
+<span id="L32"><span class="lineNum">      32</span>                 :             :      */</span>
+<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">         980 :     function build(bytes32 _create3Salt, bytes calldata _contractBytecode) external onlyOwner returns (address result) {</span></span>
+<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">         980 :         result = LibCreate3.create3(_create3Salt, _contractBytecode);</span></span>
+<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">         980 :         emit Create3Contract(result);</span></span>
+<span id="L36"><span class="lineNum">      36</span>                 :             :     }</span>
+<span id="L37"><span class="lineNum">      37</span>                 :             : </span>
+<span id="L38"><span class="lineNum">      38</span>                 :             :     /**</span>
+<span id="L39"><span class="lineNum">      39</span>                 :             :      * @notice Computes the CREATE3-based deterministic address for a given salt, without deploying.</span>
+<span id="L40"><span class="lineNum">      40</span>                 :             :      * @param _create3Salt The salt used for CREATE3 derivation.</span>
+<span id="L41"><span class="lineNum">      41</span>                 :             :      * @return The predicted address of the contract once deployed.</span>
+<span id="L42"><span class="lineNum">      42</span>                 :             :      */</span>
+<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaUNC tlaBgUNC">           0 :     function computeAddress(bytes32 _create3Salt) public view returns (address) {</span></span>
+<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaUNC">           0 :         return LibCreate3.addressOf(_create3Salt);</span></span>
+<span id="L45"><span class="lineNum">      45</span>                 :             :     }</span>
+<span id="L46"><span class="lineNum">      46</span>                 :             : }</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com//linux-test-project/lcov" target="_parent">LCOV version 2.0-1</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>

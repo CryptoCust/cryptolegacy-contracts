@@ -31,18 +31,18 @@
             <td class="headerValue">lcov.info</td>
             <td></td>
             <td class="headerItem">Lines:</td>
-            <td class="headerCovTableEntryHi">94.0&nbsp;%</td>
+            <td class="headerCovTableEntryHi">94.3&nbsp;%</td>
+            <td class="headerCovTableEntry">53</td>
             <td class="headerCovTableEntry">50</td>
-            <td class="headerCovTableEntry">47</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-04-22 00:21:36</td>
+            <td class="headerValue">2025-05-22 13:12:18</td>
             <td></td>
             <td class="headerItem">Functions:</td>
-            <td class="headerCovTableEntryMed">87.5&nbsp;%</td>
-            <td class="headerCovTableEntry">16</td>
-            <td class="headerCovTableEntry">14</td>
+            <td class="headerCovTableEntryMed">88.2&nbsp;%</td>
+            <td class="headerCovTableEntry">17</td>
+            <td class="headerCovTableEntry">15</td>
           </tr>
           <tr>
             <td></td>
@@ -81,14 +81,14 @@
 <span id="L10"><span class="lineNum">      10</span>                 :             : import &quot;../libraries/LibCryptoLegacy.sol&quot;;</span>
 <span id="L11"><span class="lineNum">      11</span>                 :             : import &quot;../interfaces/ICryptoLegacyPlugin.sol&quot;;</span>
 <span id="L12"><span class="lineNum">      12</span>                 :             : import &quot;../libraries/LibSafeMinimalBeneficiaryMultisig.sol&quot;;</span>
-<span id="L13"><span class="lineNum">      13</span>                 :             : import &quot;@openzeppelin/contracts/security/ReentrancyGuard.sol&quot;;</span>
-<span id="L14"><span class="lineNum">      14</span>                 :             : import &quot;@openzeppelin/contracts/token/ERC721/IERC721.sol&quot;;</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             : import &quot;@openzeppelin/contracts/token/ERC721/IERC721.sol&quot;;</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             : import &quot;@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol&quot;;</span>
 <span id="L15"><span class="lineNum">      15</span>                 :             : </span>
 <span id="L16"><span class="lineNum">      16</span>                 :             : /**</span>
 <span id="L17"><span class="lineNum">      17</span>                 :             :  * @title BeneficiaryPluginAddRights</span>
 <span id="L18"><span class="lineNum">      18</span>                 :             :  * @notice Empowers beneficiaries to add additional plugin functionality to tailor the distribution process. This plugin enhances control over asset distribution rights and ensures beneficiaries can manage their claims under predefined conditions.</span>
 <span id="L19"><span class="lineNum">      19</span>                 :             : */</span>
-<span id="L20"><span class="lineNum">      20</span>                 :             : contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuard {</span>
+<span id="L20"><span class="lineNum">      20</span>                 :             : contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable {</span>
 <span id="L21"><span class="lineNum">      21</span>                 :             :     using EnumerableSet for EnumerableSet.Bytes32Set;</span>
 <span id="L22"><span class="lineNum">      22</span>                 :             : </span>
 <span id="L23"><span class="lineNum">      23</span>                 :             :     bytes32 public constant PLUGIN_MULTISIG_POSITION = keccak256(&quot;beneficiary_plugin_add_rights.multisig.plugin.storage&quot;);</span>
@@ -98,196 +98,206 @@
 <span id="L27"><span class="lineNum">      27</span>                 :             :      * @dev These selectors represent the externally accessible methods implemented in this plugin.</span>
 <span id="L28"><span class="lineNum">      28</span>                 :             :      * @return sigs An array of function selectors.</span>
 <span id="L29"><span class="lineNum">      29</span>                 :             :      */</span>
-<span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaGNC tlaBgGNC">          39 :     function getSigs() external view returns (bytes4[] memory sigs) {</span></span>
-<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">          39 :         sigs = new bytes4[](8);</span></span>
-<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">          39 :         sigs[0] = BeneficiaryPluginAddRights(address(this)).barGetInitializationStatus.selector;</span></span>
-<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">          39 :         sigs[1] = BeneficiaryPluginAddRights(address(this)).barSetMultisigConfig.selector;</span></span>
-<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">          39 :         sigs[2] = BeneficiaryPluginAddRights(address(this)).barPropose.selector;</span></span>
-<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">          39 :         sigs[3] = BeneficiaryPluginAddRights(address(this)).barConfirm.selector;</span></span>
-<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">          39 :         sigs[4] = BeneficiaryPluginAddRights(address(this)).barAddPluginList.selector;</span></span>
-<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">          39 :         sigs[5] = BeneficiaryPluginAddRights(address(this)).barGetVotersAndConfirmations.selector;</span></span>
-<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">          39 :         sigs[6] = BeneficiaryPluginAddRights(address(this)).barGetProposalWithStatus.selector;</span></span>
-<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">          39 :         sigs[7] = BeneficiaryPluginAddRights(address(this)).barGetProposalListWithStatuses.selector;</span></span>
-<span id="L40"><span class="lineNum">      40</span>                 :             :     }</span>
-<span id="L41"><span class="lineNum">      41</span>                 :             : </span>
-<span id="L42"><span class="lineNum">      42</span>                 :             :     /**</span>
-<span id="L43"><span class="lineNum">      43</span>                 :             :      * @notice Returns the setup function selectors for this plugin.</span>
-<span id="L44"><span class="lineNum">      44</span>                 :             :      * @dev This plugin does not require any setup functions.</span>
-<span id="L45"><span class="lineNum">      45</span>                 :             :      * @return sigs An empty array of function selectors.</span>
-<span id="L46"><span class="lineNum">      46</span>                 :             :      */</span>
-<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">           2 :     function getSetupSigs() external pure returns (bytes4[] memory sigs) {</span></span>
-<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">           2 :         sigs = new bytes4[](0);</span></span>
-<span id="L49"><span class="lineNum">      49</span>                 :             :     }</span>
-<span id="L50"><span class="lineNum">      50</span>                 :             : </span>
-<span id="L51"><span class="lineNum">      51</span>                 :             :     /**</span>
-<span id="L52"><span class="lineNum">      52</span>                 :             :      * @notice Returns the multisig method selectors that are allowed to be executed via proposals.</span>
-<span id="L53"><span class="lineNum">      53</span>                 :             :      * @dev These allowed methods include adding plugin lists and setting multisig configuration.</span>
-<span id="L54"><span class="lineNum">      54</span>                 :             :      * @return sigs An array of function selectors for multisig proposals.</span>
-<span id="L55"><span class="lineNum">      55</span>                 :             :      */</span>
-<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaUNC tlaBgUNC">           0 :     function getMultisigAllowedMethods() public view returns (bytes4[] memory sigs) {</span></span>
-<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC tlaBgGNC">           4 :         sigs = new bytes4[](2);</span></span>
-<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">           4 :         sigs[0] = BeneficiaryPluginAddRights(address(this)).barAddPluginList.selector;</span></span>
-<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">           4 :         sigs[1] = BeneficiaryPluginAddRights(address(this)).barSetMultisigConfig.selector;</span></span>
-<span id="L60"><span class="lineNum">      60</span>                 :             :     }</span>
-<span id="L61"><span class="lineNum">      61</span>                 :             : </span>
-<span id="L62"><span class="lineNum">      62</span>                 :             :     /**</span>
-<span id="L63"><span class="lineNum">      63</span>                 :             :      * @notice Returns the unique name for this plugin.</span>
-<span id="L64"><span class="lineNum">      64</span>                 :             :      * @dev The name is used for identification purposes across the CryptoLegacy ecosystem.</span>
-<span id="L65"><span class="lineNum">      65</span>                 :             :      * @return A string representing the plugin name.</span>
-<span id="L66"><span class="lineNum">      66</span>                 :             :      */</span>
-<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">           2 :     function getPluginName() public pure returns (string memory) {</span></span>
-<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">           2 :         return &quot;beneficiary_plugin_add_rights&quot;;</span></span>
-<span id="L69"><span class="lineNum">      69</span>                 :             :     }</span>
-<span id="L70"><span class="lineNum">      70</span>                 :             : </span>
-<span id="L71"><span class="lineNum">      71</span>                 :             :     /**</span>
-<span id="L72"><span class="lineNum">      72</span>                 :             :      * @notice Returns the version number for this plugin.</span>
-<span id="L73"><span class="lineNum">      73</span>                 :             :      * @dev The version returned is encoded as a uint16.</span>
-<span id="L74"><span class="lineNum">      74</span>                 :             :      * @return The plugin version.</span>
-<span id="L75"><span class="lineNum">      75</span>                 :             :      */</span>
-<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">           2 :     function getPluginVer() external pure returns (uint16) {</span></span>
-<span id="L77"><span class="lineNum">      77</span>                 :<span class="tlaGNC">           2 :         return uint16(1);</span></span>
-<span id="L78"><span class="lineNum">      78</span>                 :             :     }</span>
-<span id="L79"><span class="lineNum">      79</span>                 :             : </span>
-<span id="L80"><span class="lineNum">      80</span>                 :             :     /**</span>
-<span id="L81"><span class="lineNum">      81</span>                 :             :      * @notice Modifier that restricts function access to the owner.</span>
-<span id="L82"><span class="lineNum">      82</span>                 :             :      * @dev Invokes LibCryptoLegacy._checkOwner() to verify that msg.sender is the contract owner.</span>
-<span id="L83"><span class="lineNum">      83</span>                 :             :      */</span>
-<span id="L84"><span class="lineNum">      84</span>                 :<span class="tlaUNC tlaBgUNC">           0 :     modifier onlyOwner() {</span></span>
-<span id="L85"><span class="lineNum">      85</span>                 :<span class="tlaUNC">           0 :         LibCryptoLegacy._checkOwner();</span></span>
-<span id="L86"><span class="lineNum">      86</span>                 :             :         _;</span>
-<span id="L87"><span class="lineNum">      87</span>                 :             :     }</span>
-<span id="L88"><span class="lineNum">      88</span>                 :             : </span>
-<span id="L89"><span class="lineNum">      89</span>                 :             :     /**</span>
-<span id="L90"><span class="lineNum">      90</span>                 :             :      * @notice Modifier that ensures token distribution has started.</span>
-<span id="L91"><span class="lineNum">      91</span>                 :             :      * @dev Calls LibCryptoLegacy._checkDistributionReady() to validate that distribution is ready.</span>
-<span id="L92"><span class="lineNum">      92</span>                 :             :      */</span>
-<span id="L93"><span class="lineNum">      93</span>                 :<span class="tlaGNC tlaBgGNC">           3 :     modifier onlyDistributionReady() {</span></span>
-<span id="L94"><span class="lineNum">      94</span>                 :<span class="tlaGNC">           3 :         LibCryptoLegacy._checkDistributionReady(LibCryptoLegacy.getCryptoLegacyStorage());</span></span>
-<span id="L95"><span class="lineNum">      95</span>                 :             :         _;</span>
-<span id="L96"><span class="lineNum">      96</span>                 :             :     }</span>
-<span id="L97"><span class="lineNum">      97</span>                 :             : </span>
-<span id="L98"><span class="lineNum">      98</span>                 :             :     /**</span>
-<span id="L99"><span class="lineNum">      99</span>                 :             :      * @notice Retrieves the multisig storage structure for this plugin.</span>
-<span id="L100"><span class="lineNum">     100</span>                 :             :      * @dev Uses a fixed storage slot (PLUGIN_MULTISIG_POSITION) to avoid collisions.</span>
-<span id="L101"><span class="lineNum">     101</span>                 :             :      * @return storageStruct A reference to the ISafeMinimalMultisig.Storage struct.</span>
-<span id="L102"><span class="lineNum">     102</span>                 :             :      */</span>
-<span id="L103"><span class="lineNum">     103</span>                 :<span class="tlaGNC">          22 :     function getPluginMultisigStorage() internal pure returns (ISafeMinimalMultisig.Storage storage storageStruct) {</span></span>
-<span id="L104"><span class="lineNum">     104</span>                 :<span class="tlaGNC">          22 :         bytes32 position = PLUGIN_MULTISIG_POSITION;</span></span>
-<span id="L105"><span class="lineNum">     105</span>                 :             :         assembly {</span>
-<span id="L106"><span class="lineNum">     106</span>                 :<span class="tlaGNC">          22 :             storageStruct.slot := position</span></span>
-<span id="L107"><span class="lineNum">     107</span>                 :             :         }</span>
-<span id="L108"><span class="lineNum">     108</span>                 :             :     }</span>
-<span id="L109"><span class="lineNum">     109</span>                 :             : </span>
-<span id="L110"><span class="lineNum">     110</span>                 :             :     /**</span>
-<span id="L111"><span class="lineNum">     111</span>                 :             :      * @notice Sets the multisig configuration for beneficiary actions.</span>
-<span id="L112"><span class="lineNum">     112</span>                 :             :      * @dev Allows the owner (or the contract itself when distribution is ready) to update multisig confirmation requirements.</span>
-<span id="L113"><span class="lineNum">     113</span>                 :             :      *      Calls LibSafeMinimalBeneficiaryMultisig._setConfirmations() using the current beneficiaries.</span>
-<span id="L114"><span class="lineNum">     114</span>                 :             :      * @param _requiredConfirmations The number of confirmations required for multisig proposals.</span>
-<span id="L115"><span class="lineNum">     115</span>                 :             :      */</span>
-<span id="L116"><span class="lineNum">     116</span>                 :<span class="tlaGNC">           4 :     function barSetMultisigConfig(uint256 _requiredConfirmations) external {</span></span>
-<span id="L117"><span class="lineNum">     117</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">           4 :         if (msg.sender == address(this)) {</span></span>
-<span id="L118"><span class="lineNum">     118</span>                 :<span class="tlaGNC">           1 :             LibCryptoLegacy._checkDistributionReady(LibCryptoLegacy.getCryptoLegacyStorage());</span></span>
-<span id="L119"><span class="lineNum">     119</span>                 :             :         } else {</span>
-<span id="L120"><span class="lineNum">     120</span>                 :<span class="tlaGNC">           3 :             LibCryptoLegacy._checkOwner();</span></span>
-<span id="L121"><span class="lineNum">     121</span>                 :             :         }</span>
-<span id="L122"><span class="lineNum">     122</span>                 :<span class="tlaGNC">           3 :         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();</span></span>
-<span id="L123"><span class="lineNum">     123</span>                 :<span class="tlaGNC">           3 :         LibSafeMinimalBeneficiaryMultisig._setConfirmations(getPluginMultisigStorage(), cls.beneficiaries.values(), _requiredConfirmations);</span></span>
-<span id="L124"><span class="lineNum">     124</span>                 :             :     }</span>
-<span id="L125"><span class="lineNum">     125</span>                 :             : </span>
-<span id="L126"><span class="lineNum">     126</span>                 :             :     /**</span>
-<span id="L127"><span class="lineNum">     127</span>                 :             :      * @notice Submits a new multisig proposal.</span>
-<span id="L128"><span class="lineNum">     128</span>                 :             :      * @dev Validates if the proposer is an allowed voter and the method is permitted before adding the proposal.</span>
-<span id="L129"><span class="lineNum">     129</span>                 :             :      *      Automatically executes the proposal if only one confirmation is required.</span>
-<span id="L130"><span class="lineNum">     130</span>                 :             :      * @param _selector The function selector targeted by the proposal.</span>
-<span id="L131"><span class="lineNum">     131</span>                 :             :      * @param _params The ABI-encoded parameters to be passed when executing the proposal.</span>
-<span id="L132"><span class="lineNum">     132</span>                 :             :      */</span>
-<span id="L133"><span class="lineNum">     133</span>                 :<span class="tlaGNC">           5 :     function barPropose(bytes4 _selector, bytes memory _params) nonReentrant external onlyDistributionReady {</span></span>
-<span id="L134"><span class="lineNum">     134</span>                 :<span class="tlaGNC">           4 :         LibSafeMinimalBeneficiaryMultisig._propose(getPluginMultisigStorage(), getMultisigAllowedMethods(), _selector, _params);</span></span>
-<span id="L135"><span class="lineNum">     135</span>                 :             :     }</span>
-<span id="L136"><span class="lineNum">     136</span>                 :             : </span>
-<span id="L137"><span class="lineNum">     137</span>                 :             :     /**</span>
-<span id="L138"><span class="lineNum">     138</span>                 :             :      * @notice Confirms an existing multisig proposal.</span>
-<span id="L139"><span class="lineNum">     139</span>                 :             :      * @dev Records a confirmation from the caller and executes the proposal if the confirmations threshold is met.</span>
-<span id="L140"><span class="lineNum">     140</span>                 :             :      * @param _proposalId The identifier of the proposal to confirm.</span>
-<span id="L141"><span class="lineNum">     141</span>                 :             :      */</span>
-<span id="L142"><span class="lineNum">     142</span>                 :<span class="tlaGNC">           2 :     function barConfirm(uint256 _proposalId) external nonReentrant onlyDistributionReady {</span></span>
-<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">           2 :         LibSafeMinimalBeneficiaryMultisig._confirm(getPluginMultisigStorage(), _proposalId);</span></span>
-<span id="L144"><span class="lineNum">     144</span>                 :             :     }</span>
-<span id="L145"><span class="lineNum">     145</span>                 :             : </span>
-<span id="L146"><span class="lineNum">     146</span>                 :             :     /**</span>
-<span id="L147"><span class="lineNum">     147</span>                 :             :      * @notice Adds a new list of plugins to the CryptoLegacy system.</span>
-<span id="L148"><span class="lineNum">     148</span>                 :             :      * @dev Ensures distribution is ready and that the caller is a multisig executor before proceeding.</span>
-<span id="L149"><span class="lineNum">     149</span>                 :             :      *      Calls LibCryptoLegacyPlugins._addPluginList with the provided plugin addresses.</span>
-<span id="L150"><span class="lineNum">     150</span>                 :             :      * @param _plugins An array of plugin contract addresses to be added.</span>
+<span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaGNC tlaBgGNC">          31 :     function getSigs() external pure returns (bytes4[] memory sigs) {</span></span>
+<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">          31 :         sigs = new bytes4[](9);</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">          31 :         sigs[0] = this.barGetInitializationStatus.selector;</span></span>
+<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">          31 :         sigs[1] = this.barSetMultisigConfig.selector;</span></span>
+<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">          31 :         sigs[2] = this.barPropose.selector;</span></span>
+<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">          31 :         sigs[3] = this.barCancel.selector;</span></span>
+<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">          31 :         sigs[4] = this.barConfirm.selector;</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">          31 :         sigs[5] = this.barAddPluginList.selector;</span></span>
+<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">          31 :         sigs[6] = this.barGetVotersAndConfirmations.selector;</span></span>
+<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">          31 :         sigs[7] = this.barGetProposalWithStatus.selector;</span></span>
+<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">          31 :         sigs[8] = this.barGetProposalListWithStatuses.selector;</span></span>
+<span id="L41"><span class="lineNum">      41</span>                 :             :     }</span>
+<span id="L42"><span class="lineNum">      42</span>                 :             : </span>
+<span id="L43"><span class="lineNum">      43</span>                 :             :     /**</span>
+<span id="L44"><span class="lineNum">      44</span>                 :             :      * @notice Returns the setup function selectors for this plugin.</span>
+<span id="L45"><span class="lineNum">      45</span>                 :             :      * @dev This plugin does not require any setup functions.</span>
+<span id="L46"><span class="lineNum">      46</span>                 :             :      * @return sigs An empty array of function selectors.</span>
+<span id="L47"><span class="lineNum">      47</span>                 :             :      */</span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">           2 :     function getSetupSigs() external pure returns (bytes4[] memory sigs) {</span></span>
+<span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">           2 :         sigs = new bytes4[](0);</span></span>
+<span id="L50"><span class="lineNum">      50</span>                 :             :     }</span>
+<span id="L51"><span class="lineNum">      51</span>                 :             : </span>
+<span id="L52"><span class="lineNum">      52</span>                 :             :     /**</span>
+<span id="L53"><span class="lineNum">      53</span>                 :             :      * @notice Returns the multisig method selectors that are allowed to be executed via proposals.</span>
+<span id="L54"><span class="lineNum">      54</span>                 :             :      * @dev These allowed methods include adding plugin lists and setting multisig configuration.</span>
+<span id="L55"><span class="lineNum">      55</span>                 :             :      * @return sigs An array of function selectors for multisig proposals.</span>
+<span id="L56"><span class="lineNum">      56</span>                 :             :      */</span>
+<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaUNC tlaBgUNC">           0 :     function getMultisigAllowedMethods() public pure returns (bytes4[] memory sigs) {</span></span>
+<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC tlaBgGNC">           5 :         sigs = new bytes4[](2);</span></span>
+<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">           5 :         sigs[0] = this.barAddPluginList.selector;</span></span>
+<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">           5 :         sigs[1] = this.barSetMultisigConfig.selector;</span></span>
+<span id="L61"><span class="lineNum">      61</span>                 :             :     }</span>
+<span id="L62"><span class="lineNum">      62</span>                 :             : </span>
+<span id="L63"><span class="lineNum">      63</span>                 :             :     /**</span>
+<span id="L64"><span class="lineNum">      64</span>                 :             :      * @notice Returns the unique name for this plugin.</span>
+<span id="L65"><span class="lineNum">      65</span>                 :             :      * @dev The name is used for identification purposes across the CryptoLegacy ecosystem.</span>
+<span id="L66"><span class="lineNum">      66</span>                 :             :      * @return A string representing the plugin name.</span>
+<span id="L67"><span class="lineNum">      67</span>                 :             :      */</span>
+<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">           2 :     function getPluginName() public pure returns (string memory) {</span></span>
+<span id="L69"><span class="lineNum">      69</span>                 :<span class="tlaGNC">           2 :         return &quot;beneficiary_plugin_add_rights&quot;;</span></span>
+<span id="L70"><span class="lineNum">      70</span>                 :             :     }</span>
+<span id="L71"><span class="lineNum">      71</span>                 :             : </span>
+<span id="L72"><span class="lineNum">      72</span>                 :             :     /**</span>
+<span id="L73"><span class="lineNum">      73</span>                 :             :      * @notice Returns the version number for this plugin.</span>
+<span id="L74"><span class="lineNum">      74</span>                 :             :      * @dev The version returned is encoded as a uint16.</span>
+<span id="L75"><span class="lineNum">      75</span>                 :             :      * @return The plugin version.</span>
+<span id="L76"><span class="lineNum">      76</span>                 :             :      */</span>
+<span id="L77"><span class="lineNum">      77</span>                 :<span class="tlaGNC">           2 :     function getPluginVer() external pure returns (uint16) {</span></span>
+<span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">           2 :         return uint16(1);</span></span>
+<span id="L79"><span class="lineNum">      79</span>                 :             :     }</span>
+<span id="L80"><span class="lineNum">      80</span>                 :             : </span>
+<span id="L81"><span class="lineNum">      81</span>                 :             :     /**</span>
+<span id="L82"><span class="lineNum">      82</span>                 :             :      * @notice Modifier that restricts function access to the owner.</span>
+<span id="L83"><span class="lineNum">      83</span>                 :             :      * @dev Invokes LibCryptoLegacy._checkOwner() to verify that msg.sender is the contract owner.</span>
+<span id="L84"><span class="lineNum">      84</span>                 :             :      */</span>
+<span id="L85"><span class="lineNum">      85</span>                 :<span class="tlaUNC tlaBgUNC">           0 :     modifier onlyOwner() {</span></span>
+<span id="L86"><span class="lineNum">      86</span>                 :<span class="tlaUNC">           0 :         LibCryptoLegacy._checkOwner();</span></span>
+<span id="L87"><span class="lineNum">      87</span>                 :             :         _;</span>
+<span id="L88"><span class="lineNum">      88</span>                 :             :     }</span>
+<span id="L89"><span class="lineNum">      89</span>                 :             : </span>
+<span id="L90"><span class="lineNum">      90</span>                 :             :     /**</span>
+<span id="L91"><span class="lineNum">      91</span>                 :             :      * @notice Modifier that ensures token distribution has started.</span>
+<span id="L92"><span class="lineNum">      92</span>                 :             :      * @dev Calls LibCryptoLegacy._checkDistributionReady() to validate that distribution is ready.</span>
+<span id="L93"><span class="lineNum">      93</span>                 :             :      */</span>
+<span id="L94"><span class="lineNum">      94</span>                 :<span class="tlaGNC tlaBgGNC">           1 :     modifier onlyDistributionReady() {</span></span>
+<span id="L95"><span class="lineNum">      95</span>                 :<span class="tlaGNC">           1 :         LibCryptoLegacy._checkDistributionReady(LibCryptoLegacy.getCryptoLegacyStorage());</span></span>
+<span id="L96"><span class="lineNum">      96</span>                 :             :         _;</span>
+<span id="L97"><span class="lineNum">      97</span>                 :             :     }</span>
+<span id="L98"><span class="lineNum">      98</span>                 :             : </span>
+<span id="L99"><span class="lineNum">      99</span>                 :             :     /**</span>
+<span id="L100"><span class="lineNum">     100</span>                 :             :      * @notice Retrieves the multisig storage structure for this plugin.</span>
+<span id="L101"><span class="lineNum">     101</span>                 :             :      * @dev Uses a fixed storage slot (PLUGIN_MULTISIG_POSITION) to avoid collisions.</span>
+<span id="L102"><span class="lineNum">     102</span>                 :             :      * @return storageStruct A reference to the ISafeMinimalMultisig.Storage struct.</span>
+<span id="L103"><span class="lineNum">     103</span>                 :             :      */</span>
+<span id="L104"><span class="lineNum">     104</span>                 :<span class="tlaGNC">          26 :     function getPluginMultisigStorage() internal pure returns (ISafeMinimalMultisig.Storage storage storageStruct) {</span></span>
+<span id="L105"><span class="lineNum">     105</span>                 :<span class="tlaGNC">          26 :         bytes32 position = PLUGIN_MULTISIG_POSITION;</span></span>
+<span id="L106"><span class="lineNum">     106</span>                 :             :         assembly {</span>
+<span id="L107"><span class="lineNum">     107</span>                 :<span class="tlaGNC">          26 :             storageStruct.slot := position</span></span>
+<span id="L108"><span class="lineNum">     108</span>                 :             :         }</span>
+<span id="L109"><span class="lineNum">     109</span>                 :             :     }</span>
+<span id="L110"><span class="lineNum">     110</span>                 :             : </span>
+<span id="L111"><span class="lineNum">     111</span>                 :             :     /**</span>
+<span id="L112"><span class="lineNum">     112</span>                 :             :      * @notice Sets the multisig configuration for beneficiary actions.</span>
+<span id="L113"><span class="lineNum">     113</span>                 :             :      * @dev Allows the owner (or the contract itself when distribution is ready) to update multisig confirmation requirements.</span>
+<span id="L114"><span class="lineNum">     114</span>                 :             :      *      Calls LibSafeMinimalBeneficiaryMultisig._setConfirmations() using the current beneficiaries.</span>
+<span id="L115"><span class="lineNum">     115</span>                 :             :      * @param _requiredConfirmations The number of confirmations required for multisig proposals.</span>
+<span id="L116"><span class="lineNum">     116</span>                 :             :      */</span>
+<span id="L117"><span class="lineNum">     117</span>                 :<span class="tlaGNC">           4 :     function barSetMultisigConfig(uint8 _requiredConfirmations) external {</span></span>
+<span id="L118"><span class="lineNum">     118</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">           4 :         if (msg.sender == address(this)) {</span></span>
+<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">           1 :             LibCryptoLegacy._checkDistributionReady(LibCryptoLegacy.getCryptoLegacyStorage());</span></span>
+<span id="L120"><span class="lineNum">     120</span>                 :             :         } else {</span>
+<span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">           3 :             LibCryptoLegacy._checkOwner();</span></span>
+<span id="L122"><span class="lineNum">     122</span>                 :             :         }</span>
+<span id="L123"><span class="lineNum">     123</span>                 :<span class="tlaGNC">           3 :         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();</span></span>
+<span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaGNC">           3 :         LibSafeMinimalBeneficiaryMultisig._setConfirmations(getPluginMultisigStorage(), cls.beneficiaries.values(), _requiredConfirmations);</span></span>
+<span id="L125"><span class="lineNum">     125</span>                 :             :     }</span>
+<span id="L126"><span class="lineNum">     126</span>                 :             : </span>
+<span id="L127"><span class="lineNum">     127</span>                 :             :     /**</span>
+<span id="L128"><span class="lineNum">     128</span>                 :             :      * @notice Submits a new multisig proposal.</span>
+<span id="L129"><span class="lineNum">     129</span>                 :             :      * @dev Validates if the proposer is an allowed voter and the method is permitted before adding the proposal.</span>
+<span id="L130"><span class="lineNum">     130</span>                 :             :      *      Automatically executes the proposal if only one confirmation is required.</span>
+<span id="L131"><span class="lineNum">     131</span>                 :             :      * @param _selector The function selector targeted by the proposal.</span>
+<span id="L132"><span class="lineNum">     132</span>                 :             :      * @param _params The ABI-encoded parameters to be passed when executing the proposal.</span>
+<span id="L133"><span class="lineNum">     133</span>                 :             :      */</span>
+<span id="L134"><span class="lineNum">     134</span>                 :<span class="tlaGNC">           6 :     function barPropose(bytes4 _selector, bytes memory _params) nonReentrant external onlyDistributionReady returns(uint256 proposalId) {</span></span>
+<span id="L135"><span class="lineNum">     135</span>                 :<span class="tlaGNC">           5 :         return LibSafeMinimalBeneficiaryMultisig._propose(getPluginMultisigStorage(), getMultisigAllowedMethods(), _selector, _params);</span></span>
+<span id="L136"><span class="lineNum">     136</span>                 :             :     }</span>
+<span id="L137"><span class="lineNum">     137</span>                 :             : </span>
+<span id="L138"><span class="lineNum">     138</span>                 :             :     /**</span>
+<span id="L139"><span class="lineNum">     139</span>                 :             :      * @notice Confirms an existing multisig proposal.</span>
+<span id="L140"><span class="lineNum">     140</span>                 :             :      * @dev Records a confirmation from the caller and executes the proposal if the confirmations threshold is met.</span>
+<span id="L141"><span class="lineNum">     141</span>                 :             :      * @param _proposalId The identifier of the proposal to confirm.</span>
+<span id="L142"><span class="lineNum">     142</span>                 :             :      */</span>
+<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">           2 :     function barConfirm(uint256 _proposalId) external nonReentrant onlyDistributionReady {</span></span>
+<span id="L144"><span class="lineNum">     144</span>                 :<span class="tlaGNC">           2 :         LibSafeMinimalBeneficiaryMultisig._confirm(getPluginMultisigStorage(), _proposalId);</span></span>
+<span id="L145"><span class="lineNum">     145</span>                 :             :     }</span>
+<span id="L146"><span class="lineNum">     146</span>                 :             : </span>
+<span id="L147"><span class="lineNum">     147</span>                 :             :     /**</span>
+<span id="L148"><span class="lineNum">     148</span>                 :             :      * @notice Cancels a previously confirmed proposal, removing the caller’s confirmation and possibly voiding it.</span>
+<span id="L149"><span class="lineNum">     149</span>                 :             :      * @dev Condition check: The proposal must not be executed or canceled; the caller must have confirmed it previously.</span>
+<span id="L150"><span class="lineNum">     150</span>                 :             :      * @param _proposalId The ID of the proposal to cancel confirmation for.</span>
 <span id="L151"><span class="lineNum">     151</span>                 :             :      */</span>
-<span id="L152"><span class="lineNum">     152</span>                 :<span class="tlaGNC">           3 :     function barAddPluginList(address[] memory _plugins) external onlyDistributionReady {</span></span>
-<span id="L153"><span class="lineNum">     153</span>                 :<span class="tlaGNC">           2 :         LibSafeMinimalBeneficiaryMultisig._checkIsMultisigExecutor();</span></span>
-<span id="L154"><span class="lineNum">     154</span>                 :             : </span>
-<span id="L155"><span class="lineNum">     155</span>                 :<span class="tlaGNC">           1 :         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();</span></span>
-<span id="L156"><span class="lineNum">     156</span>                 :             : </span>
-<span id="L157"><span class="lineNum">     157</span>                 :<span class="tlaGNC">           1 :         LibCryptoLegacy._checkDistributionReady(cls);</span></span>
-<span id="L158"><span class="lineNum">     158</span>                 :<span class="tlaGNC">           1 :         LibCryptoLegacyPlugins._addPluginList(cls,_plugins);</span></span>
-<span id="L159"><span class="lineNum">     159</span>                 :             :     }</span>
-<span id="L160"><span class="lineNum">     160</span>                 :             : </span>
-<span id="L161"><span class="lineNum">     161</span>                 :             :     /**</span>
-<span id="L162"><span class="lineNum">     162</span>                 :             :      * @notice Retrieves the initialization status of the multisig configuration.</span>
-<span id="L163"><span class="lineNum">     163</span>                 :             :      * @dev Returns whether the multisig storage for this plugin has been initialized.</span>
-<span id="L164"><span class="lineNum">     164</span>                 :             :      * @return status The current initialization status as defined in ISafeMinimalMultisig.InitializationStatus.</span>
-<span id="L165"><span class="lineNum">     165</span>                 :             :      */</span>
-<span id="L166"><span class="lineNum">     166</span>                 :<span class="tlaGNC">           2 :     function barGetInitializationStatus() external view returns(ISafeMinimalMultisig.InitializationStatus status) {</span></span>
-<span id="L167"><span class="lineNum">     167</span>                 :<span class="tlaGNC">           2 :         return LibSafeMinimalBeneficiaryMultisig._initializationStatus(getPluginMultisigStorage());</span></span>
-<span id="L168"><span class="lineNum">     168</span>                 :             :     }</span>
-<span id="L169"><span class="lineNum">     169</span>                 :             : </span>
-<span id="L170"><span class="lineNum">     170</span>                 :             :     /**</span>
-<span id="L171"><span class="lineNum">     171</span>                 :             :      * @notice Retrieves the list of multisig voters and the number of required confirmations.</span>
-<span id="L172"><span class="lineNum">     172</span>                 :             :      * @dev Returns the current configuration for multisig execution in this plugin.</span>
-<span id="L173"><span class="lineNum">     173</span>                 :             :      * @return A tuple containing:</span>
-<span id="L174"><span class="lineNum">     174</span>                 :             :      *  - An array of voter identifiers (bytes32[]).</span>
-<span id="L175"><span class="lineNum">     175</span>                 :             :      *  - The required number of confirmations (uint256).</span>
-<span id="L176"><span class="lineNum">     176</span>                 :             :      */</span>
-<span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaGNC">           5 :     function barGetVotersAndConfirmations() external view returns(bytes32[] memory, uint256) {</span></span>
-<span id="L178"><span class="lineNum">     178</span>                 :<span class="tlaGNC">           5 :         return LibSafeMinimalBeneficiaryMultisig._getVotersAndConfirmations(getPluginMultisigStorage());</span></span>
-<span id="L179"><span class="lineNum">     179</span>                 :             :     }</span>
-<span id="L180"><span class="lineNum">     180</span>                 :             : </span>
-<span id="L181"><span class="lineNum">     181</span>                 :             :     /**</span>
-<span id="L182"><span class="lineNum">     182</span>                 :             :      * @notice Retrieves a specific proposal along with its confirmation status.</span>
-<span id="L183"><span class="lineNum">     183</span>                 :             :      * @dev Returns detailed information including the list of voters, required confirmations,</span>
-<span id="L184"><span class="lineNum">     184</span>                 :             :      * and the proposal status (including per-voter confirmation flags).</span>
-<span id="L185"><span class="lineNum">     185</span>                 :             :      * @param _proposalId The identifier of the proposal.</span>
-<span id="L186"><span class="lineNum">     186</span>                 :             :      * @return voters An array of voter identifiers.</span>
-<span id="L187"><span class="lineNum">     187</span>                 :             :      * @return requiredConfirmations The number of required confirmations.</span>
-<span id="L188"><span class="lineNum">     188</span>                 :             :      * @return proposalWithStatus A ProposalWithStatus struct containing the proposal details and confirmation information.</span>
-<span id="L189"><span class="lineNum">     189</span>                 :             :      */</span>
-<span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">           1 :     function barGetProposalWithStatus(uint256 _proposalId) external view returns(</span></span>
-<span id="L191"><span class="lineNum">     191</span>                 :             :         bytes32[] memory voters,</span>
-<span id="L192"><span class="lineNum">     192</span>                 :             :         uint256 requiredConfirmations,</span>
-<span id="L193"><span class="lineNum">     193</span>                 :             :         ISafeMinimalMultisig.ProposalWithStatus memory proposalWithStatus</span>
-<span id="L194"><span class="lineNum">     194</span>                 :             :     ) {</span>
-<span id="L195"><span class="lineNum">     195</span>                 :<span class="tlaGNC">           1 :         return LibSafeMinimalBeneficiaryMultisig._getProposalWithStatus(</span></span>
-<span id="L196"><span class="lineNum">     196</span>                 :             :             LibCryptoLegacy.getCryptoLegacyStorage(),</span>
-<span id="L197"><span class="lineNum">     197</span>                 :             :             getPluginMultisigStorage(),</span>
-<span id="L198"><span class="lineNum">     198</span>                 :             :             _proposalId</span>
-<span id="L199"><span class="lineNum">     199</span>                 :             :         );</span>
-<span id="L200"><span class="lineNum">     200</span>                 :             :     }</span>
-<span id="L201"><span class="lineNum">     201</span>                 :             : </span>
-<span id="L202"><span class="lineNum">     202</span>                 :             :     /**</span>
-<span id="L203"><span class="lineNum">     203</span>                 :             :      * @notice Retrieves the entire list of proposals along with their confirmation statuses.</span>
-<span id="L204"><span class="lineNum">     204</span>                 :             :      * @dev Returns the current multisig proposals managed by the plugin, paired with their status details.</span>
-<span id="L205"><span class="lineNum">     205</span>                 :             :      * @return voters An array of voter identifiers.</span>
-<span id="L206"><span class="lineNum">     206</span>                 :             :      * @return requiredConfirmations The confirmation threshold required for proposal execution.</span>
-<span id="L207"><span class="lineNum">     207</span>                 :             :      * @return proposalsWithStatuses An array of ProposalWithStatus structs for each proposal.</span>
-<span id="L208"><span class="lineNum">     208</span>                 :             :      */</span>
-<span id="L209"><span class="lineNum">     209</span>                 :<span class="tlaGNC">           5 :     function barGetProposalListWithStatuses() external view returns(</span></span>
-<span id="L210"><span class="lineNum">     210</span>                 :             :         bytes32[] memory voters,</span>
-<span id="L211"><span class="lineNum">     211</span>                 :             :         uint256 requiredConfirmations,</span>
-<span id="L212"><span class="lineNum">     212</span>                 :             :         ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses</span>
-<span id="L213"><span class="lineNum">     213</span>                 :             :     ) {</span>
-<span id="L214"><span class="lineNum">     214</span>                 :<span class="tlaGNC">           5 :         return LibSafeMinimalBeneficiaryMultisig._getProposalListWithStatuses(</span></span>
-<span id="L215"><span class="lineNum">     215</span>                 :             :             LibCryptoLegacy.getCryptoLegacyStorage(),</span>
-<span id="L216"><span class="lineNum">     216</span>                 :             :             getPluginMultisigStorage()</span>
-<span id="L217"><span class="lineNum">     217</span>                 :             :         );</span>
-<span id="L218"><span class="lineNum">     218</span>                 :             :     }</span>
-<span id="L219"><span class="lineNum">     219</span>                 :             : }</span>
+<span id="L152"><span class="lineNum">     152</span>                 :<span class="tlaGNC">           1 :     function barCancel(uint256 _proposalId) external nonReentrant onlyDistributionReady {</span></span>
+<span id="L153"><span class="lineNum">     153</span>                 :<span class="tlaGNC">           1 :         LibSafeMinimalBeneficiaryMultisig._cancel(getPluginMultisigStorage(), _proposalId);</span></span>
+<span id="L154"><span class="lineNum">     154</span>                 :             :     }</span>
+<span id="L155"><span class="lineNum">     155</span>                 :             : </span>
+<span id="L156"><span class="lineNum">     156</span>                 :             :     /**</span>
+<span id="L157"><span class="lineNum">     157</span>                 :             :      * @notice Adds a new list of plugins to the CryptoLegacy system.</span>
+<span id="L158"><span class="lineNum">     158</span>                 :             :      * @dev Ensures distribution is ready and that the caller is a multisig executor before proceeding.</span>
+<span id="L159"><span class="lineNum">     159</span>                 :             :      *      Calls LibCryptoLegacyPlugins._addPluginList with the provided plugin addresses.</span>
+<span id="L160"><span class="lineNum">     160</span>                 :             :      * @param _plugins An array of plugin contract addresses to be added.</span>
+<span id="L161"><span class="lineNum">     161</span>                 :             :      */</span>
+<span id="L162"><span class="lineNum">     162</span>                 :<span class="tlaGNC">           3 :     function barAddPluginList(address[] memory _plugins) external onlyDistributionReady {</span></span>
+<span id="L163"><span class="lineNum">     163</span>                 :<span class="tlaGNC">           2 :         LibSafeMinimalBeneficiaryMultisig._checkIsMultisigExecutor();</span></span>
+<span id="L164"><span class="lineNum">     164</span>                 :             : </span>
+<span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">           1 :         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();</span></span>
+<span id="L166"><span class="lineNum">     166</span>                 :             : </span>
+<span id="L167"><span class="lineNum">     167</span>                 :<span class="tlaGNC">           1 :         LibCryptoLegacy._checkDistributionReady(cls);</span></span>
+<span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">           1 :         LibCryptoLegacyPlugins._addPluginList(cls,_plugins);</span></span>
+<span id="L169"><span class="lineNum">     169</span>                 :             :     }</span>
+<span id="L170"><span class="lineNum">     170</span>                 :             : </span>
+<span id="L171"><span class="lineNum">     171</span>                 :             :     /**</span>
+<span id="L172"><span class="lineNum">     172</span>                 :             :      * @notice Retrieves the initialization status of the multisig configuration.</span>
+<span id="L173"><span class="lineNum">     173</span>                 :             :      * @dev Returns whether the multisig storage for this plugin has been initialized.</span>
+<span id="L174"><span class="lineNum">     174</span>                 :             :      * @return status The current initialization status as defined in ISafeMinimalMultisig.InitializationStatus.</span>
+<span id="L175"><span class="lineNum">     175</span>                 :             :      */</span>
+<span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaGNC">           2 :     function barGetInitializationStatus() external view returns(ISafeMinimalMultisig.InitializationStatus status) {</span></span>
+<span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaGNC">           2 :         return LibSafeMinimalBeneficiaryMultisig._initializationStatus(getPluginMultisigStorage());</span></span>
+<span id="L178"><span class="lineNum">     178</span>                 :             :     }</span>
+<span id="L179"><span class="lineNum">     179</span>                 :             : </span>
+<span id="L180"><span class="lineNum">     180</span>                 :             :     /**</span>
+<span id="L181"><span class="lineNum">     181</span>                 :             :      * @notice Retrieves the list of multisig voters and the number of required confirmations.</span>
+<span id="L182"><span class="lineNum">     182</span>                 :             :      * @dev Returns the current configuration for multisig execution in this plugin.</span>
+<span id="L183"><span class="lineNum">     183</span>                 :             :      * @return A tuple containing:</span>
+<span id="L184"><span class="lineNum">     184</span>                 :             :      *  - An array of voter identifiers (bytes32[]).</span>
+<span id="L185"><span class="lineNum">     185</span>                 :             :      *  - The required number of confirmations (uint8).</span>
+<span id="L186"><span class="lineNum">     186</span>                 :             :      */</span>
+<span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">           5 :     function barGetVotersAndConfirmations() external view returns(bytes32[] memory, uint8) {</span></span>
+<span id="L188"><span class="lineNum">     188</span>                 :<span class="tlaGNC">           5 :         return LibSafeMinimalBeneficiaryMultisig._getVotersAndConfirmations(getPluginMultisigStorage());</span></span>
+<span id="L189"><span class="lineNum">     189</span>                 :             :     }</span>
+<span id="L190"><span class="lineNum">     190</span>                 :             : </span>
+<span id="L191"><span class="lineNum">     191</span>                 :             :     /**</span>
+<span id="L192"><span class="lineNum">     192</span>                 :             :      * @notice Retrieves a specific proposal along with its confirmation status.</span>
+<span id="L193"><span class="lineNum">     193</span>                 :             :      * @dev Returns detailed information including the list of voters, required confirmations,</span>
+<span id="L194"><span class="lineNum">     194</span>                 :             :      * and the proposal status (including per-voter confirmation flags).</span>
+<span id="L195"><span class="lineNum">     195</span>                 :             :      * @param _proposalId The identifier of the proposal.</span>
+<span id="L196"><span class="lineNum">     196</span>                 :             :      * @return voters An array of voter identifiers.</span>
+<span id="L197"><span class="lineNum">     197</span>                 :             :      * @return requiredConfirmations The number of required confirmations.</span>
+<span id="L198"><span class="lineNum">     198</span>                 :             :      * @return proposalWithStatus A ProposalWithStatus struct containing the proposal details and confirmation information.</span>
+<span id="L199"><span class="lineNum">     199</span>                 :             :      */</span>
+<span id="L200"><span class="lineNum">     200</span>                 :<span class="tlaGNC">           3 :     function barGetProposalWithStatus(uint256 _proposalId) external view returns(</span></span>
+<span id="L201"><span class="lineNum">     201</span>                 :             :         bytes32[] memory voters,</span>
+<span id="L202"><span class="lineNum">     202</span>                 :             :         uint8 requiredConfirmations,</span>
+<span id="L203"><span class="lineNum">     203</span>                 :             :         ISafeMinimalMultisig.ProposalWithStatus memory proposalWithStatus</span>
+<span id="L204"><span class="lineNum">     204</span>                 :             :     ) {</span>
+<span id="L205"><span class="lineNum">     205</span>                 :<span class="tlaGNC">           3 :         return LibSafeMinimalBeneficiaryMultisig._getProposalWithStatus(</span></span>
+<span id="L206"><span class="lineNum">     206</span>                 :             :             LibCryptoLegacy.getCryptoLegacyStorage(),</span>
+<span id="L207"><span class="lineNum">     207</span>                 :             :             getPluginMultisigStorage(),</span>
+<span id="L208"><span class="lineNum">     208</span>                 :             :             _proposalId</span>
+<span id="L209"><span class="lineNum">     209</span>                 :             :         );</span>
+<span id="L210"><span class="lineNum">     210</span>                 :             :     }</span>
+<span id="L211"><span class="lineNum">     211</span>                 :             : </span>
+<span id="L212"><span class="lineNum">     212</span>                 :             :     /**</span>
+<span id="L213"><span class="lineNum">     213</span>                 :             :      * @notice Retrieves the entire list of proposals along with their confirmation statuses.</span>
+<span id="L214"><span class="lineNum">     214</span>                 :             :      * @dev Returns the current multisig proposals managed by the plugin, paired with their status details.</span>
+<span id="L215"><span class="lineNum">     215</span>                 :             :      * @return voters An array of voter identifiers.</span>
+<span id="L216"><span class="lineNum">     216</span>                 :             :      * @return requiredConfirmations The confirmation threshold required for proposal execution.</span>
+<span id="L217"><span class="lineNum">     217</span>                 :             :      * @return proposalsWithStatuses An array of ProposalWithStatus structs for each proposal.</span>
+<span id="L218"><span class="lineNum">     218</span>                 :             :      */</span>
+<span id="L219"><span class="lineNum">     219</span>                 :<span class="tlaGNC">           5 :     function barGetProposalListWithStatuses() external view returns(</span></span>
+<span id="L220"><span class="lineNum">     220</span>                 :             :         bytes32[] memory voters,</span>
+<span id="L221"><span class="lineNum">     221</span>                 :             :         uint8 requiredConfirmations,</span>
+<span id="L222"><span class="lineNum">     222</span>                 :             :         ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses</span>
+<span id="L223"><span class="lineNum">     223</span>                 :             :     ) {</span>
+<span id="L224"><span class="lineNum">     224</span>                 :<span class="tlaGNC">           5 :         return LibSafeMinimalBeneficiaryMultisig._getProposalListWithStatuses(</span></span>
+<span id="L225"><span class="lineNum">     225</span>                 :             :             LibCryptoLegacy.getCryptoLegacyStorage(),</span>
+<span id="L226"><span class="lineNum">     226</span>                 :             :             getPluginMultisigStorage()</span>
+<span id="L227"><span class="lineNum">     227</span>                 :             :         );</span>
+<span id="L228"><span class="lineNum">     228</span>                 :             :     }</span>
+<span id="L229"><span class="lineNum">     229</span>                 :             : }</span>
         </pre>
               </td>
             </tr>

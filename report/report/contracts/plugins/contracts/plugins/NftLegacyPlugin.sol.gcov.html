@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-04-22 00:21:36</td>
+            <td class="headerValue">2025-05-22 13:12:18</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -80,13 +80,13 @@
 <span id="L9"><span class="lineNum">       9</span>                 :             : import &quot;../libraries/LibCryptoLegacy.sol&quot;;</span>
 <span id="L10"><span class="lineNum">      10</span>                 :             : import &quot;../interfaces/ICryptoLegacyPlugin.sol&quot;;</span>
 <span id="L11"><span class="lineNum">      11</span>                 :             : import &quot;@openzeppelin/contracts/token/ERC721/IERC721.sol&quot;;</span>
-<span id="L12"><span class="lineNum">      12</span>                 :             : import &quot;@openzeppelin/contracts/security/ReentrancyGuard.sol&quot;;</span>
+<span id="L12"><span class="lineNum">      12</span>                 :             : import &quot;@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol&quot;;</span>
 <span id="L13"><span class="lineNum">      13</span>                 :             : </span>
 <span id="L14"><span class="lineNum">      14</span>                 :             : /**</span>
 <span id="L15"><span class="lineNum">      15</span>                 :             :  * @title NftLegacyPlugin</span>
 <span id="L16"><span class="lineNum">      16</span>                 :             :  * @notice Extends CryptoLegacy functionality to support NFT asset inheritance. It allows setting NFT beneficiaries, transferring NFTs into the inheritance contract, and claiming them after specified delays, seamlessly integrating NFTs into legacy plans.</span>
 <span id="L17"><span class="lineNum">      17</span>                 :             : */</span>
-<span id="L18"><span class="lineNum">      18</span>                 :             : contract NftLegacyPlugin is ICryptoLegacyPlugin, ReentrancyGuard {</span>
+<span id="L18"><span class="lineNum">      18</span>                 :             : contract NftLegacyPlugin is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable {</span>
 <span id="L19"><span class="lineNum">      19</span>                 :             :     bytes32 public constant PLUGIN_POSITION = keccak256(&quot;nft_legacy.plugin.storage&quot;);</span>
 <span id="L20"><span class="lineNum">      20</span>                 :             : </span>
 <span id="L21"><span class="lineNum">      21</span>                 :             :     event SetNftBeneficiary(address indexed nftContract, uint256 indexed tokenId, bytes32 indexed beneficiaryHash);</span>
@@ -98,11 +98,11 @@
 <span id="L27"><span class="lineNum">      27</span>                 :             :      * @dev These selectors represent the externally callable functions of the NFT plugin.</span>
 <span id="L28"><span class="lineNum">      28</span>                 :             :      * @return sigs An array of function selectors.</span>
 <span id="L29"><span class="lineNum">      29</span>                 :             :      */</span>
-<span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaGNC tlaBgGNC">          53 :     function getSigs() external view returns (bytes4[] memory sigs) {</span></span>
-<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">          53 :         sigs = new bytes4[](3);</span></span>
-<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">          53 :         sigs[0] = NftLegacyPlugin(address(this)).setNftBeneficiary.selector;</span></span>
-<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">          53 :         sigs[1] = NftLegacyPlugin(address(this)).transferNftTokensToLegacy.selector;</span></span>
-<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">          53 :         sigs[2] = NftLegacyPlugin(address(this)).beneficiaryClaimNft.selector;</span></span>
+<span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaGNC tlaBgGNC">          25 :     function getSigs() external pure returns (bytes4[] memory sigs) {</span></span>
+<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">          25 :         sigs = new bytes4[](3);</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">          25 :         sigs[0] = this.setNftBeneficiary.selector;</span></span>
+<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">          25 :         sigs[1] = this.transferNftTokensToLegacy.selector;</span></span>
+<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">          25 :         sigs[2] = this.beneficiaryClaimNft.selector;</span></span>
 <span id="L35"><span class="lineNum">      35</span>                 :             :     }</span>
 <span id="L36"><span class="lineNum">      36</span>                 :             : </span>
 <span id="L37"><span class="lineNum">      37</span>                 :             :     /**</span>

@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-04-22 00:21:36</td>
+            <td class="headerValue">2025-05-22 13:12:18</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -110,8 +110,8 @@
 <span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">           4 :     _checkBuildManagerValid(_cryptoLegacy, msg.sender);</span></span>
 <span id="L40"><span class="lineNum">      40</span>                 :             : </span>
 <span id="L41"><span class="lineNum">      41</span>                 :<span class="tlaGNC">           1 :     for (uint256 i = 0; i &lt; _recipientList.length; i++) {</span></span>
-<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">           2 :       emit LegacyMessage(_recipientList[i], _messageHashList[i], _messageList[i], _messageType);</span></span>
-<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">           2 :       emit LegacyMessageCheck(_recipientList[i], _messageHashList[i], _messageCheckList[i], _messageType);</span></span>
+<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">           2 :       emit LegacyMessage(_cryptoLegacy, _recipientList[i], _messageHashList[i], _messageList[i], _messageType);</span></span>
+<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">           2 :       emit LegacyMessageCheck(_cryptoLegacy, _recipientList[i], _messageHashList[i], _messageCheckList[i], _messageType);</span></span>
 <span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">           2 :       messagesGotByBlockNumber[_recipientList[i]].push(uint64(block.number));</span></span>
 <span id="L45"><span class="lineNum">      45</span>                 :             :     }</span>
 <span id="L46"><span class="lineNum">      46</span>                 :             :   }</span>

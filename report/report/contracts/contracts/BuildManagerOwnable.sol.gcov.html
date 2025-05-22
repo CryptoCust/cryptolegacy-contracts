@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-04-22 00:21:36</td>
+            <td class="headerValue">2025-05-22 13:12:18</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -100,10 +100,10 @@
 <span id="L29"><span class="lineNum">      29</span>                 :             :      * @param _buildManager The address to be added or removed.</span>
 <span id="L30"><span class="lineNum">      30</span>                 :             :      * @param _isAdd True to add the build manager; false to remove.</span>
 <span id="L31"><span class="lineNum">      31</span>                 :             :      */</span>
-<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC tlaBgGNC">          63 :     function setBuildManager(address _buildManager, bool _isAdd) external onlyOwner {</span></span>
-<span id="L33"><span class="lineNum">      33</span>         [<span class="tlaGBC" title="Branch 0 was taken 62 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">          62 :         if (_isAdd) {</span></span>
-<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">          62 :             buildManagerAdded.add(_buildManager);</span></span>
-<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">          62 :             emit AddBuildManager(_buildManager);</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC tlaBgGNC">          82 :     function setBuildManager(address _buildManager, bool _isAdd) external onlyOwner {</span></span>
+<span id="L33"><span class="lineNum">      33</span>         [<span class="tlaGBC" title="Branch 0 was taken 81 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">          81 :         if (_isAdd) {</span></span>
+<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">          81 :             buildManagerAdded.add(_buildManager);</span></span>
+<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">          81 :             emit AddBuildManager(_buildManager);</span></span>
 <span id="L36"><span class="lineNum">      36</span>                 :             :         } else {</span>
 <span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">           1 :             buildManagerAdded.remove(_buildManager);</span></span>
 <span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">           1 :             emit RemoveBuildManager(_buildManager);</span></span>
@@ -116,16 +116,16 @@
 <span id="L45"><span class="lineNum">      45</span>                 :             :      * @param _cryptoLegacy The CryptoLegacy contract address to verify.</span>
 <span id="L46"><span class="lineNum">      46</span>                 :             :      * @param _clOwner If non-zero, the verified contract owner must match this address.</span>
 <span id="L47"><span class="lineNum">      47</span>                 :             :      */</span>
-<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">         170 :     function _checkBuildManagerValid(address _cryptoLegacy, address _clOwner) internal view {</span></span>
-<span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">         170 :         ICryptoLegacy cl = ICryptoLegacy(_cryptoLegacy);</span></span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">         210 :     function _checkBuildManagerValid(address _cryptoLegacy, address _clOwner) internal view {</span></span>
+<span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">         210 :         ICryptoLegacyBuildManager buildManager = ICryptoLegacy(_cryptoLegacy).buildManager();</span></span>
 <span id="L50"><span class="lineNum">      50</span>                 :             : </span>
-<span id="L51"><span class="lineNum">      51</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">         170 :         if (_clOwner != address(0) &amp;&amp; cl.owner() != _clOwner) {</span></span>
+<span id="L51"><span class="lineNum">      51</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">         210 :         if (_clOwner != address(0) &amp;&amp; ICryptoLegacy(_cryptoLegacy).owner() != _clOwner) {</span></span>
 <span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">           1 :             revert NotTheOwnerOfCryptoLegacy();</span></span>
 <span id="L53"><span class="lineNum">      53</span>                 :             :         }</span>
-<span id="L54"><span class="lineNum">      54</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">         169 :         if (!cl.buildManager().isCryptoLegacyBuilt(_cryptoLegacy)) {</span></span>
+<span id="L54"><span class="lineNum">      54</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">         209 :         if (!buildManager.isCryptoLegacyBuilt(_cryptoLegacy)) {</span></span>
 <span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">           1 :             revert CryptoLegacyNotRegistered();</span></span>
 <span id="L56"><span class="lineNum">      56</span>                 :             :         }</span>
-<span id="L57"><span class="lineNum">      57</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">         168 :         if (!buildManagerAdded.contains(address(cl.buildManager()))) {</span></span>
+<span id="L57"><span class="lineNum">      57</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">         208 :         if (!buildManagerAdded.contains(address(buildManager))) {</span></span>
 <span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">           1 :             revert BuildManagerNotAdded();</span></span>
 <span id="L59"><span class="lineNum">      59</span>                 :             :         }</span>
 <span id="L60"><span class="lineNum">      60</span>                 :             :     }</span>
