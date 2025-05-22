@@ -6,6 +6,6 @@
 pragma solidity ^0.8.6;
 
 interface ILegacyMessenger {
-    event LegacyMessage(bytes32 indexed toRecipient, bytes32 messageHash, bytes message, uint256 indexed messageType);
-    event LegacyMessageCheck(bytes32 indexed toBeneficiary, bytes32 messageHash, bytes message, uint256 indexed messageType);
+    event LegacyMessage(address indexed legacy, bytes32 indexed toRecipient, bytes32 messageHash, bytes message, uint256 indexed messageType);
+    event LegacyMessageCheck(address indexed legacy, bytes32 indexed toBeneficiary, bytes32 messageHash, bytes message, uint256 indexed messageType);
 }

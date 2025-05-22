@@ -18,6 +18,7 @@ import "../contracts/interfaces/ICryptoLegacy.sol";
 import "../contracts/mocks/MockMaliciousERC20.sol";
 import "../contracts/mocks/MockMaliciousERC721.sol";
 import "../contracts/libraries/LibCryptoLegacy.sol";
+import "../contracts/mocks/AuditMockERC20Rebase.sol";
 import "../contracts/plugins/LegacyRecoveryPlugin.sol";
 import "../contracts/interfaces/ICryptoLegacyLens.sol";
 import "../contracts/plugins/TrustedGuardiansPlugin.sol";
@@ -119,6 +120,21 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(address(proxyBuilder.proxyAdmin()), newProxyAdmin);
   }
 
+  function testNotRegisteredCryptoLegacy() public {
+    vm.prank(owner);
+    pluginsRegistry.addPlugin(lensPlugin, "");
+    
+    MockCryptoLegacy cl = new MockCryptoLegacy(address(buildManager), bob, _getBasePlugins());
+    
+    vm.expectRevert(ICryptoLegacyBuildManager.NotRegisteredCryptoLegacy.selector);
+    CryptoLegacyBasePlugin(address(cl)).payInitialFee(_getEmptyUintList(), _getEmptyUintList());
+
+    MockCryptoLegacyBuildManager(payable(address(buildManager))).mockSetCryptoLegacyBuilt(address(cl), true);
+
+    vm.expectRevert(ICryptoLegacyBuildManager.NotOwnerOfCryptoLegacy.selector);
+    cl.mockIsLifetimeActiveAndUpdate(alice);
+  }
+
   function testExternalLens() public {
     bytes8 customRefCode = 0x0123456789abcdef;
     vm.prank(alice);
@@ -200,17 +216,17 @@ contract CryptoLegacyTest is AbstractTestHelper {
     uint64[] memory blockNumbers = externalLens.getTransferBlockNumbers(cl);
     assertEq(blockNumbers[0], block.number);
 
-    ICryptoLegacy.TokenDistribution[] memory list = externalLens.getTokensDistribution(cl, _getOneAddressList(address(mockToken1)));
+    ICryptoLegacyLens.LensTokenDistribution[] memory list = externalLens.getTokensDistribution(cl, _getOneAddressList(address(mockToken1)));
 
-    assertEq(list[0].amountToDistribute, 100 ether);
-    assertEq(list[0].totalClaimedAmount, 0);
+    assertEq(list[0].lastBalance, 100 ether);
+    assertEq(list[0].totalClaimed, 0);
 
     vm.expectRevert(ICryptoLegacy.BeneficiaryNotExist.selector);
     (LensPlugin.BeneficiaryTokenData[] memory tokenData, , ) = externalLens.getVestedAndClaimedData(cl, addressToHash(dan), _getOneAddressList(address(mockToken1)));
 
     (tokenData, , ) = externalLens.getVestedAndClaimedData(cl, addressToHash(bobBeneficiary2), _getOneAddressList(address(mockToken1)));
     assertEq(tokenData[0].claimedAmount, 0);
-    assertEq(tokenData[0].vestedAmount, 60 ether);
+    assertEq(tokenData[0].claimableAmount, 60 ether);
     assertEq(tokenData[0].totalAmount, 60 ether);
   }
 
@@ -228,11 +244,11 @@ contract CryptoLegacyTest is AbstractTestHelper {
     DiamondLoupeFacet.Facet[] memory facets = cl.facets();
     assertEq(facets.length, 2);
     assertEq(facets[0].facetAddress, cryptoLegacyBasePlugin);
-    assertEq(facets[0].functionSelectors.length, 17);
+    assertEq(facets[0].functionSelectors.length, 20);
     assertEq(facets[1].facetAddress, lensPlugin);
     assertEq(facets[1].functionSelectors.length, 20);
 
-    assertEq(cl.facetFunctionSelectors(cryptoLegacyBasePlugin).length, 17);
+    assertEq(cl.facetFunctionSelectors(cryptoLegacyBasePlugin).length, 20);
     assertEq(cl.facetAddresses().length, 2);
     assertEq(cl.facetAddresses()[0], cryptoLegacyBasePlugin);
     assertEq(cl.facetAddresses()[1], lensPlugin);
@@ -243,6 +259,115 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     vm.expectRevert(ICryptoLegacyDiamondBase.NotSelfCall.selector);
     cl.staticCallChecker();
+
+    vm.expectRevert(ICryptoLegacy.FacetCantBeZero.selector);
+    MockCryptoLegacy(payable(address(cryptoLegacy))).mockAddFunctions(address(0), new bytes4[](0));
+
+    vm.expectRevert(ICryptoLegacy.FacetCantBeZero.selector);
+    MockCryptoLegacy(payable(address(cryptoLegacy))).mockRemoveFunctions(address(0), new bytes4[](0));
+
+    vm.expectRevert(LibCryptoLegacyDeploy.BytecodeEmpty.selector);
+    MockCryptoLegacy(payable(address(cryptoLegacy))).mockDeployByCreate3(address(0), bytes32(0), address(0), new bytes(0));
+  }
+
+  function testCryptoLegacyCatchExternalCalls() public {
+    vm.startPrank(owner);
+    address legacyRecoveryPlugin = address(new LegacyRecoveryPlugin());
+    address guardiansPlugin = address(new TrustedGuardiansPlugin());
+    pluginsRegistry.addPlugin(lensPlugin, "");
+    pluginsRegistry.addPlugin(legacyRecoveryPlugin, "");
+    pluginsRegistry.addPlugin(guardiansPlugin, "");
+    vm.stopPrank();
+
+    (CryptoLegacyBasePlugin cryptoLegacy, , , ) = _buildCryptoLegacyWithPlugins(bob, 0, bytes8(0), _getThreeInitPluginsList(lensPlugin, legacyRecoveryPlugin, guardiansPlugin));
+    
+    MockCryptoLegacy mockCryptoLegacy = MockCryptoLegacy(payable(address(cryptoLegacy)));
+    mockCryptoLegacy.mockSetBuildManager(address(cryptoLegacy)); // setting incorrect buildManager address
+
+    vm.expectRevert(abi.encodeWithSelector(ILockChainGate.IncorrectFee.selector, buildFee));
+    cryptoLegacy.payInitialFee{value: 1}(_getEmptyUintList(), _getEmptyUintList());
+
+    vm.expectEmit(true, false, false, false);
+    emit ICryptoLegacy.IsLifetimeNftLockedAndUpdateCatch(new bytes(0));
+    cryptoLegacy.payInitialFee{value: buildFee}(_getEmptyUintList(), _getEmptyUintList());
+    
+    vm.expectEmit(true, false, false, false);
+    emit ICryptoLegacy.BeneficiaryRegistryCatch(new bytes(0));
+    vm.expectEmit(true, false, false, false);
+    emit ICryptoLegacy.BeneficiaryRegistryNotDefined();
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.beneficiarySwitch(keccak256(abi.encode(bobBeneficiary4)));
+
+    mockCryptoLegacy.mockSetBuildManager(address(buildManager));
+    MockCryptoLegacyBuildManager(payable(address(buildManager))).mockSetBeneficiaryRegistry(address(cryptoLegacy));
+
+    vm.warp(block.timestamp + 1 days);
+
+    vm.expectEmit(true, false, false, false);
+    emit ICryptoLegacy.SetCryptoLegacyBeneficiaryCatch(new bytes(0));
+    vm.prank(bobBeneficiary4);
+    cryptoLegacy.beneficiarySwitch(keccak256(abi.encode(bobBeneficiary1)));
+
+    MockCryptoLegacyBuildManager(payable(address(buildManager))).mockSetBeneficiaryRegistry(address(0));
+    vm.expectEmit(true, false, false, false);
+    emit ICryptoLegacy.BeneficiaryRegistryNotDefined();
+    vm.prank(bob);
+    LegacyRecoveryPlugin(address(cryptoLegacy)).lrSetMultisigConfig(_getTwoBytes32List(addressToHash(alice), addressToHash(dan)), 1);
+  
+    MockCryptoLegacyBuildManager(payable(address(buildManager))).mockSetBeneficiaryRegistry(address(cryptoLegacy));
+    vm.expectEmit(true, false, false, false);
+    emit ICryptoLegacy.SetCryptoLegacyRecoveryAddressesCatch(new bytes(0));
+    vm.prank(bob);
+    LegacyRecoveryPlugin(address(cryptoLegacy)).lrSetMultisigConfig(_getTwoBytes32List(addressToHash(alice), addressToHash(dan)), 1);
+    (bytes32[] memory voters, uint8 requiredConfirmations, ) = LegacyRecoveryPlugin(address(cryptoLegacy)).lrGetProposalListWithStatuses();
+    assertEq(voters.length, 2);
+    assertEq(voters[0], addressToHash(alice));
+    assertEq(voters[1], addressToHash(dan));
+    assertEq(requiredConfirmations, 1);
+
+    vm.prank(alice);
+    vm.expectRevert(abi.encodeWithSelector(ICryptoLegacyOwnable.OwnableUnauthorizedAccount.selector, alice));
+    cryptoLegacy.acceptOwnership();
+    
+    assertEq(cryptoLegacy.pendingOwner(), address(0));
+
+    vm.expectEmit(true, false, false, false);
+    emit ICryptoLegacy.SetCryptoLegacyOwnerCatch(new bytes(0));
+    vm.prank(bob);
+    cryptoLegacy.transferOwnership(alice);
+    assertEq(cryptoLegacy.pendingOwner(), alice);
+    assertEq(cryptoLegacy.owner(), bob);
+
+    vm.prank(alice);
+    cryptoLegacy.acceptOwnership();
+
+    assertEq(cryptoLegacy.pendingOwner(), address(0));
+    assertEq(cryptoLegacy.owner(), alice);
+
+    ITrustedGuardiansPlugin.GuardianToChange[] memory newGuardians = new ITrustedGuardiansPlugin.GuardianToChange[](1);
+    newGuardians[0] = ITrustedGuardiansPlugin.GuardianToChange(addressToHash(dan), true);
+
+    vm.expectEmit(true, false, false, false);
+    emit ICryptoLegacy.SetCryptoLegacyGuardianCatch(new bytes(0));
+    vm.prank(alice);
+    TrustedGuardiansPlugin(address(cryptoLegacy)).setGuardians(newGuardians);
+    (bytes32[] memory guardians, , , ) = TrustedGuardiansPlugin(address(cryptoLegacy)).getGuardiansData();
+    assertEq(guardians.length, 1);
+    assertEq(guardians[0], addressToHash(dan));
+  }
+
+  function testGasLimitChange() public {
+    vm.prank(owner);
+    pluginsRegistry.addPlugin(lensPlugin, "");
+
+    (CryptoLegacyBasePlugin cryptoLegacy, , , ) = _buildCryptoLegacyWithPlugins(bob, buildFee, bytes8(0), _getOneInitPluginList(lensPlugin));
+    
+    assertEq(cryptoLegacy.getGasBySelector(bytes4(uint32(1))), 4e4);
+
+    vm.prank(bob);
+    cryptoLegacy.setGasLimitMultiplier(2);
+
+    assertEq(cryptoLegacy.getGasBySelector(bytes4(uint32(1))), 8e4);
   }
 
   function testCreateCryptoLegacyAndUpdate() public {
@@ -254,7 +379,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.prank(alice);
     vm.expectEmit(true, true, true, true);
     emit ICryptoLegacyBuildManager.CreateCustomRef(alice, customRefCode, aliceRecipient, _getRefChains());
-    (bytes8 refCode, ) = buildManager.createCustomRef(customRefCode, aliceRecipient, _getRefChains(), _getRefChains());
+    (bytes8 refCode, , ) = buildManager.createCustomRef(customRefCode, aliceRecipient, _getRefChains(), _getRefChains());
     assertEq(customRefCode, refCode);
     IFeeRegistry.Referrer memory ref = feeRegistry.getReferrerByCode(refCode);
     assertEq(ref.owner, alice);
@@ -286,7 +411,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.expectRevert(abi.encodeWithSelector(ILockChainGate.IncorrectFee.selector, buildFee - discount));
     (cryptoLegacy, cryptoLegacyLens, , ) = _buildCryptoLegacy(bob, buildFee - discount - 0.01 ether, customRefCode);
 
-    vm.expectRevert(LibCreate2Deploy.Create2Failed.selector);
+    vm.expectRevert(LibCreate3.ErrorCreatingContract.selector);
     (cryptoLegacy, cryptoLegacyLens, , ) = _buildCryptoLegacy(bob, buildFee - discount, customRefCode);
     vm.stopPrank();
 
@@ -361,17 +486,21 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     vm.prank(bob);
     beneficiaryArr = new bytes32[](1);
-    beneficiaryArr[0] = keccak256(abi.encode(bobBeneficiary1));
+    beneficiaryArr[0] = addressToHash(bobBeneficiary1);
     beneficiaryConfigArr = new ICryptoLegacy.BeneficiaryConfig[](1);
     beneficiaryConfigArr[0] = ICryptoLegacy.BeneficiaryConfig(0, 0, 10000);
     vm.expectRevert(ICryptoLegacy.ShareSumDoesntMatchBase.selector);
     cryptoLegacy.setBeneficiaries(beneficiaryArr, beneficiaryConfigArr);
 
     vm.prank(bob);
+    vm.expectRevert(ICryptoLegacy.LengthMismatch.selector);
+    cryptoLegacy.setBeneficiaries(_getTwoBytes32List(addressToHash(alice), addressToHash(dan)), beneficiaryConfigArr);
+
+    vm.prank(bob);
     beneficiaryArr = new bytes32[](3);
-    beneficiaryArr[0] = keccak256(abi.encode(bobBeneficiary1));
-    beneficiaryArr[1] = keccak256(abi.encode(bobBeneficiary2));
-    beneficiaryArr[2] = keccak256(abi.encode(bobBeneficiary3));
+    beneficiaryArr[0] = addressToHash(bobBeneficiary1);
+    beneficiaryArr[1] = addressToHash(bobBeneficiary2);
+    beneficiaryArr[2] = addressToHash(bobBeneficiary3);
     beneficiaryConfigArr = new ICryptoLegacy.BeneficiaryConfig[](3);
     beneficiaryConfigArr[0] = ICryptoLegacy.BeneficiaryConfig(0, 0, 4000);
     beneficiaryConfigArr[1] = ICryptoLegacy.BeneficiaryConfig(0, 0, 0);
@@ -392,23 +521,28 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     vm.prank(bobBeneficiary1);
     cryptoLegacy.initiateChallenge();
-    address[] memory _treasuries = new address[](1);
-    _treasuries[0] = treasury;
+
     address[] memory _tokens = new address[](1);
     _tokens[0] = address(mockToken1);
 
-    vm.expectRevert(ICryptoLegacy.NotTheBeneficiary.selector);
-    cryptoLegacy.transferTreasuryTokensToLegacy(_treasuries, _tokens);
+    {
+      address[] memory _treasuries = new address[](2);
+      _treasuries[0] = treasury;
+      _treasuries[1] = dan;
 
-    vm.startPrank(bobBeneficiary1);
-    vm.expectRevert(ICryptoLegacy.TooEarly.selector);
-    cryptoLegacy.transferTreasuryTokensToLegacy(_treasuries, _tokens);
+      vm.expectRevert(ICryptoLegacy.NotTheBeneficiary.selector);
+      cryptoLegacy.transferTreasuryTokensToLegacy(_treasuries, _tokens);
 
-    uint256 distributionStartAt = block.timestamp + clData.challengeTimeout;
-    clData = cryptoLegacyLens.getCryptoLegacyBaseData();
-    assertEq(clData.distributionStartAt, distributionStartAt);
-    vm.warp(block.timestamp + clData.challengeTimeout + 1);
-    cryptoLegacy.transferTreasuryTokensToLegacy(_treasuries, _tokens);
+      vm.startPrank(bobBeneficiary1);
+      vm.expectRevert(ICryptoLegacy.TooEarly.selector);
+      cryptoLegacy.transferTreasuryTokensToLegacy(_treasuries, _tokens);
+
+      uint256 distributionStartAt = block.timestamp + clData.challengeTimeout;
+      clData = cryptoLegacyLens.getCryptoLegacyBaseData();
+      assertEq(clData.distributionStartAt, distributionStartAt);
+      vm.warp(block.timestamp + clData.challengeTimeout + 1);
+      cryptoLegacy.transferTreasuryTokensToLegacy(_treasuries, _tokens);
+    }
 
     assertEq(mockToken1.balanceOf(bobBeneficiary1), 0);
     assertEq(lastFeePaidAt, cryptoLegacyLens.getCryptoLegacyBaseData().lastFeePaidAt);
@@ -427,23 +561,28 @@ contract CryptoLegacyTest is AbstractTestHelper {
     cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
     assertEq(mockToken1.balanceOf(bobBeneficiary3), 60 ether);
     assertEq(mockToken1.balanceOf(bobBeneficiary1), 40 ether);
+  
+    assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 0);
   }
 
   function _buildCryptoLegacyWithVesting() internal returns(CryptoLegacyBasePlugin cryptoLegacy, LensPlugin cryptoLegacyLens, bytes32[] memory beneficiaryArr, ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr) {
+    return _buildCryptoLegacyWithVesting(10, 20, 4000, 6000);
+  }
+  function _buildCryptoLegacyWithVesting(uint64 _claimDelay1, uint64 _claimDelay2, uint64 _shareBps1, uint64 _shareBps2) internal returns(CryptoLegacyBasePlugin cryptoLegacy, LensPlugin cryptoLegacyLens, bytes32[] memory beneficiaryArr, ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr) {
     vm.prank(owner);
     pluginsRegistry.addPlugin(lensPlugin, "");
 
     beneficiaryArr = new bytes32[](2);
-    beneficiaryArr[0] = keccak256(abi.encode(bobBeneficiary1));
-    beneficiaryArr[1] = keccak256(abi.encode(bobBeneficiary2));
+    beneficiaryArr[0] = addressToHash(bobBeneficiary1);
+    beneficiaryArr[1] = addressToHash(bobBeneficiary2);
     beneficiaryConfigArr = new ICryptoLegacy.BeneficiaryConfig[](2);
-    beneficiaryConfigArr[0] = ICryptoLegacy.BeneficiaryConfig(10, 100, 4000);
-    beneficiaryConfigArr[1] = ICryptoLegacy.BeneficiaryConfig(20, 100, 6000);
+    beneficiaryConfigArr[0] = ICryptoLegacy.BeneficiaryConfig(_claimDelay1, 100, _shareBps1);
+    beneficiaryConfigArr[1] = ICryptoLegacy.BeneficiaryConfig(_claimDelay2, 100, _shareBps2);
 
     buildRoll();
     vm.prank(bob);
     uint256 createdAt = block.timestamp;
-    ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(bytes8(0), beneficiaryArr, beneficiaryConfigArr, _getBasePlugins(), 180 days, 90 days);
+    ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(bytes8(0), beneficiaryArr, beneficiaryConfigArr, _getBasePlugins(), updateInterval, challengeTimeout);
     address payable cl = buildManager.buildCryptoLegacy{value: buildFee}(buildArgs, _getRefArgsStruct(bob), _getCreate2ArgsStruct(address(0), bytes32(uint(0))));
     cryptoLegacy = CryptoLegacyBasePlugin(cl);
     cryptoLegacyLens = LensPlugin(cl);
@@ -451,7 +590,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(clData.lastUpdateAt, createdAt);
   }
 
-  function testCreateCryptoLegacyVesting() public {
+  function testCreateCryptoLegacySimpleVesting() public {
     (
       CryptoLegacyBasePlugin cryptoLegacy,
       LensPlugin cryptoLegacyLens,
@@ -500,7 +639,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     (LensPlugin.BeneficiaryTokenData[] memory tokenData, uint64 startDate, uint64 endDate) = cryptoLegacyLens.getVestedAndClaimedData(addressToHash(bobBeneficiary2), _getOneAddressList(address(mockToken1)));
     assertEq(tokenData[0].claimedAmount, 0);
-    assertEq(tokenData[0].vestedAmount, 0);
+    assertEq(tokenData[0].claimableAmount, 0);
     assertEq(tokenData[0].totalAmount, 60 ether);
 
     assertEq(mockToken1.balanceOf(bobBeneficiary1), 0);
@@ -536,7 +675,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(mockToken1.balanceOf(bobBeneficiary2), 1.2 ether);
     assertEq(mockToken1.balanceOf(bobBeneficiary1), 1.6 ether);
 
-    assertEq(cryptoLegacyLens.getBeneficiaryVesting(addressToHash(bobBeneficiary1), address(mockToken1)), 1.6 ether);
+    assertEq(cryptoLegacyLens.getBeneficiaryClaimed(addressToHash(bobBeneficiary1), address(mockToken1)), 1.6 ether);
 
     vm.warp(block.timestamp + 3);
     cryptoLegacy.beneficiaryClaim(_getOneAddressList(address(mockToken1)), address(0), 0);
@@ -618,7 +757,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     (tokenData, startDate, endDate) = cryptoLegacyLens.getVestedAndClaimedData(addressToHash(bobBeneficiary2), _getOneAddressList(address(mockToken1)));
     assertEq(tokenData[0].claimedAmount, 3 ether);
-    assertEq(tokenData[0].vestedAmount, 4.2 ether);
+    assertEq(tokenData[0].claimableAmount, 1.2 ether);
     assertEq(tokenData[0].totalAmount, 60 ether);
 
     vm.warp(block.timestamp + 2);
@@ -629,14 +768,14 @@ contract CryptoLegacyTest is AbstractTestHelper {
     clListData = cryptoLegacyLens.getCryptoLegacyListData(_getOneAddressList(address(mockToken1)));
 
     vm.startPrank(bobBeneficiary3);
-    assertEq(clListData.tokenDistributions[0].amountToDistribute, 100 ether);
+    assertEq(clListData.tokenDistributions[0].lastBalance, 90.2 ether);
     cryptoLegacy.beneficiaryClaim(_getOneAddressList(address(mockToken1)), address(0), 0);
     clListData = cryptoLegacyLens.getCryptoLegacyListData(_getOneAddressList(address(mockToken1)));
-    assertEq(clListData.tokenDistributions[0].amountToDistribute, 200 ether);
+    assertEq(clListData.tokenDistributions[0].lastBalance, 181.8 ether);
 
     (tokenData, startDate, endDate) = cryptoLegacyLens.getVestedAndClaimedData(addressToHash(bobBeneficiary2), _getOneAddressList(address(mockToken1)));
     assertEq(tokenData[0].claimedAmount, 3 ether);
-    assertEq(tokenData[0].vestedAmount, 10.8 ether);
+    assertEq(tokenData[0].claimableAmount, 7.8 ether);
     assertEq(tokenData[0].totalAmount, 120 ether);
 
     assertEq(mockToken1.balanceOf(bobBeneficiary2), 3 ether);
@@ -652,20 +791,20 @@ contract CryptoLegacyTest is AbstractTestHelper {
     clListData = cryptoLegacyLens.getCryptoLegacyListData(_getOneAddressList(address(mockToken1)));
 
     vm.startPrank(bobBeneficiary3);
-    assertEq(clListData.tokenDistributions[0].amountToDistribute, 200 ether);
-    assertEq(clListData.tokenDistributions[0].totalClaimedAmount, 18.2 ether);
+    assertEq(clListData.tokenDistributions[0].lastBalance, 181.8 ether);
+    assertEq(clListData.tokenDistributions[0].totalClaimed, 18.2 ether);
     cryptoLegacy.beneficiaryClaim(_getOneAddressList(address(mockToken1)), address(0), 0);
     clListData = cryptoLegacyLens.getCryptoLegacyListData(_getOneAddressList(address(mockToken1)));
-    assertEq(clListData.tokenDistributions[0].amountToDistribute, 150 ether);
+    assertEq(clListData.tokenDistributions[0].lastBalance, 126.000220022002200214 ether);
 
     assertEq(mockToken1.balanceOf(bobBeneficiary2), 3 ether);
-    assertEq(mockToken1.balanceOf(bobBeneficiary3), 11.4 ether);
+    assertEq(mockToken1.balanceOf(bobBeneficiary3), 14.999779977997799786 ether);
 
     vm.startPrank(bobBeneficiary2);
     cryptoLegacy.beneficiaryClaim(_getOneAddressList(address(mockToken1)), address(0), 0);
 
-    assertEq(mockToken1.balanceOf(bobBeneficiary2), 17.1 ether);
-    assertEq(mockToken1.balanceOf(bobBeneficiary3), 11.4 ether);
+    assertEq(mockToken1.balanceOf(bobBeneficiary2), 17.354455445544554455 ether);
+    assertEq(mockToken1.balanceOf(bobBeneficiary3), 14.999779977997799786 ether);
 
     vm.warp(block.timestamp + 10);
     vm.startPrank(bobBeneficiary2);
@@ -673,8 +812,8 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.startPrank(bobBeneficiary3);
     cryptoLegacy.beneficiaryClaim(_getOneAddressList(address(mockToken1)), address(0), 0);
 
-    assertEq(mockToken1.balanceOf(bobBeneficiary2), 26.1 ether);
-    assertEq(mockToken1.balanceOf(bobBeneficiary3), 17.4 ether);
+    assertEq(mockToken1.balanceOf(bobBeneficiary2), 26.054125412541254125 ether);
+    assertEq(mockToken1.balanceOf(bobBeneficiary3), 20.799559955995599566 ether);
 
     vm.warp(block.timestamp + 100);
     vm.startPrank(bobBeneficiary2);
@@ -683,11 +822,12 @@ contract CryptoLegacyTest is AbstractTestHelper {
     cryptoLegacy.beneficiaryClaim(_getOneAddressList(address(mockToken1)), address(0), 0);
 
     assertEq(mockToken1.balanceOf(bobBeneficiary1), 6 ether);
-    assertEq(mockToken1.balanceOf(bobBeneficiary2), 90 ether);
-    assertEq(mockToken1.balanceOf(bobBeneficiary3), 54 ether);
+    assertEq(mockToken1.balanceOf(bobBeneficiary2), 87.821782178217821778 ether);
+    assertEq(mockToken1.balanceOf(bobBeneficiary3), 56.178217821782178222 ether);
+    assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 0);
   }
 
-  function testCreateCryptoLegacyVestingAndAddTokens() public {
+  function testCreateCryptoLegacyVestingAndAddTokensDefaultShares() public {
     (CryptoLegacyBasePlugin cryptoLegacy, LensPlugin cryptoLegacyLens, , ) = _buildCryptoLegacyWithVesting();
 
     vm.prank(treasury);
@@ -714,7 +854,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     cryptoLegacy.beneficiaryClaim{value: updateFee}(_tokens, address(0), 0);
     assertEq(mockToken1.balanceOf(bobBeneficiary1), 0.8 ether);
     (ICryptoLegacyLens.BeneficiaryTokenData[] memory result, uint64 startDate, uint64 endDate) = cryptoLegacyLens.getVestedAndClaimedData(addressToHash(bobBeneficiary1), _getOneAddressList(address(mockToken1)));
-    assertEq(result[0].vestedAmount, 0.8 ether);
+    assertEq(result[0].claimableAmount, 0);
     assertEq(result[0].claimedAmount, 0.8 ether);
 
     assertEq(address(buildManager).balance, updateFee);
@@ -722,7 +862,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.warp(block.timestamp + 1);
 
     (result, startDate, endDate) = cryptoLegacyLens.getVestedAndClaimedData(addressToHash(bobBeneficiary1), _getOneAddressList(address(mockToken1)));
-    assertEq(result[0].vestedAmount, 1.2 ether);
+    assertEq(result[0].claimableAmount, 0.4 ether);
     assertEq(result[0].claimedAmount, 0.8 ether);
     cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
     assertEq(mockToken1.balanceOf(bobBeneficiary1), 1.2 ether);
@@ -730,6 +870,10 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     vm.expectRevert("Ownable: caller is not the owner");
     buildManager.withdrawFee(treasury, updateFee);
+
+    vm.prank(owner);
+    vm.expectRevert(abi.encodeWithSelector(ICryptoLegacyBuildManager.WithdrawFeeFailed.selector, new bytes(0)));
+    buildManager.withdrawFee(payable(address(mockToken1)), updateFee);
 
     vm.prank(owner);
     buildManager.withdrawFee(treasury, updateFee);
@@ -743,11 +887,11 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.startPrank(bobBeneficiary1);
     ICryptoLegacyLens.CryptoLegacyListData memory clListData = cryptoLegacyLens.getCryptoLegacyListData(_getOneAddressList(address(mockToken1)));
 
-    assertEq(clListData.tokenDistributions[0].amountToDistribute, 100 ether);
+    assertEq(clListData.tokenDistributions[0].lastBalance, 98.8 ether);
     vm.warp(block.timestamp + 1);
     cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
     clListData = cryptoLegacyLens.getCryptoLegacyListData(_getOneAddressList(address(mockToken1)));
-    assertEq(clListData.tokenDistributions[0].amountToDistribute, 200 ether);
+    assertEq(clListData.tokenDistributions[0].lastBalance, 196.8 ether);
 
     assertEq(mockToken1.balanceOf(bobBeneficiary1), 3.2 ether);
 
@@ -759,6 +903,9 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.startPrank(bobBeneficiary2);
     cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
     assertEq(mockToken1.balanceOf(bobBeneficiary2), 120 ether);
+    assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 0);
+   
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
     vm.stopPrank();
   }
 
@@ -796,27 +943,199 @@ contract CryptoLegacyTest is AbstractTestHelper {
     mockToken1.mockTransferFrom(address(cryptoLegacy), address(1), 50 ether);
 
     ICryptoLegacyLens.CryptoLegacyListData memory clListData = cryptoLegacyLens.getCryptoLegacyListData(_getOneAddressList(address(mockToken1)));
-    assertEq(clListData.tokenDistributions[0].amountToDistribute, 100 ether);
+    assertEq(clListData.tokenDistributions[0].lastBalance, 98.8 ether);
     vm.warp(block.timestamp + 10);
     vm.prank(bobBeneficiary1);
     cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
     clListData = cryptoLegacyLens.getCryptoLegacyListData(_getOneAddressList(address(mockToken1)));
-    assertEq(clListData.tokenDistributions[0].amountToDistribute, 50 ether);
+    assertEq(clListData.tokenDistributions[0].lastBalance, 46.824291497975708501 ether);
 
     vm.prank(bobBeneficiary2);
     cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
 
-    assertEq(mockToken1.balanceOf(bobBeneficiary1), 2.6 ether);
-    assertEq(mockToken1.balanceOf(bobBeneficiary2), 0.9 ether);
+    assertEq(mockToken1.balanceOf(bobBeneficiary1), 3.175708502024291499 ether);
+    assertEq(mockToken1.balanceOf(bobBeneficiary2), 0.889068825910931174 ether);
 
     vm.warp(block.timestamp + 200);
     vm.prank(bobBeneficiary1);
     cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
-    assertEq(mockToken1.balanceOf(bobBeneficiary1), 20 ether);
+    assertEq(mockToken1.balanceOf(bobBeneficiary1), 20.364372469635627531 ether);
 
     vm.prank(bobBeneficiary2);
     cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
-    assertEq(mockToken1.balanceOf(bobBeneficiary2), 30 ether);
+    assertEq(mockToken1.balanceOf(bobBeneficiary2), 29.635627530364372468 ether);
+    assertLt(mockToken1.balanceOf(address(cryptoLegacy)), 20);
+  }
+
+  function testCreateCryptoLegacyVestingAndSubTokensEqualShares() public {
+    (CryptoLegacyBasePlugin cryptoLegacy, LensPlugin cryptoLegacyLens, , ) = _buildCryptoLegacyWithVesting(0, 0, 5000, 5000);
+
+    vm.prank(bob);
+    mockToken1.approve(address(cryptoLegacy), 2000 ether);
+
+    ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
+    vm.warp(block.timestamp + clData.updateInterval + 1);
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.initiateChallenge();
+
+    vm.warp(block.timestamp + clData.challengeTimeout + 1);
+    address[] memory _treasuries = new address[](1);
+    _treasuries[0] = bob;
+    address[] memory _tokens = new address[](1);
+    _tokens[0] = address(mockToken1);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.transferTreasuryTokensToLegacy(_treasuries, _tokens);
+
+    vm.prank(owner);
+    mockToken1.mockTransferFrom(address(cryptoLegacy), address(1), 500 ether);
+
+    vm.startPrank(bobBeneficiary1);
+    vm.warp(block.timestamp + 49);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+    assertEq(mockToken1.balanceOf(bobBeneficiary1), 375 ether);
+    vm.stopPrank();
+
+    ICryptoLegacyLens.CryptoLegacyListData memory clListData = cryptoLegacyLens.getCryptoLegacyListData(_getOneAddressList(address(mockToken1)));
+    assertEq(clListData.tokenDistributions[0].lastBalance, 1125 ether);
+
+    vm.prank(owner);
+    mockToken1.mockTransferFrom(address(cryptoLegacy), address(1), 250 ether);
+
+    vm.warp(block.timestamp + 50);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+    clListData = cryptoLegacyLens.getCryptoLegacyListData(_getOneAddressList(address(mockToken1)));
+    assertEq(clListData.tokenDistributions[0].lastBalance, 583.333333333333333188 ether);
+
+    vm.prank(bobBeneficiary2);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertEq(mockToken1.balanceOf(bobBeneficiary1), 666.666666666666666812 ether);
+    assertEq(mockToken1.balanceOf(bobBeneficiary2), 583.333333333333333187 ether);
+
+    assertLt(mockToken1.balanceOf(address(cryptoLegacy)), 20);
+  }
+
+  function testCreateCryptoLegacyVestingAndAddTokensEqualShares1() public {
+    (CryptoLegacyBasePlugin cryptoLegacy, LensPlugin cryptoLegacyLens, , ) = _buildCryptoLegacyWithVesting(0, 0, 5000, 5000);
+
+    vm.prank(treasury);
+    mockToken1.approve(address(cryptoLegacy), 1000 ether);
+
+    ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
+    vm.warp(block.timestamp + clData.updateInterval + 1);
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.initiateChallenge();
+
+    vm.warp(block.timestamp + clData.challengeTimeout + 1);
+    address[] memory _treasuries = new address[](1);
+    _treasuries[0] = treasury;
+    address[] memory _tokens = new address[](1);
+    _tokens[0] = address(mockToken1);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.transferTreasuryTokensToLegacy(_treasuries, _tokens);
+
+    assertEq(address(buildManager).balance, 0);
+
+    vm.startPrank(bobBeneficiary1);
+    vm.warp(block.timestamp + 49);
+    cryptoLegacy.beneficiaryClaim{value: updateFee}(_tokens, address(0), 0);
+    assertEq(mockToken1.balanceOf(bobBeneficiary1), 250 ether);
+    vm.stopPrank();
+
+    ICryptoLegacyLens.LensTokenDistribution[] memory list = cryptoLegacyLens.getTokensDistribution(_getOneAddressList(address(mockToken1)));
+    assertEq(list[0].lastBalance, 750 ether);
+    assertEq(list[0].totalClaimed, 250 ether);
+
+    vm.prank(bob);
+    mockToken1.transfer(address(cryptoLegacy), 750 ether);
+
+    vm.warp(block.timestamp + 151);
+
+    vm.startPrank(bobBeneficiary2);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+    assertEq(mockToken1.balanceOf(bobBeneficiary2), 875 ether);
+    vm.stopPrank();
+
+    list = cryptoLegacyLens.getTokensDistribution(_getOneAddressList(address(mockToken1)));
+    assertEq(list[0].lastBalance, 625 ether);
+    assertEq(list[0].totalClaimed, 1125 ether);
+
+    vm.startPrank(bobBeneficiary1);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+    assertEq(mockToken1.balanceOf(bobBeneficiary1), 875 ether);
+    vm.stopPrank();
+
+    list = cryptoLegacyLens.getTokensDistribution(_getOneAddressList(address(mockToken1)));
+    assertEq(list[0].lastBalance, 0);
+    assertEq(list[0].totalClaimed, 1750 ether);
+    assertLt(mockToken1.balanceOf(address(cryptoLegacy)), 20);
+  }
+
+  function testCreateCryptoLegacyVestingAndAddTokensEqualShares2() public {
+    (CryptoLegacyBasePlugin cryptoLegacy, LensPlugin cryptoLegacyLens, , ) = _buildCryptoLegacyWithVesting(0, 0, 5000, 5000);
+
+    vm.prank(treasury);
+    mockToken1.approve(address(cryptoLegacy), 1000 ether);
+
+    ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
+    vm.warp(block.timestamp + clData.updateInterval + 1);
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.initiateChallenge();
+
+    vm.warp(block.timestamp + clData.challengeTimeout + 1);
+    address[] memory _treasuries = new address[](1);
+    _treasuries[0] = treasury;
+    address[] memory _tokens = new address[](1);
+    _tokens[0] = address(mockToken1);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.transferTreasuryTokensToLegacy(_treasuries, _tokens);
+
+    assertEq(address(buildManager).balance, 0);
+
+    vm.prank(bob);
+    mockToken1.transfer(address(cryptoLegacy), 500 ether);
+
+    vm.startPrank(bobBeneficiary1);
+    vm.warp(block.timestamp + 49);
+    cryptoLegacy.beneficiaryClaim{value: updateFee}(_tokens, address(0), 0);
+    assertEq(mockToken1.balanceOf(bobBeneficiary1), 375 ether);
+    assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 1125 ether);
+    vm.stopPrank();
+
+    ICryptoLegacyLens.LensTokenDistribution[] memory list = cryptoLegacyLens.getTokensDistribution(_getOneAddressList(address(mockToken1)));
+    assertEq(list[0].lastBalance, 1125 ether);
+    assertEq(list[0].totalClaimed, 375 ether);
+
+    vm.warp(block.timestamp + 10);
+
+    vm.prank(bob);
+    mockToken1.transfer(address(cryptoLegacy), 250 ether);
+
+    vm.warp(block.timestamp + 41);
+
+    vm.startPrank(bobBeneficiary2);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+    assertEq(mockToken1.balanceOf(bobBeneficiary2), 875 ether);
+    vm.stopPrank();
+
+    list = cryptoLegacyLens.getTokensDistribution(_getOneAddressList(address(mockToken1)));
+    assertEq(list[0].lastBalance, 500 ether);
+    assertEq(list[0].totalClaimed, 1250 ether);
+
+    vm.startPrank(bobBeneficiary1);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+    assertEq(mockToken1.balanceOf(bobBeneficiary1), 875 ether);
+    vm.stopPrank();
+
+    list = cryptoLegacyLens.getTokensDistribution(_getOneAddressList(address(mockToken1)));
+    assertEq(list[0].lastBalance, 0);
+    assertEq(list[0].totalClaimed, 1750 ether);
+    assertLt(mockToken1.balanceOf(address(cryptoLegacy)), 20);
   }
 
   function testIncreaseUpdateFee() public {
@@ -828,7 +1147,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     vm.prank(bob);
     vm.expectEmit(true, false, false, false);
-    emit ICryptoLegacy.FeePaidByDefault(bytes8(0), false, 0, address(9), 0);
+    emit ICryptoLegacy.FeePaidByDefault(bytes8(0), false, 0, 0, address(9), 0);
     cryptoLegacy.update{value: updateFee}(_getEmptyUintList(), _getEmptyUintList());
 
     vm.expectRevert("Ownable: caller is not the owner");
@@ -845,7 +1164,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     vm.prank(bob);
     vm.expectEmit(true, false, false, false);
-    emit ICryptoLegacy.FeePaidByDefault(bytes8(0), false, 0, address(9), 0);
+    emit ICryptoLegacy.FeePaidByDefault(bytes8(0), false, 0, 0, address(9), 0);
     cryptoLegacy.update{value: updateFee * 2}(_getEmptyUintList(), _getEmptyUintList());
 
     vm.prank(owner);
@@ -871,7 +1190,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     vm.prank(dan);
     vm.expectEmit(true, false, false, false);
-    emit ICryptoLegacy.FeePaidByDefault(customRefCode, false, 0, address(9), 0);
+    emit ICryptoLegacy.FeePaidByDefault(customRefCode, false, 0, 0, address(9), 0);
     cryptoLegacy.update{value: updateFee - discount}(_getEmptyUintList(), _getEmptyUintList());
 
     vm.prank(owner);
@@ -889,11 +1208,11 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     assertEq(feeRegistry.refererByCode(customRefCode).accumulatedFee, 0);
     vm.expectEmit(true, true, true, true);
-    emit IFeeRegistry.AccumulateFee(alice, customRefCode, incorrectRecipient, share * 2);
+    emit IFeeRegistry.AccumulateFee(alice, customRefCode, incorrectRecipient, share * 2, new bytes(0));
 
     vm.prank(dan);
     vm.expectEmit(true, false, false, false);
-    emit ICryptoLegacy.FeePaidByDefault(customRefCode, false, 0, address(9), 0);
+    emit ICryptoLegacy.FeePaidByDefault(customRefCode, false, 0, 0, address(9), 0);
     cryptoLegacy.update{value: updateFee * 2 - discount * 2}(_getEmptyUintList(), _getEmptyUintList());
 
     assertEq(feeRegistry.refererByCode(customRefCode).accumulatedFee, share * 2);
@@ -910,31 +1229,6 @@ contract CryptoLegacyTest is AbstractTestHelper {
     feeRegistry.withdrawReferralAccumulatedFee(customRefCode);
     assertEq(aliceRecipient.balance, aliceRecipientBalance + share * 2);
     assertEq(feeRegistry.refererByCode(customRefCode).accumulatedFee, 0);
-  }
-
-  function testBrokenFeeRegistry() public {
-    vm.prank(owner);
-    pluginsRegistry.addPlugin(lensPlugin, "");
-
-    (CryptoLegacyBasePlugin cryptoLegacy, ICryptoLegacyLens cryptoLegacyLens, , ) = _buildCryptoLegacyWithPlugins(bob, buildFee, bytes8(0), _getOneInitPluginList(lensPlugin));
-    vm.warp(block.timestamp + 1);
-
-    vm.prank(bob);
-    vm.expectEmit(true, false, false, false);
-    emit ICryptoLegacy.FeePaidByDefault(bytes8(0), false, 0, address(9), 0);
-    cryptoLegacy.update{value: updateFee}(_getEmptyUintList(), _getEmptyUintList());
-
-    vm.startPrank(owner);
-    buildManager.setRegistries(IFeeRegistry(address(0)), buildManager.pluginsRegistry(), buildManager.beneficiaryRegistry());
-    vm.stopPrank();
-
-    vm.warp(block.timestamp + cryptoLegacyLens.getCryptoLegacyBaseData().updateInterval + 1);
-
-    vm.prank(bob);
-    emit ICryptoLegacy.FeePaidByTransfer(bytes8(0), false, 0, address(9), 0);
-    cryptoLegacy.update{value: updateFee}(_getEmptyUintList(), _getEmptyUintList());
-
-    assertEq(address(buildManager).balance, updateFee);
   }
 
   function testReplaceBasicPlugin() public {
@@ -1027,7 +1321,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     address[] memory _treasuries = new address[](1);
     _treasuries[0] = treasury;
 
-    (bytes32[] memory voters, uint256 requiredConfirmations) = cryptoLegacyBeneficiaryPluginLegacy.barGetVotersAndConfirmations();
+    (bytes32[] memory voters, uint8 requiredConfirmations) = cryptoLegacyBeneficiaryPluginLegacy.barGetVotersAndConfirmations();
     assertEq(requiredConfirmations, 2);
     assertEq(voters.length, 2);
     assertEq(voters[0], addressToHash(bobBeneficiary1));
@@ -1081,7 +1375,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(proposalsWithStatuses[0].confirmedBy[0], true);
     assertEq(proposalsWithStatuses[0].confirmedBy[1], false);
     assertEq(proposalsWithStatuses[0].proposal.confirms, 1);
-    assertEq(proposalsWithStatuses[0].proposal.executed, false);
+    assertProposalStatusEq(proposalsWithStatuses[0].proposal.status, ISafeMinimalMultisig.ProposalStatus.PENDING);
     assertEq(proposalsWithStatuses[0].proposal.selector, BeneficiaryPluginAddRights.barAddPluginList.selector);
     assertEq(proposalsWithStatuses[0].proposal.params, abi.encode(_getOneAddressList(mockClaimPlugin)));
 
@@ -1096,7 +1390,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(proposalsWithStatuses[0].confirmedBy[0], false);
     assertEq(proposalsWithStatuses[0].confirmedBy[1], false);
     assertEq(proposalsWithStatuses[0].proposal.confirms, 0);
-    assertEq(proposalsWithStatuses[0].proposal.executed, false);
+    assertProposalStatusEq(proposalsWithStatuses[0].proposal.status, ISafeMinimalMultisig.ProposalStatus.PENDING);
 
     vm.prank(bobBeneficiary3);
     cryptoLegacyBeneficiaryPluginLegacy.barConfirm(0);
@@ -1109,13 +1403,13 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(proposalsWithStatuses[0].confirmedBy[0], false);
     assertEq(proposalsWithStatuses[0].confirmedBy[1], true);
     assertEq(proposalsWithStatuses[0].proposal.confirms, 1);
-    assertEq(proposalsWithStatuses[0].proposal.executed, false);
+    assertProposalStatusEq(proposalsWithStatuses[0].proposal.status, ISafeMinimalMultisig.ProposalStatus.PENDING);
 
     vm.prank(bobBeneficiary2);
     cryptoLegacyBeneficiaryPluginLegacy.barConfirm(0);
     ( , , proposalsWithStatuses) = cryptoLegacyBeneficiaryPluginLegacy.barGetProposalListWithStatuses();
     assertEq(proposalsWithStatuses[0].proposal.confirms, 2);
-    assertEq(proposalsWithStatuses[0].proposal.executed, true);
+    assertProposalStatusEq(proposalsWithStatuses[0].proposal.status, ISafeMinimalMultisig.ProposalStatus.EXECUTED);
     assertEq(proposalsWithStatuses[0].confirmedBy[0], true);
     assertEq(proposalsWithStatuses[0].confirmedBy[1], true);
 
@@ -1126,7 +1420,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(voters[0], addressToHash(bobBeneficiary2));
     assertEq(voters[1], addressToHash(bobBeneficiary3));
     assertEq(proposalWithStatus.proposal.confirms, 2);
-    assertEq(proposalWithStatus.proposal.executed, true);
+    assertProposalStatusEq(proposalWithStatus.proposal.status, ISafeMinimalMultisig.ProposalStatus.EXECUTED);
     assertEq(proposalWithStatus.proposal.selector, BeneficiaryPluginAddRights.barAddPluginList.selector);
     assertEq(proposalWithStatus.proposal.params, abi.encode(_getOneAddressList(mockClaimPlugin)));
     assertEq(proposalWithStatus.confirmedBy[0], true);
@@ -1157,6 +1451,26 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     assertEq(mockToken1.balanceOf(bobBeneficiary1), 40 ether);
     assertEq(mockToken1.balanceOf(bobBeneficiary3), 60 ether);
+
+    vm.prank(bobBeneficiary3);
+    uint256 proposalId = cryptoLegacyBeneficiaryPluginLegacy.barPropose(BeneficiaryPluginAddRights.barAddPluginList.selector, abi.encode(_getOneAddressList(mockClaimPlugin)));
+
+    (voters, requiredConfirmations, proposalWithStatus) = cryptoLegacyBeneficiaryPluginLegacy.barGetProposalWithStatus(proposalId);
+    assertEq(requiredConfirmations, 2);
+    assertEq(proposalWithStatus.proposal.confirms, 1);
+    assertProposalStatusEq(proposalWithStatus.proposal.status, ISafeMinimalMultisig.ProposalStatus.PENDING);
+    assertEq(proposalWithStatus.confirmedBy[0], false);
+    assertEq(proposalWithStatus.confirmedBy[1], true);
+
+    vm.prank(bobBeneficiary3);
+    cryptoLegacyBeneficiaryPluginLegacy.barCancel(proposalId);
+
+    (voters, requiredConfirmations, proposalWithStatus) = cryptoLegacyBeneficiaryPluginLegacy.barGetProposalWithStatus(proposalId);
+    assertEq(requiredConfirmations, 2);
+    assertEq(proposalWithStatus.proposal.confirms, 0);
+    assertProposalStatusEq(proposalWithStatus.proposal.status, ISafeMinimalMultisig.ProposalStatus.CANCELED);
+    assertEq(proposalWithStatus.confirmedBy[0], false);
+    assertEq(proposalWithStatus.confirmedBy[1], false);
   }
 
   function testBarMulisigSetFunction() public {
@@ -1180,7 +1494,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.expectRevert(ICryptoLegacy.NotTheOwner.selector);
     cryptoLegacyBeneficiaryPluginLegacy.barSetMultisigConfig(1);
 
-    (bytes32[] memory voters, uint256 requiredConfirmations) = cryptoLegacyBeneficiaryPluginLegacy.barGetVotersAndConfirmations();
+    (bytes32[] memory voters, uint8 requiredConfirmations) = cryptoLegacyBeneficiaryPluginLegacy.barGetVotersAndConfirmations();
 
     assertEq(requiredConfirmations, 2);
     assertEq(uint(cryptoLegacyBeneficiaryPluginLegacy.barGetInitializationStatus()), uint(ISafeMinimalMultisig.InitializationStatus.NOT_INITIALIZED_NO_NEED));
@@ -1230,10 +1544,25 @@ contract CryptoLegacyTest is AbstractTestHelper {
       pluginsRegistry.addPlugin(legacyRecoveryPlugin, "");
       vm.stopPrank();
 
-      (cryptoLegacy, cryptoLegacyLens, , ) = _buildCryptoLegacyWithPlugins(bob, buildFee, bytes8(0), _getThreeInitPluginsList(lensPlugin, trustedGuardiansPlugin, legacyRecoveryPlugin));
+      (cryptoLegacy, cryptoLegacyLens, , ) = _buildCryptoLegacyWithPlugins(bob, 0, bytes8(0), _getThreeInitPluginsList(lensPlugin, trustedGuardiansPlugin, legacyRecoveryPlugin));
       vm.warp(block.timestamp + 1);
     }
     LegacyRecoveryPlugin legacyRecoveryPluginLegacy = LegacyRecoveryPlugin(address(cryptoLegacy));
+    TrustedGuardiansPlugin trustedGuardianPluginLegacy = TrustedGuardiansPlugin(address(cryptoLegacy));
+
+    vm.expectRevert(ICryptoLegacy.InitialFeeNotPaid.selector);
+    vm.prank(bobBeneficiary1);
+    trustedGuardianPluginLegacy.guardiansVoteForDistribution();
+
+    vm.expectRevert(ICryptoLegacy.InitialFeeNotPaid.selector);
+    vm.prank(bobBeneficiary1);
+    trustedGuardianPluginLegacy.guardiansTransferTreasuryTokensToLegacy(_getEmptyAddressList(), _getEmptyAddressList());
+
+    vm.expectRevert(ICryptoLegacy.InitialFeeNotPaid.selector);
+    vm.prank(bobBeneficiary1);
+    trustedGuardianPluginLegacy.resetGuardianVoting();
+
+    cryptoLegacy.payInitialFee{value: buildFee}(_getEmptyUintList(), _getEmptyUintList());
 
     assertEq(uint(legacyRecoveryPluginLegacy.lrGetInitializationStatus()), uint(ISafeMinimalMultisig.InitializationStatus.NOT_INITIALIZED_BUT_NEED));
 
@@ -1249,6 +1578,8 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     assertEq(uint(legacyRecoveryPluginLegacy.lrGetInitializationStatus()), uint(ISafeMinimalMultisig.InitializationStatus.INITIALIZED));
 
+    vm.warp(block.timestamp + updateInterval);
+
     vm.prank(bob);
     cryptoLegacy.update{value: updateFee}(_getEmptyUintList(), _getEmptyUintList());
 
@@ -1256,8 +1587,6 @@ contract CryptoLegacyTest is AbstractTestHelper {
     mockToken1.approve(address(cryptoLegacy), 100 ether);
 
     ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
-
-    TrustedGuardiansPlugin trustedGuardianPluginLegacy = TrustedGuardiansPlugin(address(cryptoLegacy));
 
     ICryptoLegacyLens.CryptoLegacyListData memory clListData = cryptoLegacyLens.getCryptoLegacyListData(_getEmptyAddressList());
 
@@ -1358,10 +1687,10 @@ contract CryptoLegacyTest is AbstractTestHelper {
     trustedGuardianPluginLegacy.setGuardians(newGuardians);
 
     vm.expectRevert(ISafeMinimalMultisig.MultisigVoterNotAllowed.selector);
-    legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrResetGuardianVoting.selector, new bytes(0));
+    legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrResetGuardianVoting.selector, new bytes(0), bytes32(0));
 
     vm.prank(alice);
-    legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrResetGuardianVoting.selector, new bytes(0));
+    legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrResetGuardianVoting.selector, new bytes(0), bytes32(0));
 
     {
       (
@@ -1373,7 +1702,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
       assertEq(requiredConfirmations, 1);
       assertEq(proposalWithStatus.proposal.selector, LegacyRecoveryPlugin.lrResetGuardianVoting.selector);
       assertEq(proposalWithStatus.proposal.confirms, 1);
-      assertEq(proposalWithStatus.proposal.executed, true);
+      assertProposalStatusEq(proposalWithStatus.proposal.status, ISafeMinimalMultisig.ProposalStatus.EXECUTED);
       assertEq(proposalWithStatus.proposal.params, new bytes(0));
     }
     vm.startPrank(bob);
@@ -1381,11 +1710,21 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.expectRevert(abi.encodeWithSelector(ITrustedGuardiansPlugin.MaxGuardiansTimeout.selector, 30 days));
     trustedGuardianPluginLegacy.setGuardiansConfig(1, 31 days);
 
+    vm.expectRevert(ITrustedGuardiansPlugin.GuardiansTimeoutCantBeZero.selector);
+    trustedGuardianPluginLegacy.setGuardiansConfig(1, 0);
+
     vm.roll(20);
 
+    vm.expectRevert(ITrustedGuardiansPlugin.ZeroGuardian.selector);
+    trustedGuardianPluginLegacy.setGuardians(new ITrustedGuardiansPlugin.GuardianToChange[](1));
+
 //    trustedGuardianPluginLegacy.resetGuardianVoting();
-    trustedGuardianPluginLegacy.setGuardiansConfig(1, 80);
     trustedGuardianPluginLegacy.setGuardians(newGuardians);
+
+    vm.expectRevert(ITrustedGuardiansPlugin.ThresholdTooBig.selector);
+    trustedGuardianPluginLegacy.setGuardiansConfig(10, 80);
+
+    trustedGuardianPluginLegacy.setGuardiansConfig(1, 80);
 
     clList = beneficiaryRegistry.getCryptoLegacyListByGuardian(newGuardians[0].hash);
     assertEq(clList.length, 0);
@@ -1448,6 +1787,19 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 100 ether);
   }
 
+  function _getFourBeneficiaries() internal pure returns(bytes32[] memory beneficiaryArr, ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr) {
+    beneficiaryArr = new bytes32[](4);
+    beneficiaryArr[0] = addressToHash(bobBeneficiary1);
+    beneficiaryArr[1] = addressToHash(bobBeneficiary2);
+    beneficiaryArr[2] = addressToHash(bobBeneficiary3);
+    beneficiaryArr[3] = addressToHash(bobBeneficiary4);
+    beneficiaryConfigArr = new ICryptoLegacy.BeneficiaryConfig[](4);
+    beneficiaryConfigArr[0] = ICryptoLegacy.BeneficiaryConfig(0, 0, 2000);
+    beneficiaryConfigArr[1] = ICryptoLegacy.BeneficiaryConfig(0, 0, 2000);
+    beneficiaryConfigArr[2] = ICryptoLegacy.BeneficiaryConfig(0, 0, 3000);
+    beneficiaryConfigArr[3] = ICryptoLegacy.BeneficiaryConfig(0, 0, 3000);
+  }
+
   function testSwitchTrustedGuardians() public {
     CryptoLegacyBasePlugin cryptoLegacy;
     ICryptoLegacyLens cryptoLegacyLens;
@@ -1459,21 +1811,15 @@ contract CryptoLegacyTest is AbstractTestHelper {
       pluginsRegistry.addPlugin(lensPlugin, "");
       pluginsRegistry.addPlugin(trustedGuardiansPlugin, "");
       pluginsRegistry.addPlugin(legacyRecoveryPlugin, "");
+      (buildManager, beneficiaryRegistry, ) = LibDeploy._deployBuildManager(create3Factory, bytes32(uint256(2)), owner, feeRegistry, pluginsRegistry, lifetimeNft);
+      LibDeploy._initFeeRegistry(feeRegistry, buildManager, lifetimeFee, buildFee, updateFee);
+      feeRegistry.setCodeOperator(address(buildManager), true);
+      beneficiaryRegistry.setBuildManager(address(buildManager), true);
       vm.stopPrank();
 
-      bytes32[] memory beneficiaryArr = new bytes32[](4);
-      beneficiaryArr[0] = addressToHash(bobBeneficiary1);
-      beneficiaryArr[1] = addressToHash(bobBeneficiary2);
-      beneficiaryArr[2] = addressToHash(bobBeneficiary3);
-      beneficiaryArr[3] = addressToHash(bobBeneficiary4);
-      ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr = new ICryptoLegacy.BeneficiaryConfig[](4);
-      beneficiaryConfigArr[0] = ICryptoLegacy.BeneficiaryConfig(0, 0, 2000);
-      beneficiaryConfigArr[1] = ICryptoLegacy.BeneficiaryConfig(0, 0, 2000);
-      beneficiaryConfigArr[2] = ICryptoLegacy.BeneficiaryConfig(0, 0, 3000);
-      beneficiaryConfigArr[3] = ICryptoLegacy.BeneficiaryConfig(0, 0, 3000);
-
+      (bytes32[] memory beneficiaryArr, ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr) = _getFourBeneficiaries();
       vm.prank(bob);
-      ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(bytes8(0), beneficiaryArr, beneficiaryConfigArr, _getThreeInitPluginsList(lensPlugin, trustedGuardiansPlugin, legacyRecoveryPlugin), updateInterval, challengeTimeout);
+      ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(bytes8(0), beneficiaryArr, beneficiaryConfigArr, _getThreeInitPluginsList(lensPlugin, trustedGuardiansPlugin, legacyRecoveryPlugin), 180 days, 90 days);
       buildRoll();
       address payable cl = buildManager.buildCryptoLegacy{value: buildFee}(buildArgs, _getRefArgsStruct(bob), _getCreate2ArgsStruct(address(0), bytes32(uint(0))));
       cryptoLegacy = CryptoLegacyBasePlugin(cl);
@@ -1516,8 +1862,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     }
 
     vm.prank(bob);
-    ITrustedGuardiansPlugin.GuardianToChange[] memory _guardians = new ITrustedGuardiansPlugin.GuardianToChange[](0);
-    trustedGuardianPluginLegacy.initializeGuardians(_guardians, 4, 30 days);
+    trustedGuardianPluginLegacy.setGuardiansConfig(4, 30 days);
 
     vm.prank(bobBeneficiary3);
     trustedGuardianPluginLegacy.guardiansVoteForDistribution();
@@ -1531,6 +1876,13 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     vm.prank(bobBeneficiary3);
     cryptoLegacy.beneficiarySwitch(addressToHash(dan));
+
+    {
+      (bytes32[] memory beneficiaryArr, ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr) = _getFourBeneficiaries();
+      vm.prank(bob);
+      vm.expectRevert(ICryptoLegacy.OriginalHashDuplicate.selector);
+      cryptoLegacy.setBeneficiaries(beneficiaryArr, beneficiaryConfigArr);
+    }
 
     vm.prank(bobBeneficiary3);
     vm.expectRevert(ITrustedGuardiansPlugin.NotGuardian.selector);
@@ -1551,8 +1903,27 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(guardiansVoted[0], addressToHash(bobBeneficiary2));
     assertEq(guardiansVoted[1], addressToHash(dan));
 
+    vm.expectRevert(ICryptoLegacy.BeneficiarySwitchTimelock.selector);
     vm.prank(dan);
     cryptoLegacy.beneficiarySwitch(addressToHash(bobBeneficiary3));
+
+    vm.warp(block.timestamp + 1 days);
+    vm.prank(dan);
+    cryptoLegacy.beneficiarySwitch(addressToHash(bobBeneficiary3));
+
+    ( , guardiansVoted, ,) = trustedGuardianPluginLegacy.getGuardiansData();
+    assertEq(guardiansVoted.length, 2);
+    assertEq(guardiansVoted[0], addressToHash(bobBeneficiary2));
+    assertEq(guardiansVoted[1], addressToHash(dan));
+
+    vm.prank(dan);
+    vm.expectRevert(ITrustedGuardiansPlugin.NotGuardian.selector);
+    ( , guardiansVoted, , ,) = trustedGuardianPluginLegacy.checkGuardiansVotedAndGetGuardiansData();
+
+    vm.prank(bobBeneficiary2);
+    ( , guardiansVoted, , ,) = trustedGuardianPluginLegacy.checkGuardiansVotedAndGetGuardiansData();
+    assertEq(guardiansVoted.length, 1);
+    assertEq(guardiansVoted[0], addressToHash(bobBeneficiary2));
 
     vm.prank(bobBeneficiary3);
     trustedGuardianPluginLegacy.guardiansVoteForDistribution();
@@ -1582,6 +1953,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(guardiansVoted[1], addressToHash(dan));
     assertEq(guardiansVoted[2], addressToHash(bobBeneficiary1));
 
+    vm.warp(block.timestamp + 1 days);
     vm.prank(bobBeneficiary3);
     cryptoLegacy.beneficiarySwitch(addressToHash(charlie));
 
@@ -1606,6 +1978,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(guardiansVoted[1], addressToHash(charlie));
     assertEq(guardiansVoted[2], addressToHash(bobBeneficiary3));
 
+    vm.warp(block.timestamp + 1 days);
     vm.prank(bobBeneficiary3);
     cryptoLegacy.beneficiarySwitch(addressToHash(dan));
 
@@ -1618,6 +1991,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(guardiansVoted[1], addressToHash(charlie));
     assertEq(guardiansVoted[2], addressToHash(dan));
 
+    vm.warp(block.timestamp + 1 days);
     vm.prank(dan);
     cryptoLegacy.beneficiarySwitch(addressToHash(bobBeneficiary3));
 
@@ -1634,8 +2008,11 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(guardiansVoted.length, 1);
     assertEq(guardiansVoted[0], addressToHash(bobBeneficiary2));
 
+    vm.warp(block.timestamp + 1 days);
     vm.prank(alice);
     cryptoLegacy.beneficiarySwitch(addressToHash(bobBeneficiary1));
+
+    vm.warp(block.timestamp + 180 days);
 
     vm.prank(bobBeneficiary1);
     trustedGuardianPluginLegacy.guardiansVoteForDistribution();
@@ -1650,7 +2027,17 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(clData.distributionStartAt, block.timestamp + 30 days);
 
     vm.prank(bob);
+    vm.expectRevert(abi.encodeWithSelector(ICryptoLegacy.IncorrectFee.selector, updateFee));
     trustedGuardianPluginLegacy.resetGuardianVoting();
+
+    vm.prank(bob);
+    trustedGuardianPluginLegacy.resetGuardianVoting{value: updateFee}();
+    clData = cryptoLegacyLens.getCryptoLegacyBaseData();
+    assertNotEq(clData.lastUpdateAt, block.timestamp);
+    assertEq(clData.distributionStartAt, 0);
+
+    ( , guardiansVoted, ,) = trustedGuardianPluginLegacy.getGuardiansData();
+    assertEq(guardiansVoted.length, 0);
 
     CryptoLegacyExternalLens externalLens = new CryptoLegacyExternalLens();
 
@@ -1666,12 +2053,12 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(beneficiaryDefaultGuardian[0], true);
     assertEq(listByGuardian.length, 0);
 
-    ITrustedGuardiansPlugin.GuardianToChange[] memory newGuardians = new ITrustedGuardiansPlugin.GuardianToChange[](4);
+    ITrustedGuardiansPlugin.GuardianToChange[] memory newGuardians = new ITrustedGuardiansPlugin.GuardianToChange[](2);
     newGuardians[0] = ITrustedGuardiansPlugin.GuardianToChange(addressToHash(bobBeneficiary1), true);
     newGuardians[1] = ITrustedGuardiansPlugin.GuardianToChange(addressToHash(alice), true);
 
     vm.prank(bob);
-    trustedGuardianPluginLegacy.setGuardians(newGuardians);
+    trustedGuardianPluginLegacy.initializeGuardians(newGuardians, 2, 30 days);
 
     (listByBeneficiary, beneficiaryDefaultGuardian, , listByGuardian, ) = externalLens.getCryptoLegacyListWithStatuses(beneficiaryRegistry, addressToHash(bobBeneficiary1));
     assertEq(listByBeneficiary.length, 1);
@@ -1715,7 +2102,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     (
       bytes32[] memory voters,
-      uint256 requiredConfirmations,
+      uint8 requiredConfirmations,
       ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses
     ) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
     assertEq(voters.length, 0);
@@ -1723,7 +2110,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     vm.expectRevert(ISafeMinimalMultisig.MultisigVoterNotAllowed.selector);
     vm.prank(bobBeneficiary1);
-    legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrTransferTreasuryTokensToLegacy.selector, abi.encode(_treasuries, _tokens));
+    legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrTransferTreasuryTokensToLegacy.selector, abi.encode(_treasuries, _tokens), bytes32(0));
 
     voters = new bytes32[](2);
     voters[0] = addressToHash(bobBeneficiary1);
@@ -1755,10 +2142,10 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     vm.expectRevert(ISafeMinimalMultisig.MultisigMethodNotAllowed.selector);
     vm.prank(bobBeneficiary1);
-    legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrConfirm.selector, abi.encode(0));
+    legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrConfirm.selector, abi.encode(0), bytes32(0));
 
     vm.prank(bobBeneficiary1);
-    legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrTransferTreasuryTokensToLegacy.selector, abi.encode(_treasuries, _tokens));
+    legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrTransferTreasuryTokensToLegacy.selector, abi.encode(_treasuries, _tokens), bytes32(0));
 
     (voters, requiredConfirmations, proposalsWithStatuses) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
     assertEq(proposalsWithStatuses.length, 1);
@@ -1767,29 +2154,37 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(proposalsWithStatuses[0].confirmedBy[1], false);
     assertEq(proposalsWithStatuses[0].proposal.selector, LegacyRecoveryPlugin.lrTransferTreasuryTokensToLegacy.selector);
     assertEq(proposalsWithStatuses[0].proposal.params, abi.encode(_treasuries, _tokens));
-    assertEq(proposalsWithStatuses[0].proposal.executed, false);
+    assertProposalStatusEq(proposalsWithStatuses[0].proposal.status, ISafeMinimalMultisig.ProposalStatus.PENDING);
 
-    vm.expectRevert(ISafeMinimalMultisig.MultisigAlreadyConfirmed.selector);
     vm.prank(bobBeneficiary1);
-    legacyRecoveryPluginLegacy.lrConfirm(0);
+    legacyRecoveryPluginLegacy.lrConfirm(0, bytes32(0));
+
+    (voters, requiredConfirmations, proposalsWithStatuses) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
+    assertEq(proposalsWithStatuses.length, 1);
+    assertEq(proposalsWithStatuses[0].confirmedBy.length, 2);
+    assertEq(proposalsWithStatuses[0].confirmedBy[0], true);
+    assertEq(proposalsWithStatuses[0].confirmedBy[1], false);
+    assertEq(proposalsWithStatuses[0].proposal.selector, LegacyRecoveryPlugin.lrTransferTreasuryTokensToLegacy.selector);
+    assertEq(proposalsWithStatuses[0].proposal.params, abi.encode(_treasuries, _tokens));
+    assertProposalStatusEq(proposalsWithStatuses[0].proposal.status, ISafeMinimalMultisig.ProposalStatus.PENDING);
 
     vm.expectRevert(ISafeMinimalMultisig.MultisigVoterNotAllowed.selector);
     vm.prank(bobBeneficiary2);
-    legacyRecoveryPluginLegacy.lrConfirm(0);
+    legacyRecoveryPluginLegacy.lrConfirm(0, bytes32(0));
 
     vm.prank(dan);
-    legacyRecoveryPluginLegacy.lrConfirm(0);
+    legacyRecoveryPluginLegacy.lrConfirm(0, bytes32(0));
 
     vm.expectRevert(ISafeMinimalMultisig.MultisigAlreadyExecuted.selector);
     vm.prank(dan);
-    legacyRecoveryPluginLegacy.lrConfirm(0);
+    legacyRecoveryPluginLegacy.lrConfirm(0, bytes32(0));
 
     (voters, requiredConfirmations, proposalsWithStatuses) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
     assertEq(proposalsWithStatuses.length, 1);
     assertEq(proposalsWithStatuses[0].confirmedBy.length, 2);
     assertEq(proposalsWithStatuses[0].confirmedBy[0], true);
     assertEq(proposalsWithStatuses[0].confirmedBy[1], true);
-    assertEq(proposalsWithStatuses[0].proposal.executed, true);
+    assertProposalStatusEq(proposalsWithStatuses[0].proposal.status, ISafeMinimalMultisig.ProposalStatus.EXECUTED);
 
     assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 100 ether);
 
@@ -1797,14 +2192,14 @@ contract CryptoLegacyTest is AbstractTestHelper {
     transfers[0] = ICryptoLegacy.TokenTransferTo(address(mockToken1), dan, 40 ether);
     transfers[1] = ICryptoLegacy.TokenTransferTo(address(mockToken1), bobBeneficiary1, 60 ether);
     vm.prank(dan);
-    legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrWithdrawTokensFromLegacy.selector, abi.encode(transfers));
+    legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrWithdrawTokensFromLegacy.selector, abi.encode(transfers), bytes32(0));
 
     (voters, requiredConfirmations, proposalsWithStatuses) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
     assertEq(proposalsWithStatuses.length, 2);
     assertEq(proposalsWithStatuses[1].confirmedBy.length, 2);
     assertEq(proposalsWithStatuses[1].confirmedBy[0], false);
     assertEq(proposalsWithStatuses[1].confirmedBy[1], true);
-    assertEq(proposalsWithStatuses[1].proposal.executed, false);
+    assertProposalStatusEq(proposalsWithStatuses[1].proposal.status, ISafeMinimalMultisig.ProposalStatus.PENDING);
 
     assertEq(proposalsWithStatuses[0].proposal.selector, LegacyRecoveryPlugin.lrTransferTreasuryTokensToLegacy.selector);
     assertEq(proposalsWithStatuses[0].proposal.params, abi.encode(_treasuries, _tokens));
@@ -1813,14 +2208,360 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(proposalsWithStatuses[1].proposal.params, abi.encode(transfers));
 
     vm.prank(bobBeneficiary1);
-    legacyRecoveryPluginLegacy.lrConfirm(1);
+    legacyRecoveryPluginLegacy.lrConfirm(1, bytes32(0));
 
     (voters, requiredConfirmations, proposalsWithStatuses) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
     assertEq(proposalsWithStatuses.length, 2);
     assertEq(proposalsWithStatuses[1].confirmedBy.length, 2);
     assertEq(proposalsWithStatuses[1].confirmedBy[0], true);
     assertEq(proposalsWithStatuses[1].confirmedBy[1], true);
-    assertEq(proposalsWithStatuses[1].proposal.executed, true);
+    assertProposalStatusEq(proposalsWithStatuses[1].proposal.status, ISafeMinimalMultisig.ProposalStatus.EXECUTED);
+
+    assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 0);
+    assertEq(mockToken1.balanceOf(dan), 40 ether);
+    assertEq(mockToken1.balanceOf(bobBeneficiary1), 60 ether);
+
+    voters = new bytes32[](2);
+    voters[0] = addressToHash(alice);
+    voters[1] = addressToHash(dan);
+
+    vm.prank(bob);
+    legacyRecoveryPluginLegacy.lrSetMultisigConfig(voters, 2);
+
+    clList = beneficiaryRegistry.getCryptoLegacyListByRecovery(addressToHash(alice));
+    assertEq(clList.length, 1);
+    assertEq(clList[0], address(cryptoLegacy));
+
+    clList = beneficiaryRegistry.getCryptoLegacyListByRecovery(addressToHash(dan));
+    assertEq(clList.length, 1);
+    assertEq(clList[0], address(cryptoLegacy));
+
+    clList = beneficiaryRegistry.getCryptoLegacyListByRecovery(addressToHash(bobBeneficiary1));
+    assertEq(clList.length, 0);
+  }
+
+  function testLegacyRecoveryPluginCancelByOne() public {
+    CryptoLegacyBasePlugin cryptoLegacy;
+    ICryptoLegacyLens cryptoLegacyLens;
+    address legacyRecoveryPlugin = address(new LegacyRecoveryPlugin());
+
+    vm.startPrank(owner);
+    pluginsRegistry.addPlugin(lensPlugin, "");
+    pluginsRegistry.addPlugin(legacyRecoveryPlugin, "");
+    vm.stopPrank();
+
+    (cryptoLegacy, cryptoLegacyLens, , ) = _buildCryptoLegacyWithPlugins(bob, buildFee, bytes8(0), _getTwoInitPluginsList(lensPlugin, legacyRecoveryPlugin));
+    vm.warp(block.timestamp + 1);
+
+    vm.prank(treasury);
+    mockToken1.approve(address(cryptoLegacy), 100 ether);
+
+    ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
+    vm.warp(block.timestamp + clData.updateInterval + 1);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.initiateChallenge();
+    address[] memory _treasuries = new address[](1);
+    _treasuries[0] = treasury;
+    address[] memory _tokens = new address[](1);
+    _tokens[0] = address(mockToken1);
+
+    LegacyRecoveryPlugin legacyRecoveryPluginLegacy = LegacyRecoveryPlugin(address(cryptoLegacy));
+
+    (
+      bytes32[] memory voters,
+      uint8 requiredConfirmations,
+      ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses
+    ) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
+    assertEq(voters.length, 0);
+    assertEq(requiredConfirmations, 0);
+
+    voters = new bytes32[](2);
+    voters[0] = addressToHash(bobBeneficiary1);
+    voters[1] = addressToHash(dan);
+
+    vm.prank(bob);
+    legacyRecoveryPluginLegacy.lrSetMultisigConfig(voters, 2);
+
+    vm.prank(bobBeneficiary1);
+    legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrTransferTreasuryTokensToLegacy.selector, abi.encode(_treasuries, _tokens), bytes32(0));
+
+    (voters, requiredConfirmations, proposalsWithStatuses) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
+    assertEq(proposalsWithStatuses.length, 1);
+    assertEq(proposalsWithStatuses[0].confirmedBy.length, 2);
+    assertEq(proposalsWithStatuses[0].confirmedBy[0], true);
+    assertEq(proposalsWithStatuses[0].confirmedBy[1], false);
+    assertProposalStatusEq(proposalsWithStatuses[0].proposal.status, ISafeMinimalMultisig.ProposalStatus.PENDING);
+
+    vm.expectRevert(ISafeMinimalMultisig.MultisigVoterNotAllowed.selector);
+    vm.prank(bobBeneficiary2);
+    legacyRecoveryPluginLegacy.lrCancel(0, bytes32(0));
+
+    vm.expectRevert(ISafeMinimalMultisig.MultisigNotConfirmed.selector);
+    vm.prank(dan);
+    legacyRecoveryPluginLegacy.lrCancel(0, bytes32(0));
+
+    vm.prank(bobBeneficiary1);
+    legacyRecoveryPluginLegacy.lrCancel(0, bytes32(0));
+
+    (voters, requiredConfirmations, proposalsWithStatuses) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
+    assertEq(proposalsWithStatuses.length, 1);
+    assertEq(proposalsWithStatuses[0].confirmedBy.length, 2);
+    assertEq(proposalsWithStatuses[0].confirmedBy[0], false);
+    assertEq(proposalsWithStatuses[0].confirmedBy[1], false);
+    assertProposalStatusEq(proposalsWithStatuses[0].proposal.status, ISafeMinimalMultisig.ProposalStatus.CANCELED);
+
+    vm.expectRevert(ISafeMinimalMultisig.MultisigCanceled.selector);
+    vm.prank(dan);
+    legacyRecoveryPluginLegacy.lrCancel(0, bytes32(0));
+  }
+
+  function testLegacyRecoveryPluginCancelByTwo() public {
+    CryptoLegacyBasePlugin cryptoLegacy;
+    ICryptoLegacyLens cryptoLegacyLens;
+    address legacyRecoveryPlugin = address(new LegacyRecoveryPlugin());
+
+    vm.startPrank(owner);
+    pluginsRegistry.addPlugin(lensPlugin, "");
+    pluginsRegistry.addPlugin(legacyRecoveryPlugin, "");
+    vm.stopPrank();
+
+    (cryptoLegacy, cryptoLegacyLens, , ) = _buildCryptoLegacyWithPlugins(bob, buildFee, bytes8(0), _getTwoInitPluginsList(lensPlugin, legacyRecoveryPlugin));
+    vm.warp(block.timestamp + 1);
+
+    vm.prank(treasury);
+    mockToken1.approve(address(cryptoLegacy), 100 ether);
+
+    ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
+    vm.warp(block.timestamp + clData.updateInterval + 1);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.initiateChallenge();
+    address[] memory _treasuries = new address[](1);
+    _treasuries[0] = treasury;
+    address[] memory _tokens = new address[](1);
+    _tokens[0] = address(mockToken1);
+
+    LegacyRecoveryPlugin legacyRecoveryPluginLegacy = LegacyRecoveryPlugin(address(cryptoLegacy));
+
+    (
+      bytes32[] memory voters,
+      uint8 requiredConfirmations,
+      ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses
+    ) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
+    assertEq(voters.length, 0);
+    assertEq(requiredConfirmations, 0);
+
+    voters = new bytes32[](3);
+    voters[0] = addressToHash(bobBeneficiary1);
+    voters[1] = addressToHash(dan);
+    voters[2] = addressToHash(charlie);
+
+    vm.prank(bob);
+    legacyRecoveryPluginLegacy.lrSetMultisigConfig(voters, 3);
+
+    vm.prank(bobBeneficiary1);
+    legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrTransferTreasuryTokensToLegacy.selector, abi.encode(_treasuries, _tokens), bytes32(0));
+
+    (voters, requiredConfirmations, proposalsWithStatuses) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
+    assertEq(proposalsWithStatuses.length, 1);
+    assertEq(proposalsWithStatuses[0].confirmedBy.length, 3);
+    assertEq(proposalsWithStatuses[0].confirmedBy[0], true);
+    assertEq(proposalsWithStatuses[0].confirmedBy[1], false);
+    assertEq(proposalsWithStatuses[0].confirmedBy[2], false);
+    assertProposalStatusEq(proposalsWithStatuses[0].proposal.status, ISafeMinimalMultisig.ProposalStatus.PENDING);
+
+    vm.prank(dan);
+    legacyRecoveryPluginLegacy.lrConfirm(0, bytes32(0));
+
+    (voters, requiredConfirmations, proposalsWithStatuses) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
+    assertEq(proposalsWithStatuses.length, 1);
+    assertEq(proposalsWithStatuses[0].confirmedBy.length, 3);
+    assertEq(proposalsWithStatuses[0].confirmedBy[0], true);
+    assertEq(proposalsWithStatuses[0].confirmedBy[1], true);
+    assertEq(proposalsWithStatuses[0].confirmedBy[2], false);
+    assertProposalStatusEq(proposalsWithStatuses[0].proposal.status, ISafeMinimalMultisig.ProposalStatus.PENDING);
+
+    vm.prank(bobBeneficiary1);
+    legacyRecoveryPluginLegacy.lrCancel(0, bytes32(0));
+
+    (voters, requiredConfirmations, proposalsWithStatuses) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
+    assertEq(proposalsWithStatuses.length, 1);
+    assertEq(proposalsWithStatuses[0].confirmedBy.length, 3);
+    assertEq(proposalsWithStatuses[0].confirmedBy[0], false);
+    assertEq(proposalsWithStatuses[0].confirmedBy[1], true);
+    assertEq(proposalsWithStatuses[0].confirmedBy[2], false);
+    assertProposalStatusEq(proposalsWithStatuses[0].proposal.status, ISafeMinimalMultisig.ProposalStatus.PENDING);
+
+    vm.prank(dan);
+    legacyRecoveryPluginLegacy.lrCancel(0, bytes32(0));
+
+    (voters, requiredConfirmations, proposalsWithStatuses) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
+    assertEq(proposalsWithStatuses.length, 1);
+    assertEq(proposalsWithStatuses[0].confirmedBy.length, 3);
+    assertEq(proposalsWithStatuses[0].confirmedBy[0], false);
+    assertEq(proposalsWithStatuses[0].confirmedBy[1], false);
+    assertEq(proposalsWithStatuses[0].confirmedBy[2], false);
+    assertProposalStatusEq(proposalsWithStatuses[0].proposal.status, ISafeMinimalMultisig.ProposalStatus.CANCELED);
+  }
+
+  function testLegacyRecoveryPluginWithSalt() public {
+    CryptoLegacyBasePlugin cryptoLegacy;
+    ICryptoLegacyLens cryptoLegacyLens;
+    {
+      address legacyRecoveryPlugin = address(new LegacyRecoveryPlugin());
+
+      vm.startPrank(owner);
+      pluginsRegistry.addPlugin(lensPlugin, "");
+      pluginsRegistry.addPlugin(legacyRecoveryPlugin, "");
+      vm.stopPrank();
+
+      (cryptoLegacy, cryptoLegacyLens, , ) = _buildCryptoLegacyWithPlugins(bob, buildFee, bytes8(0), _getTwoInitPluginsList(lensPlugin, legacyRecoveryPlugin));
+    }
+    vm.warp(block.timestamp + 1);
+
+    vm.prank(bob);
+    cryptoLegacy.update{value: updateFee}(_getEmptyUintList(), _getEmptyUintList());
+
+    vm.prank(treasury);
+    mockToken1.approve(address(cryptoLegacy), 100 ether);
+
+    ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
+    vm.warp(block.timestamp + clData.updateInterval + 1);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.initiateChallenge();
+    address[] memory _treasuries = new address[](1);
+    _treasuries[0] = treasury;
+    address[] memory _tokens = new address[](1);
+    _tokens[0] = address(mockToken1);
+
+    LegacyRecoveryPlugin legacyRecoveryPluginLegacy = LegacyRecoveryPlugin(address(cryptoLegacy));
+
+    (
+      bytes32[] memory voters,
+      uint8 requiredConfirmations,
+      ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses
+    ) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
+    assertEq(voters.length, 0);
+    assertEq(requiredConfirmations, 0);
+
+    bytes32 bobBeneficiary1SaltHash = keccak256(abi.encode("bb1"));
+    bytes32 danSaltHash = keccak256(abi.encode("dan"));
+    voters = new bytes32[](2);
+    voters[0] = addressWithSaltToHash(bobBeneficiary1, bobBeneficiary1SaltHash);
+    voters[1] = addressWithSaltToHash(dan, danSaltHash);
+
+    vm.prank(bob);
+    legacyRecoveryPluginLegacy.lrSetMultisigConfig(voters, 2);
+
+    address[] memory clList = beneficiaryRegistry.getCryptoLegacyListByRecovery(addressWithSaltToHash(bobBeneficiary1, bobBeneficiary1SaltHash));
+    assertEq(clList.length, 1);
+    assertEq(clList[0], address(cryptoLegacy));
+
+    clList = beneficiaryRegistry.getCryptoLegacyListByRecovery(addressWithSaltToHash(dan, danSaltHash));
+    assertEq(clList.length, 1);
+    assertEq(clList[0], address(cryptoLegacy));
+
+    (voters, requiredConfirmations, proposalsWithStatuses) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
+    assertEq(voters.length, 2);
+    assertEq(voters[0], addressWithSaltToHash(bobBeneficiary1, bobBeneficiary1SaltHash));
+    assertEq(voters[1], addressWithSaltToHash(dan, danSaltHash));
+    assertEq(requiredConfirmations, 2);
+    assertEq(proposalsWithStatuses.length, 0);
+
+    vm.expectRevert(ISafeMinimalMultisig.MultisigVoterNotAllowed.selector);
+    vm.prank(bobBeneficiary1);
+    legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrTransferTreasuryTokensToLegacy.selector, abi.encode(_treasuries, _tokens), bytes32(0));
+
+    vm.expectRevert(ISafeMinimalMultisig.MultisigVoterNotAllowed.selector);
+    vm.prank(bobBeneficiary1);
+    legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrTransferTreasuryTokensToLegacy.selector, abi.encode(_treasuries, _tokens), bytes32(uint(1)));
+
+    vm.prank(bobBeneficiary1);
+    legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrTransferTreasuryTokensToLegacy.selector, abi.encode(_treasuries, _tokens), bobBeneficiary1SaltHash);
+
+    (voters, requiredConfirmations, proposalsWithStatuses) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
+    assertEq(proposalsWithStatuses.length, 1);
+    assertEq(proposalsWithStatuses[0].confirmedBy.length, 2);
+    assertEq(proposalsWithStatuses[0].confirmedBy[0], true);
+    assertEq(proposalsWithStatuses[0].confirmedBy[1], false);
+    assertEq(proposalsWithStatuses[0].proposal.selector, LegacyRecoveryPlugin.lrTransferTreasuryTokensToLegacy.selector);
+    assertEq(proposalsWithStatuses[0].proposal.params, abi.encode(_treasuries, _tokens));
+    assertProposalStatusEq(proposalsWithStatuses[0].proposal.status, ISafeMinimalMultisig.ProposalStatus.PENDING);
+
+    vm.expectRevert(ISafeMinimalMultisig.MultisigVoterNotAllowed.selector);
+    vm.prank(bobBeneficiary1);
+    legacyRecoveryPluginLegacy.lrConfirm(0, bytes32(0));
+
+    vm.expectRevert(ISafeMinimalMultisig.MultisigVoterNotAllowed.selector);
+    vm.prank(bobBeneficiary1);
+    legacyRecoveryPluginLegacy.lrConfirm(0, danSaltHash);
+
+    vm.prank(bobBeneficiary1);
+    legacyRecoveryPluginLegacy.lrConfirm(0, bobBeneficiary1SaltHash);
+
+    (voters, requiredConfirmations, proposalsWithStatuses) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
+    assertEq(proposalsWithStatuses.length, 1);
+    assertEq(proposalsWithStatuses[0].confirmedBy.length, 2);
+    assertEq(proposalsWithStatuses[0].confirmedBy[0], true);
+    assertEq(proposalsWithStatuses[0].confirmedBy[1], false);
+    assertEq(proposalsWithStatuses[0].proposal.selector, LegacyRecoveryPlugin.lrTransferTreasuryTokensToLegacy.selector);
+    assertEq(proposalsWithStatuses[0].proposal.params, abi.encode(_treasuries, _tokens));
+    assertProposalStatusEq(proposalsWithStatuses[0].proposal.status, ISafeMinimalMultisig.ProposalStatus.PENDING);
+
+    vm.expectRevert(ISafeMinimalMultisig.MultisigVoterNotAllowed.selector);
+    vm.prank(dan);
+    legacyRecoveryPluginLegacy.lrConfirm(0, bytes32(0));
+
+    vm.expectRevert(ISafeMinimalMultisig.MultisigVoterNotAllowed.selector);
+    vm.prank(dan);
+    legacyRecoveryPluginLegacy.lrConfirm(0, bobBeneficiary1SaltHash);
+
+    vm.prank(dan);
+    legacyRecoveryPluginLegacy.lrConfirm(0, danSaltHash);
+
+    vm.expectRevert(ISafeMinimalMultisig.MultisigAlreadyExecuted.selector);
+    vm.prank(dan);
+    legacyRecoveryPluginLegacy.lrConfirm(0, danSaltHash);
+
+    (voters, requiredConfirmations, proposalsWithStatuses) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
+    assertEq(proposalsWithStatuses.length, 1);
+    assertEq(proposalsWithStatuses[0].confirmedBy.length, 2);
+    assertEq(proposalsWithStatuses[0].confirmedBy[0], true);
+    assertEq(proposalsWithStatuses[0].confirmedBy[1], true);
+    assertProposalStatusEq(proposalsWithStatuses[0].proposal.status, ISafeMinimalMultisig.ProposalStatus.EXECUTED);
+
+    assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 100 ether);
+
+    ICryptoLegacy.TokenTransferTo[] memory transfers = new ICryptoLegacy.TokenTransferTo[](2);
+    transfers[0] = ICryptoLegacy.TokenTransferTo(address(mockToken1), dan, 40 ether);
+    transfers[1] = ICryptoLegacy.TokenTransferTo(address(mockToken1), bobBeneficiary1, 60 ether);
+    vm.prank(dan);
+    legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrWithdrawTokensFromLegacy.selector, abi.encode(transfers), danSaltHash);
+
+    (voters, requiredConfirmations, proposalsWithStatuses) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
+    assertEq(proposalsWithStatuses.length, 2);
+    assertEq(proposalsWithStatuses[1].confirmedBy.length, 2);
+    assertEq(proposalsWithStatuses[1].confirmedBy[0], false);
+    assertEq(proposalsWithStatuses[1].confirmedBy[1], true);
+    assertProposalStatusEq(proposalsWithStatuses[1].proposal.status, ISafeMinimalMultisig.ProposalStatus.PENDING);
+
+    assertEq(proposalsWithStatuses[0].proposal.selector, LegacyRecoveryPlugin.lrTransferTreasuryTokensToLegacy.selector);
+    assertEq(proposalsWithStatuses[0].proposal.params, abi.encode(_treasuries, _tokens));
+
+    assertEq(proposalsWithStatuses[1].proposal.selector, LegacyRecoveryPlugin.lrWithdrawTokensFromLegacy.selector);
+    assertEq(proposalsWithStatuses[1].proposal.params, abi.encode(transfers));
+
+    vm.prank(bobBeneficiary1);
+    legacyRecoveryPluginLegacy.lrConfirm(1, bobBeneficiary1SaltHash);
+
+    (voters, requiredConfirmations, proposalsWithStatuses) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
+    assertEq(proposalsWithStatuses.length, 2);
+    assertEq(proposalsWithStatuses[1].confirmedBy.length, 2);
+    assertEq(proposalsWithStatuses[1].confirmedBy[0], true);
+    assertEq(proposalsWithStatuses[1].confirmedBy[1], true);
+    assertProposalStatusEq(proposalsWithStatuses[1].proposal.status, ISafeMinimalMultisig.ProposalStatus.EXECUTED);
 
     assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 0);
     assertEq(mockToken1.balanceOf(dan), 40 ether);
@@ -1869,39 +2610,41 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(clData.lastUpdateAt, block.timestamp);
   }
 
-  function testCreate2Build() public {
+  function testCreate3Build() public {
     vm.prank(owner);
     pluginsRegistry.addPlugin(lensPlugin, "");
 
-    bytes32[] memory beneficiaryArr = new bytes32[](1);
-    beneficiaryArr[0] = keccak256(abi.encode(bobBeneficiary1));
-    ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr = new ICryptoLegacy.BeneficiaryConfig[](1);
-    beneficiaryConfigArr[0] = ICryptoLegacy.BeneficiaryConfig(10, 100, 10000);
+    uint256 initialFeeToPay;
+    uint256 updateFee;
+    ICryptoLegacyBuildManager.BuildArgs memory buildArgs;
+    {
+      bytes32[] memory beneficiaryArr = new bytes32[](1);
+      beneficiaryArr[0] = keccak256(abi.encode(bobBeneficiary1));
+      ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr = new ICryptoLegacy.BeneficiaryConfig[](1);
+      beneficiaryConfigArr[0] = ICryptoLegacy.BeneficiaryConfig(10, 100, 10000);
 
-    ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(bytes8(0), beneficiaryArr, beneficiaryConfigArr, _getBasePlugins(), 180 days, 90 days);
-    uint256 initialFeeToPay = 0;
-    uint256 updateFee = feeRegistry.getContractCaseFeeForCode(address(buildManager), buildManager.REGISTRY_UPDATE_CASE(), bytes8(0));
-    address cl1Address = factory.computeAddress(bytes32(uint(1)), keccak256(factory.cryptoLegacyBytecode(address(buildManager), bob, _getBasePlugins())));
-    buildRoll();
-    vm.prank(bob);
-    address payable cl1 = buildManager.buildCryptoLegacy{value: buildFee}(buildArgs, _getCustomRefArgsStruct(bob, bytes8(uint64(1))), _getCreate2ArgsStruct(cl1Address, bytes32(uint(1))));
+      buildArgs = ICryptoLegacyBuildManager.BuildArgs(bytes8(0), beneficiaryArr, beneficiaryConfigArr, _getBasePlugins(), updateInterval, challengeTimeout);
+      updateFee = feeRegistry.getContractCaseFeeForCode(address(buildManager), buildManager.REGISTRY_UPDATE_CASE(), bytes8(0));
+      address cl1Address = factory.computeAddress(bytes32(uint(1)), bob);
+      buildRoll();
+      vm.prank(bob);
+      address payable cl1 = buildManager.buildCryptoLegacy{value: buildFee}(buildArgs, _getCustomRefArgsStruct(bob, bytes8(uint64(1))), _getCreate2ArgsStruct(cl1Address, bytes32(uint(1))));
 
-    assertEq(feeRegistry.codeByReferrer(bob), bytes8(uint64(1)));
+      assertEq(feeRegistry.codeByReferrer(bob), bytes8(uint64(1)));
 
-    vm.expectRevert(LibCreate2Deploy.AlreadyExists.selector);
-    vm.prank(bob);
-    buildManager.buildCryptoLegacy{value: buildFee}(buildArgs, _getRefArgsStruct(address(0)), _getCreate2ArgsStruct(cl1Address, bytes32(uint(1))));
+      vm.expectRevert(LibCreate3.TargetAlreadyExists.selector);
+      vm.prank(bob);
+      buildManager.buildCryptoLegacy{value: buildFee}(buildArgs, _getRefArgsStruct(address(0)), _getCreate2ArgsStruct(cl1Address, bytes32(uint(1))));
 
-    vm.expectRevert(LibCreate2Deploy.AddressMismatch.selector);
-    buildManager.buildCryptoLegacy{value: buildFee}(buildArgs, _getRefArgsStruct(address(0)), _getCreate2ArgsStruct(cl1Address, bytes32(uint(1))));
+      vm.expectRevert(LibCryptoLegacyDeploy.AddressMismatch.selector);
+      buildManager.buildCryptoLegacy{value: buildFee}(buildArgs, _getRefArgsStruct(address(0)), _getCreate2ArgsStruct(cl1Address, bytes32(uint(1))));
 
-    ICryptoLegacyLens.CryptoLegacyBaseData memory clData = ICryptoLegacyLens(cl1).getCryptoLegacyBaseData();
+      ICryptoLegacyLens.CryptoLegacyListData memory clListData = ICryptoLegacyLens(cl1).getCryptoLegacyListData(_getEmptyAddressList());
 
-    ICryptoLegacyLens.CryptoLegacyListData memory clListData = ICryptoLegacyLens(cl1).getCryptoLegacyListData(_getEmptyAddressList());
-
-    assertEq(beneficiaryArr.length, clListData.beneficiaries.length);
-    assertEq(beneficiaryArr[0], clListData.beneficiaries[0]);
-    assertEq(beneficiaryArr[0], addressToHash(bobBeneficiary1));
+      assertEq(beneficiaryArr.length, clListData.beneficiaries.length);
+      assertEq(beneficiaryArr[0], clListData.beneficiaries[0]);
+      assertEq(beneficiaryArr[0], addressToHash(bobBeneficiary1));
+    }
 
     vm.expectRevert("Ownable: caller is not the owner");
     factory.setBuildOperator(address(buildManager), false);
@@ -1910,7 +2653,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     factory.setBuildOperator(address(buildManager), false);
 
     (initialFeeToPay, updateFee) = buildManager.getAndPayBuildFee(buildArgs.invitedByRefCode);
-    address cl2Address = factory.computeAddress(bytes32(uint(2)), keccak256(factory.cryptoLegacyBytecode(address(buildManager), bob, _getBasePlugins())));
+    address cl2Address = factory.computeAddress(bytes32(uint(2)), bob);
     buildRoll();
     vm.prank(bob);
     vm.expectRevert(ICryptoLegacyFactory.NotBuildOperator.selector);
@@ -1925,8 +2668,8 @@ contract CryptoLegacyTest is AbstractTestHelper {
     ICryptoLegacyLens cryptoLegacyLens2 = ICryptoLegacyLens(cl2);
 
     vm.prank(bob);
-    clData = cryptoLegacyLens2.getCryptoLegacyBaseData();
-    assertEq(clData.lastFeePaidAt, 0);
+    uint256 lastFeePaidAt = cryptoLegacyLens2.getCryptoLegacyBaseData().lastFeePaidAt;
+    assertEq(lastFeePaidAt, 0);
 
     vm.prank(bob);
     vm.expectRevert(ICryptoLegacy.InitialFeeNotPaid.selector);
@@ -1936,9 +2679,15 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.expectRevert(ICryptoLegacy.InitialFeeNotPaid.selector);
     cryptoLegacy2.transferOwnership(alice);
 
+    vm.expectRevert(ICryptoLegacy.ArrayLengthMismatch.selector);
+    cryptoLegacy2.payInitialFee{value: buildFee}(_getEmptyUintList(), _getOneUintList(1));
+
     cryptoLegacy2.payInitialFee{value: buildFee}(_getEmptyUintList(), _getEmptyUintList());
-    clData = cryptoLegacyLens2.getCryptoLegacyBaseData();
-    assertEq(clData.lastFeePaidAt, block.timestamp);
+    lastFeePaidAt = cryptoLegacyLens2.getCryptoLegacyBaseData().lastFeePaidAt;
+    assertEq(lastFeePaidAt, block.timestamp);
+
+    // vm.expectRevert(LibCryptoLegacyDeploy.BytecodeEmpty.selector);
+    // LibCryptoLegacyDeploy._deployByCreate3(address(1), salt, address(2), new bytes(0));
   }
 
   function testLegacyMessenger() public {
@@ -1963,7 +2712,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     messageChecksArr[0] = bytes("1t");
     messageChecksArr[1] = bytes("2t");
     vm.expectEmit(true, true, true, true);
-    emit ILegacyMessenger.LegacyMessage(beneficiaryArr[0], messagesHashArr[0], messagesArr[0], 1);
+    emit ILegacyMessenger.LegacyMessage(address(cryptoLegacy), beneficiaryArr[0], messagesHashArr[0], messagesArr[0], 1);
     vm.roll(100);
     lm.sendMessagesTo(address(cryptoLegacy), beneficiaryArr, messagesHashArr, messagesArr, messageChecksArr, 1);
 
@@ -2048,7 +2797,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     _tokens[0] = address(maliciousToken);
 
     // Attempt to trigger reentrancy during token transfer
-    vm.expectRevert("ReentrancyGuard: reentrant call");
+    vm.expectRevert("SafeERC20: low-level call failed");
     cryptoLegacy.transferTreasuryTokensToLegacy(_treasuries, _tokens);
   }
 
@@ -2085,6 +2834,10 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.expectRevert(ICryptoLegacy.NotTheOwner.selector);
     cryptoLegacy.update(_getEmptyUintList(), _getEmptyUintList());
 
+    vm.prank(bob);
+    vm.expectRevert(ICryptoLegacy.ArrayLengthMismatch.selector);
+    cryptoLegacy.update(_getEmptyUintList(), _getOneUintList(1));
+
     address[] memory clList = beneficiaryRegistry.getCryptoLegacyListByOwner(addressToHash(bob));
     assertEq(clList.length, 1);
     assertEq(clList[0], address(cryptoLegacy));
@@ -2102,14 +2855,6 @@ contract CryptoLegacyTest is AbstractTestHelper {
     clList = beneficiaryRegistry.getCryptoLegacyListByOwner(addressToHash(alice));
     assertEq(clList.length, 1);
     assertEq(clList[0], address(cryptoLegacy));
-
-    vm.prank(bob);
-    vm.expectRevert(ICryptoLegacy.NotTheOwner.selector);
-    cryptoLegacy.renounceOwnership();
-
-    vm.prank(alice);
-    cryptoLegacy.renounceOwnership();
-    assertEq(cryptoLegacy.owner(), address(0));
   }
 
   function testClaimAsRemovedBeneficiary() public {
@@ -2146,6 +2891,14 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.prank(bobBeneficiary1);
     vm.expectRevert(ICryptoLegacy.NotTheBeneficiary.selector);
     cryptoLegacy.beneficiaryClaim(new address[](0), address(0), 0);
+
+    vm.prank(bobBeneficiary2);
+    vm.expectRevert(ICryptoLegacy.IncorrectRefShare.selector);
+    cryptoLegacy.beneficiaryClaim{value: updateFee}(new address[](0), dan, 11000);
+
+    vm.prank(bobBeneficiary2);
+    vm.expectRevert(abi.encodeWithSelector(ICryptoLegacy.TransferFeeFailed.selector, new bytes(0)));
+    cryptoLegacy.beneficiaryClaim{value: updateFee}(new address[](0), address(mockToken1), 1000);
 
     uint256 danBalanceBefore = dan.balance;
     vm.prank(bobBeneficiary2);
@@ -2346,5 +3099,204 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.expectRevert(ICryptoLegacy.InitialFeeAlreadyPaid.selector);
     cryptoLegacy.payInitialFee{value: buildFee}(_getEmptyUintList(), _getEmptyUintList());
     vm.stopPrank();
+  }
+
+  function testAuditRebaseToken() public {
+    bytes8 customRefCode = 0x0123456789abcdef;
+    vm.prank(alice);
+    buildManager.createCustomRef(customRefCode, aliceRecipient, _getRefChains(), _getRefChains());
+
+    vm.startPrank(owner);
+    pluginsRegistry.addPlugin(lensPlugin, "123");
+    pluginsRegistry.addPluginDescription(lensPlugin, "123");
+    vm.stopPrank();
+
+    bytes32[] memory beneficiaryArr;
+    ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr;
+    CryptoLegacyBasePlugin cryptoLegacy;
+    ICryptoLegacyLens cryptoLegacyLens;
+    uint256 discount = buildFee * refDiscountPct / 10000;
+    (cryptoLegacy, cryptoLegacyLens, beneficiaryArr, beneficiaryConfigArr) = _buildCryptoLegacy(bob, buildFee - discount, customRefCode);
+
+    ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
+
+    vm.warp(block.timestamp + clData.updateInterval);
+
+    vm.startPrank(bob);
+    cryptoLegacy.update{value: 0.09 ether}(_getEmptyUintList(), _getEmptyUintList());
+    beneficiaryArr = new bytes32[](3);
+    beneficiaryArr[0] = keccak256(abi.encode(bobBeneficiary1));
+    beneficiaryArr[1] = keccak256(abi.encode(bobBeneficiary2));
+    beneficiaryArr[2] = keccak256(abi.encode(bobBeneficiary3));
+    beneficiaryConfigArr = new ICryptoLegacy.BeneficiaryConfig[](3);
+    beneficiaryConfigArr[0] = ICryptoLegacy.BeneficiaryConfig(0, 0, 4000);
+    beneficiaryConfigArr[1] = ICryptoLegacy.BeneficiaryConfig(0, 0, 0);
+    beneficiaryConfigArr[2] = ICryptoLegacy.BeneficiaryConfig(0, 0, 6000);
+    cryptoLegacy.setBeneficiaries(beneficiaryArr, beneficiaryConfigArr);
+    vm.stopPrank();
+
+    vm.startPrank(treasury);
+    AuditMockERC20Rebase rebaseToken = new AuditMockERC20Rebase();
+    rebaseToken.approve(address(cryptoLegacy), 100 ether);
+    rebaseToken.setRebaseRate(1000); // balance = underlying * (100% + 10%)
+    vm.stopPrank();
+
+    vm.warp(block.timestamp + clData.updateInterval + 1);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.initiateChallenge();
+    address[] memory _treasuries = new address[](1);
+    _treasuries[0] = treasury;
+    address[] memory _tokens = new address[](1);
+    _tokens[0] = address(rebaseToken);
+
+    vm.warp(block.timestamp + clData.challengeTimeout + 1);
+
+    vm.startPrank(bobBeneficiary1);
+    cryptoLegacy.transferTreasuryTokensToLegacy(_treasuries, _tokens);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+    vm.stopPrank();
+  
+    assertEq(rebaseToken.balanceOf(address(cryptoLegacy)), 60000000000000000000);
+
+    vm.prank(treasury);
+    rebaseToken.setRebaseRate(500); // // balance = underlying * (100% + 5%)
+    assertEq(rebaseToken.balanceOf(address(cryptoLegacy)), 57272727272727272727);
+
+    vm.prank(bobBeneficiary3);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0); // @audit reverts, beacuse of incorrect balance calculations
+  }
+
+  function testAuditSubTransferToken() public {
+    bytes8 customRefCode = 0x0123456789abcdef;
+    vm.prank(alice);
+    buildManager.createCustomRef(customRefCode, aliceRecipient, _getRefChains(), _getRefChains());
+
+    vm.startPrank(owner);
+    pluginsRegistry.addPlugin(lensPlugin, "123");
+    pluginsRegistry.addPluginDescription(lensPlugin, "123");
+    vm.stopPrank();
+
+    bytes32[] memory beneficiaryArr;
+    ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr;
+    CryptoLegacyBasePlugin cryptoLegacy;
+    ICryptoLegacyLens cryptoLegacyLens;
+    uint256 discount = buildFee * refDiscountPct / 10000;
+    (cryptoLegacy, cryptoLegacyLens, beneficiaryArr, beneficiaryConfigArr) = _buildCryptoLegacy(bob, buildFee - discount, customRefCode);
+
+    ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
+
+    vm.warp(block.timestamp + clData.updateInterval);
+
+    vm.startPrank(bob);
+    cryptoLegacy.update{value: 0.09 ether}(_getEmptyUintList(), _getEmptyUintList());
+    beneficiaryArr = new bytes32[](3);
+    beneficiaryArr[0] = keccak256(abi.encode(bobBeneficiary1));
+    beneficiaryArr[1] = keccak256(abi.encode(bobBeneficiary2));
+    beneficiaryArr[2] = keccak256(abi.encode(bobBeneficiary3));
+    beneficiaryConfigArr = new ICryptoLegacy.BeneficiaryConfig[](3);
+    beneficiaryConfigArr[0] = ICryptoLegacy.BeneficiaryConfig(0, 0, 4000);
+    beneficiaryConfigArr[1] = ICryptoLegacy.BeneficiaryConfig(0, 0, 0);
+    beneficiaryConfigArr[2] = ICryptoLegacy.BeneficiaryConfig(0, 0, 6000);
+    cryptoLegacy.setBeneficiaries(beneficiaryArr, beneficiaryConfigArr);
+    vm.stopPrank();
+
+    vm.prank(treasury);
+    mockToken1.approve(address(cryptoLegacy), 100 ether);
+
+    vm.warp(block.timestamp + clData.updateInterval + 1);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.initiateChallenge();
+    address[] memory _treasuries = new address[](1);
+    _treasuries[0] = treasury;
+    address[] memory _tokens = new address[](1);
+    _tokens[0] = address(mockToken1);
+
+    vm.warp(block.timestamp + clData.challengeTimeout + 1);
+
+    vm.startPrank(bobBeneficiary1);
+    cryptoLegacy.transferTreasuryTokensToLegacy(_treasuries, _tokens);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+    vm.stopPrank();
+  
+    assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 60000000000000000000);
+
+    vm.prank(owner);
+    mockToken1.mockTransferFrom(address(cryptoLegacy), address(1), 2700000000000000000);
+
+    assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 57300000000000000000);
+
+    vm.prank(bobBeneficiary3);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0); // @audit reverts, beacuse of incorrect balance calculations
+
+    assertLt(mockToken1.balanceOf(address(cryptoLegacy)), 20);
+  }
+
+
+  function testAuditRebaseSubAndAddToken() public {
+    (CryptoLegacyBasePlugin cryptoLegacy, LensPlugin cryptoLegacyLens, , ) = _buildCryptoLegacyWithVesting();
+
+    ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
+
+    vm.warp(block.timestamp + clData.updateInterval);
+
+    vm.prank(bob);
+    cryptoLegacy.update{value: 0.1 ether}(_getEmptyUintList(), _getEmptyUintList());
+    vm.stopPrank();
+
+    vm.startPrank(treasury);
+    AuditMockERC20Rebase rebaseToken = new AuditMockERC20Rebase();
+    rebaseToken.approve(address(cryptoLegacy), 100 ether);
+    rebaseToken.setRebaseRate(0); // balance = underlying * (100% + 10%)
+    vm.stopPrank();
+
+    vm.warp(block.timestamp + clData.updateInterval + 1);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.initiateChallenge();
+
+    vm.warp(block.timestamp + clData.challengeTimeout + 1);
+
+    address[] memory _tokens = _getOneAddressList(address(rebaseToken));
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.transferTreasuryTokensToLegacy(_getOneAddressList(treasury), _tokens);
+
+    vm.prank(treasury);
+    rebaseToken.setRebaseRate(5000); // balance = underlying * (100% + 50%)
+
+    assertEq(rebaseToken.balanceOf(address(cryptoLegacy)), 150 ether);
+
+    vm.warp(block.timestamp + 11);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertEq(rebaseToken.balanceOf(address(cryptoLegacy)), 148.8 ether);
+
+    vm.warp(block.timestamp + 21);
+
+    vm.prank(bobBeneficiary2);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertEq(rebaseToken.balanceOf(address(cryptoLegacy)), 137.1 ether);
+
+    vm.warp(block.timestamp + 10);
+
+    vm.prank(treasury);
+    rebaseToken.setRebaseRate(500); // // balance = underlying * (100% + 5%)
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    vm.warp(block.timestamp + 100);
+
+    vm.prank(bobBeneficiary2);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertLt(rebaseToken.balanceOf(address(cryptoLegacy)), 20);
   }
 }

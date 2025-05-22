@@ -2,11 +2,13 @@
 pragma solidity ^0.8.13;
 
 import "./AbstractTestHelper.sol";
+import "./CrossChainTestHelper.sol";
 import "../contracts/FeeRegistry.sol";
 import "../contracts/LegacyMessenger.sol";
 import "../contracts/PluginsRegistry.sol";
 import "../contracts/mocks/MockERC20.sol";
 import "../contracts/mocks/MockERC721.sol";
+import "../contracts/mocks/MockPayable.sol";
 import "../contracts/plugins/LensPlugin.sol";
 import "../contracts/mocks/MockClaimPlugin.sol";
 import "../contracts/plugins/NftLegacyPlugin.sol";
@@ -21,13 +23,47 @@ import "../contracts/interfaces/ICryptoLegacyLens.sol";
 import "../contracts/plugins/TrustedGuardiansPlugin.sol";
 import "../contracts/interfaces/ITrustedGuardiansPlugin.sol";
 import "../contracts/plugins/BeneficiaryPluginAddRights.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./CrossChainTestHelper.sol";
 
 contract FeeRegistryTest is CrossChainTestHelper {
 
   function setUp() public override {
     super.setUp();
+  }
+
+  function testFeeRegistryBuilder() public {
+    bytes32 feeRegistrySalt = keccak256(abi.encodePacked("FeeRegistry2", salt));
+    address implementation = address(new FeeRegistry{salt: salt}());
+    bytes memory initData = LibDeploy.feeRegistryInitialize(owner, uint32(refDiscountPct), uint32(refSharePct), lifetimeNft, 60, 10);
+
+    vm.expectRevert("Ownable: caller is not the owner");
+    proxyBuilder.build(address(1), feeRegistrySalt, implementation, initData);
+
+    vm.expectRevert(ProxyBuilder.AddressMismatch.selector);
+    vm.prank(owner);
+    proxyBuilder.build(address(1), feeRegistrySalt, implementation, initData);
+  }
+
+  function testFeeRegistryTooBigPct() public {
+    (bytes8 refCode, , ) = buildManager.createRef(aliceRecipient, _getEmptyUintList(), _getEmptyUintList());
+    vm.prank(owner);
+    feeRegistry.setDefaultPct(10001, 1000);
+  
+    vm.expectRevert(IFeeRegistry.TooBigPct.selector);
+    feeRegistry.calculateFee(refCode, 1 ether);
+
+    vm.prank(owner);
+    feeRegistry.setDefaultPct(1000, 10001);
+  
+    vm.expectRevert(IFeeRegistry.TooBigPct.selector);
+    feeRegistry.calculateFee(refCode, 1 ether);
+
+    vm.prank(owner);
+    feeRegistry.setDefaultPct(1000, 1000);
+
+    (uint256 discount, uint256 share, uint256 fee) = feeRegistry.calculateFee(refCode, 1 ether);
+    assertEq(discount, 0.1 ether);
+    assertEq(share, 0.1 ether);
+    assertEq(fee, 0.9 ether);
   }
 
   function testFeeRegistry() public {
@@ -107,7 +143,7 @@ contract FeeRegistryTest is CrossChainTestHelper {
     vm.prank(bob);
     assertEq(address(feeRegistry).balance, 0);
     assertEq(feeRegistry.accumulatedFee(), 0);
-    ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(bytes8(0), beneficiaryArr, beneficiaryConfigArr, plugins, 180 days, 90 days);
+    ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(bytes8(0), beneficiaryArr, beneficiaryConfigArr, plugins, updateInterval, challengeTimeout);
     address payable cl = buildManager.buildCryptoLegacy{value: buildFee}(buildArgs, _getRefArgsStruct(bob), _getCreate2ArgsStruct(address(0), bytes32(uint(0))));
 
     vm.expectRevert(ICryptoLegacy.NotBuildManager.selector);
@@ -192,7 +228,7 @@ contract FeeRegistryTest is CrossChainTestHelper {
     uint256 share = buildFee * refSharePct / 10000;
     assertEq(aliceRecipient.balance, 0);
     assertEq(danRecipient.balance, 0);
-    ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(customRefCodeAlice, beneficiaryArr, beneficiaryConfigArr, plugins, 180 days, 90 days);
+    ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(customRefCodeAlice, beneficiaryArr, beneficiaryConfigArr, plugins, updateInterval, challengeTimeout);
     buildManager.buildCryptoLegacy{value: buildFee - discount}(buildArgs, _getRefArgsStruct(address(0)), _getCreate2ArgsStruct(address(0), bytes32(uint(0))));
     assertEq(aliceRecipient.balance, 0);
     assertEq(danRecipient.balance, share);
@@ -204,8 +240,47 @@ contract FeeRegistryTest is CrossChainTestHelper {
 
     buildRoll();
 
-    vm.expectRevert(LibCreate2Deploy.Create2Failed.selector);
+    vm.expectRevert(LibCreate3.ErrorCreatingContract.selector);
     buildManager.buildCryptoLegacy{value: buildFee - discount}(buildArgs, _getRefArgsStruct(address(0)), _getCreate2ArgsStruct(address(0), bytes32(uint(0))));
+  }
+
+  function testReturnValue() public {
+    MockPayable mockPayable = new MockPayable(true);
+
+    (bool success, ) = payable(mockPayable).call{value: 2 ether}(new bytes(0));
+    if (!success) {
+      revert("Not paid");
+    }
+
+    assertEq(mockPayable.received(), 2 ether);
+
+    bytes8 customRefCode = 0x0123456789abcdef;
+    vm.prank(address(mockPayable));
+    buildManager.createCustomRef{value: 1.1 ether}(customRefCode, aliceRecipient, _getRefChains(), _getRefChains());
+
+    assertEq(mockPayable.received(), 3.1 ether);
+
+    uint256[] memory chainIdsToLock = new uint256[](2);
+    chainIdsToLock[0] = SIDE_CHAIN_ID_1;
+    chainIdsToLock[1] = SIDE_CHAIN_ID_2;
+
+    vm.prank(address(mockPayable));
+    feeRegistry.changeCodeReferrer{value: 0.02 ether}(customRefCode, alice, aliceRecipient, chainIdsToLock, _getTwoUintList(0, 0));
+
+    assertEq(mockPayable.received(), 3.1 ether);
+
+    vm.prank(address(mockPayable));
+    (bytes8 refCode, , ) = buildManager.createRef{value: 1.2 ether}(aliceRecipient, chainIdsToLock, _getTwoUintList(0, 0));
+
+    assertEq(mockPayable.received(), 4.28 ether);
+
+    vm.prank(address(mockPayable));
+    feeRegistry.changeCodeReferrer(refCode, bob, aliceRecipient, _getRefChains(), _getRefChains());
+
+    mockPayable.setPayableActive(false);
+    vm.prank(address(mockPayable));
+    vm.expectRevert(abi.encodeWithSelector(ILockChainGate.TransferFeeFailed.selector, new bytes(0)));
+    buildManager.createRef{value: 1.2 ether}(aliceRecipient, chainIdsToLock, _getTwoUintList(0, 0));
   }
 
   function testCrossChainRefs() public {
@@ -245,7 +320,7 @@ contract FeeRegistryTest is CrossChainTestHelper {
     vm.prank(alice);
     vm.expectEmit(true, true, true, false);
     emit MockDeBridgeGate.SentMessage(SIDE_CHAIN_ID_1, deBridgeFee);
-    (bytes8 refCode, ) = buildManager.createRef{value: deBridgeFee * 2 + 3}(bob, chainIdsToLock, crossChainFees);
+    (bytes8 refCode, ,) = buildManager.createRef{value: deBridgeFee * 2 + 3}(bob, chainIdsToLock, crossChainFees);
 
     IFeeRegistry.Referrer memory ref = mainLock.refererByCode(refCode);
     assertEq(ref.owner, alice);
@@ -293,6 +368,10 @@ contract FeeRegistryTest is CrossChainTestHelper {
 
     crossChainFees[0] = 0;
     crossChainFees[1] = 0;
+
+    vm.prank(alice);
+    vm.expectRevert(ILockChainGate.ArrayLengthMismatch.selector);
+    buildManager.updateCrossChainsRef{value: deBridgeFee * 2}(_getEmptyUintList(), crossChainFees);
 
     vm.prank(alice);
     buildManager.updateCrossChainsRef{value: deBridgeFee * 2}(chainIdsToLock, crossChainFees);
@@ -395,7 +474,7 @@ contract FeeRegistryTest is CrossChainTestHelper {
 
     assertEq(buildManager.calculateCrossChainCreateRefFee(chainIdsToLock, crossChainFees), deBridgeFee * 2 + 3);
     vm.prank(charlie);
-    (bytes8 newRefCode, ) = buildManager.createRef{value: deBridgeFee * 2 + 3}(charlie, chainIdsToLock, crossChainFees);
+    (bytes8 newRefCode, , ) = buildManager.createRef{value: deBridgeFee * 2 + 3}(charlie, chainIdsToLock, crossChainFees);
 
     ref = sideLock3.refererByCode(refCode);
     assertEq(ref.owner, bob);
@@ -419,5 +498,30 @@ contract FeeRegistryTest is CrossChainTestHelper {
     ref = sideLock3.refererByCode(newRefCode);
     assertEq(ref.owner, address(0));
     assertEq(ref.recipient, address(0));
+  }
+
+  function testBrokenFeeRegistry() public {
+    vm.prank(owner);
+    pluginsRegistry.addPlugin(lensPlugin, "");
+
+    (CryptoLegacyBasePlugin cryptoLegacy, ICryptoLegacyLens cryptoLegacyLens, , ) = _buildCryptoLegacyWithPlugins(bob, buildFee, bytes8(0), _getOneInitPluginList(lensPlugin));
+    vm.warp(block.timestamp + 1);
+
+    vm.prank(bob);
+    vm.expectEmit(true, false, false, false);
+    emit ICryptoLegacy.FeePaidByDefault(bytes8(0), false, 0, 0, address(9), 0);
+    cryptoLegacy.update{value: updateFee}(_getEmptyUintList(), _getEmptyUintList());
+
+    vm.startPrank(owner);
+    buildManager.setRegistries(IFeeRegistry(address(0)), buildManager.pluginsRegistry(), buildManager.beneficiaryRegistry());
+    vm.stopPrank();
+
+    vm.warp(block.timestamp + cryptoLegacyLens.getCryptoLegacyBaseData().updateInterval + 1);
+
+    vm.prank(bob);
+    emit ICryptoLegacy.FeePaidByTransfer(bytes8(0), false, 0, address(9), 0);
+    cryptoLegacy.update{value: updateFee}(_getEmptyUintList(), _getEmptyUintList());
+
+    assertEq(address(buildManager).balance, updateFee);
   }
 }

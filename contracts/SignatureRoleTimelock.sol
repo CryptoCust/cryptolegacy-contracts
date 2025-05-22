@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import "./interfaces/ISignatureRoleTimelock.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 /**
  * @title SignatureRoleTimelock
@@ -12,11 +12,14 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  *         Role assignments and signature role associations are enforced with a timelock delay.
  * @dev Inherits from AccessControl for role management and ReentrancyGuard for security.
  */
-contract SignatureRoleTimelock is ISignatureRoleTimelock, AccessControl, ReentrancyGuard {
+contract SignatureRoleTimelock is ISignatureRoleTimelock, AccessControl, ReentrancyGuardUpgradeable {
     /// @notice The administrator role is the default admin role.
     bytes32 public constant ADMIN_ROLE = DEFAULT_ADMIN_ROLE;
     /// @notice The maximum timelock duration is 7 days.
     uint128 public constant MAX_TIMELOCK_DURATION = 7 days;
+
+    uint128 public constant MAX_EXECUTION_PERIOD_LOWER_BOUND = 7 days;
+    uint128 public constant MAX_EXECUTION_PERIOD_UPPER_BOUND = 21 days;
 
     /// @notice The maximum period during which an executed call remains valid is initially set to 14 days.
     uint128 public maxExecutionPeriod = 14 days;
@@ -78,13 +81,13 @@ contract SignatureRoleTimelock is ISignatureRoleTimelock, AccessControl, Reentra
 
     /**
      * @notice Sets the maximum execution period for scheduled calls.
-     * @dev Can only be called by the contract itself (via onlyCurrentAddress).
-     *      Reverts if _maxExecutionPeriod is less than 7 days or more than 21 days.
+     * @dev Can only be called by the contract itself (via onlyCurrentAddress). Reverts if _maxExecutionPeriod is less
+     *      than MAX_EXECUTION_PERIOD_LOWER_BOUND or more than MAX_EXECUTION_PERIOD_UPPER_BOUND.
      * @param _maxExecutionPeriod The maximum period (in seconds) during which a scheduled call remains valid.
      */
     function setMaxExecutionPeriod(uint128 _maxExecutionPeriod) external onlyCurrentAddress {
-        if (_maxExecutionPeriod < 7 days || _maxExecutionPeriod > 21 days) {
-            revert OutOfMaxExecutionPeriodBounds(7 days, 21 days);
+        if (_maxExecutionPeriod < MAX_EXECUTION_PERIOD_LOWER_BOUND || _maxExecutionPeriod > MAX_EXECUTION_PERIOD_UPPER_BOUND) {
+            revert OutOfMaxExecutionPeriodBounds(MAX_EXECUTION_PERIOD_LOWER_BOUND, MAX_EXECUTION_PERIOD_UPPER_BOUND);
         }
         maxExecutionPeriod = _maxExecutionPeriod;
         emit SetMaxExecutionPeriod(_maxExecutionPeriod);
@@ -133,13 +136,13 @@ contract SignatureRoleTimelock is ISignatureRoleTimelock, AccessControl, Reentra
      * @param _addr The address to search for.
      * @return index The index of _addr in _list.
      */
-    function _getAddressIndex(address[] memory _list, address _addr) internal pure returns(uint index){
-        index = type(uint256).max;
+    function _getAddressIndex(address[] memory _list, address _addr) internal pure returns(uint){
         for (uint256 i = 0; i < _list.length; i++) {
             if (_list[i] == _addr) {
-                index = i;
+                return i;
             }
         }
+        return type(uint256).max;
     }
 
     /**
@@ -149,13 +152,13 @@ contract SignatureRoleTimelock is ISignatureRoleTimelock, AccessControl, Reentra
      * @param _hash The bytes4 value to search for.
      * @return index The index of _hash in _list.
      */
-    function _getBytes4Index(bytes4[] memory _list, bytes4 _hash) internal pure returns(uint index){
-        index = type(uint256).max;
+    function _getBytes4Index(bytes4[] memory _list, bytes4 _hash) internal pure returns(uint){
         for (uint256 i = 0; i < _list.length; i++) {
             if (_list[i] == _hash) {
-                index = i;
+                return i;
             }
         }
+        return type(uint256).max;
     }
 
     /**
@@ -179,6 +182,10 @@ contract SignatureRoleTimelock is ISignatureRoleTimelock, AccessControl, Reentra
         roleAccounts[_role].pop();
         _revokeRole(_role, _account);
         emit RemoveRoleAccount(_role, _account);
+    }
+
+    function renounceRole(bytes32, address) public pure override {
+        revert DisabledFunction();
     }
 
     /**

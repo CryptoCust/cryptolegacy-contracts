@@ -20,4 +20,10 @@ interface IPluginsRegistry {
     function getPluginDescriptionBlockNumbers(address _plugin) external view returns(uint64[] memory);
 
     function isPluginRegistered(address _plugin) external view returns(bool);
+
+    function addPlugin(address _plugin, string memory _description) external;
+
+    function addPluginDescription(address _plugin, string memory _description) external;
+
+    function removePlugin(address _plugin) external;
 }

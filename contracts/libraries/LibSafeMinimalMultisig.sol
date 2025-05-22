@@ -21,14 +21,14 @@ library LibSafeMinimalMultisig {
     }
 
     /**
-     * @notice Verifies that a given voter is allowed by comparing against an array of allowed voters.
+     * @notice Verifies that a msg.sender is allowed by comparing against an array of allowed voters.
      * @dev Iterates through _allVoters to ensure that _voter exists.
-     * Reverts with ISafeMinimalMultisig.MultisigVoterNotAllowed if _voter is not contained in _allVoters.
+     * Reverts with ISafeMinimalMultisig.MultisigVoterNotAllowed if hash of msg.sender is not contained in _allVoters.
      * @param _allVoters The array of allowed voter identifiers.
-     * @param _voter The voter identifier (hash of the voter's address) to check.
      */
-    function _checkIsVoterAllowed(bytes32[] memory _allVoters, bytes32 _voter) internal pure {
-        if (!_isVoterAllowed(_allVoters, _voter)) {
+    function _checkIsSenderAllowed(bytes32[] memory _allVoters, bytes32 _salt) internal view returns(bytes32 voter) {
+        voter = _salt == bytes32(0) ? LibCryptoLegacy._addressToHash(msg.sender) : LibCryptoLegacy._addressWithSaltToHash(msg.sender, _salt);
+        if (!_isVoterAllowed(_allVoters, voter)) {
             revert ISafeMinimalMultisig.MultisigVoterNotAllowed();
         }
     }
@@ -41,7 +41,7 @@ library LibSafeMinimalMultisig {
      * @param _voters An array of voter identifiers.
      * @param _requiredConfirmations The number of confirmations required to execute a proposal.
      */
-    function _setVotersAndConfirmations(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _voters, uint256 _requiredConfirmations) internal {
+    function _setVotersAndConfirmations(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _voters, uint8 _requiredConfirmations) internal {
         if (_requiredConfirmations > _voters.length || _requiredConfirmations == 0) {
             revert ISafeMinimalMultisig.MultisigIncorrectRequiredConfirmations();
         }
@@ -71,7 +71,7 @@ library LibSafeMinimalMultisig {
      * @param _voterCount The total count of voters.
      * @return The default number of required confirmations.
      */
-    function _calcDefaultConfirmations(uint256 _voterCount) internal pure returns(uint256) {
+    function _calcDefaultConfirmations(uint8 _voterCount) internal pure returns(uint8) {
         return (_voterCount / 2) + 1;
     }
 
@@ -115,7 +115,7 @@ library LibSafeMinimalMultisig {
      * @param _proposalId The proposal identifier.
      * @return confirmed The total number of confirmations for the proposal.
      */
-    function _getConfirmedCount(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _allVoters, uint256 _proposalId) internal view returns(uint256 confirmed) {
+    function _getConfirmedCount(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _allVoters, uint256 _proposalId) internal view returns(uint8 confirmed) {
         for (uint256 i = 0; i < _allVoters.length; i++) {
             if (s.confirmedBy[_proposalId][_allVoters[i]]) {
                 confirmed++;
@@ -124,37 +124,6 @@ library LibSafeMinimalMultisig {
         return confirmed;
     }
 
-    /**
-     * @notice Retrieves the stored voters and required confirmations from multisig storage.
-     * @dev Returns the voter list and the required confirmation threshold.
-     * @param s The multisig storage structure.
-     * @return voters The array of voter identifiers.
-     * @return requiredConfirmations The number of required confirmations.
-     */
-    function _getStorageVotersAndConfirmations(ISafeMinimalMultisig.Storage storage s) internal view returns(bytes32[] memory, uint256) {
-        return (s.voters, s.requiredConfirmations);
-    }
-
-    /**
-     * @notice Retrieves a specific proposal from storage.
-     * @dev Accesses the proposals array at the provided index.
-     * @param s The multisig storage structure.
-     * @param _proposalId The identifier of the proposal.
-     * @return The Proposal corresponding to _proposalId.
-     */
-    function _getProposal(ISafeMinimalMultisig.Storage storage s, uint256 _proposalId) internal view returns(ISafeMinimalMultisig.Proposal memory) {
-        return s.proposals[_proposalId];
-    }
-
-    /**
-     * @notice Retrieves the complete list of proposals.
-     * @dev Returns an array containing all proposals stored in the multisig.
-     * @param s The multisig storage structure.
-     * @return An array of Proposal structs.
-     */
-    function _getProposalList(ISafeMinimalMultisig.Storage storage s) internal view returns(ISafeMinimalMultisig.Proposal[] memory) {
-        return s.proposals;
-    }
 
     /**
      * @notice Retrieves all proposals with their confirmation statuses and the stored voter list.
@@ -166,7 +135,7 @@ library LibSafeMinimalMultisig {
      */
     function _getProposalListWithStatusesAndStorageVoters(ISafeMinimalMultisig.Storage storage s) internal view returns(
         bytes32[] memory voters,
-        uint256 requiredConfirmations,
+        uint8 requiredConfirmations,
         ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses
     ) {
         voters = s.voters;
@@ -190,14 +159,14 @@ library LibSafeMinimalMultisig {
     function _getProposalWithStatus(ISafeMinimalMultisig.Storage storage s, bytes32[] memory voters, uint256 _proposalId) internal view returns(ISafeMinimalMultisig.ProposalWithStatus memory proposalWithStatus) {
         bool[] memory confirmedBy = new bool[](voters.length);
         ISafeMinimalMultisig.Proposal memory proposal = s.proposals[_proposalId];
-        uint256 confirms = 0;
+        uint8 confirms = 0;
         for (uint256 j = 0; j < voters.length; j++) {
             confirmedBy[j] = s.confirmedBy[_proposalId][voters[j]];
             if (confirmedBy[j]) {
                 confirms++;
             }
         }
-        if (!proposal.executed) {
+        if (proposal.status == ISafeMinimalMultisig.ProposalStatus.PENDING) {
             proposal.confirms = confirms;
         }
         return ISafeMinimalMultisig.ProposalWithStatus(proposal, confirmedBy);
@@ -210,20 +179,21 @@ library LibSafeMinimalMultisig {
      * Emits the CreateSafeMinimalMultisigProposal event.
      * If the required confirmations equal 1, the proposal is executed immediately.
      * @param s The multisig storage structure.
+     * @param _salt Secret salt to improve address hash security. Optional, can be zero.
      * @param _allVoters The array of allowed voter identifiers.
      * @param _allowedMethods An array of permitted function selectors.
      * @param _selector The function selector representing the action of the proposal.
      * @param _params The ABI-encoded parameters for the proposed action.
      */
-    function _propose(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _allVoters, bytes4[] memory _allowedMethods, bytes4 _selector, bytes memory _params) internal {
-        bytes32 voter = LibCryptoLegacy._addressToHash(msg.sender);
+    function _propose(ISafeMinimalMultisig.Storage storage s, bytes32 _salt, bytes32[] memory _allVoters, bytes4[] memory _allowedMethods, bytes4 _selector, bytes memory _params) internal returns(uint256 proposalId) {
+        bytes32 voter = _checkIsSenderAllowed(_allVoters, _salt);
+
         if (!_isMethodAllowed(_allowedMethods, _selector)) {
             revert ISafeMinimalMultisig.MultisigMethodNotAllowed();
         }
-        _checkIsVoterAllowed(_allVoters, voter);
 
-        s.proposals.push(ISafeMinimalMultisig.Proposal(_selector, _params, 1, false));
-        uint256 proposalId = s.proposals.length - 1;
+        s.proposals.push(ISafeMinimalMultisig.Proposal(_params, uint8(1), _selector, ISafeMinimalMultisig.ProposalStatus.PENDING));
+        proposalId = s.proposals.length - 1;
         s.confirmedBy[proposalId][voter] = true;
 
         emit ISafeMinimalMultisig.CreateSafeMinimalMultisigProposal(proposalId, voter, s.requiredConfirmations);
@@ -234,24 +204,65 @@ library LibSafeMinimalMultisig {
     }
 
     /**
+     * @notice Retrieves the Proposal object for a given `_proposalId` to check whether
+     *         the proposal is still pending (not executed/canceled)
+     *         and verifies that the caller (represented by its hashed identity from `_allVoters`) is allowed.
+     * @dev Reverts if the proposal is already executed or canceled, or if the caller is unauthorized.
+     * @param s The multisig storage struct (`ISafeMinimalMultisig.Storage`) containing proposals and confirmations.
+     * @param _salt Secret salt to improve address hash security. Optional, can be zero.
+     * @param _allVoters The array of voter identifiers (bytes32 hashed addresses).
+     * @param _proposalId The index of the proposal in the `proposals` array.
+     * @return p The proposal struct from storage.
+     * @return voter The bytes32 hash representing the caller’s identity.
+     */
+    function _getPendingProposalForVoter(ISafeMinimalMultisig.Storage storage s, bytes32 _salt, bytes32[] memory _allVoters, uint256 _proposalId) internal view returns(ISafeMinimalMultisig.Proposal storage p, bytes32 voter) {
+        voter = _checkIsSenderAllowed(_allVoters, _salt);
+
+        p = s.proposals[_proposalId];
+        if (p.status == ISafeMinimalMultisig.ProposalStatus.EXECUTED) {
+            revert ISafeMinimalMultisig.MultisigAlreadyExecuted();
+        }
+        if (p.status == ISafeMinimalMultisig.ProposalStatus.CANCELED) {
+            revert ISafeMinimalMultisig.MultisigCanceled();
+        }
+    }
+
+    /**
+     * @notice Allows a voter to remove their confirmation from an existing proposal,
+     *         potentially causing the proposal to become canceled if no other confirmations remain.
+     * @param s The multisig storage struct referencing the proposals array and confirmations mapping.
+     * @param _salt Secret salt to improve address hash security. Optional, can be zero.
+     * @param _allVoters An array of bytes32-encoded voter identifiers.
+     * @param _proposalId The index of the proposal to remove caller's confirmation from.
+     */
+    function _cancel(ISafeMinimalMultisig.Storage storage s, bytes32 _salt, bytes32[] memory _allVoters, uint256 _proposalId) internal {
+        (ISafeMinimalMultisig.Proposal storage p, bytes32 voter) = _getPendingProposalForVoter(s, _salt, _allVoters, _proposalId);
+
+        if (!s.confirmedBy[_proposalId][voter]) {
+            revert ISafeMinimalMultisig.MultisigNotConfirmed();
+        }
+
+        s.confirmedBy[_proposalId][voter] = false;
+        p.confirms = _getConfirmedCount(s, _allVoters, _proposalId);
+
+        if (p.confirms == 0) {
+            p.status = ISafeMinimalMultisig.ProposalStatus.CANCELED;
+        }
+        emit ISafeMinimalMultisig.CancelSafeMinimalMultisigProposal(_proposalId, voter, s.requiredConfirmations, p.status);
+    }
+
+    /**
      * @notice Records a confirmation for an existing multisig proposal.
      * @dev Checks that the proposal is not already executed and that the sender has not already confirmed.
      * Records the confirmation, updates the confirmation count, and emits the ConfirmSafeMinimalMultisigProposal event.
      * If the total confirmations reach the required threshold, the proposal is executed.
      * @param s The multisig storage structure.
+     * @param _salt Secret salt to improve address hash security. Optional, can be zero.
      * @param _allVoters The array of allowed voter identifiers.
      * @param _proposalId The proposal identifier.
      */
-    function _confirm(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _allVoters, uint256 _proposalId) internal {
-        bytes32 voter = LibCryptoLegacy._addressToHash(msg.sender);
-        ISafeMinimalMultisig.Proposal storage p = s.proposals[_proposalId];
-        if (p.executed) {
-            revert ISafeMinimalMultisig.MultisigAlreadyExecuted();
-        }
-        if (s.confirmedBy[_proposalId][voter]) {
-            revert ISafeMinimalMultisig.MultisigAlreadyConfirmed();
-        }
-        _checkIsVoterAllowed(_allVoters, voter);
+    function _confirm(ISafeMinimalMultisig.Storage storage s, bytes32 _salt, bytes32[] memory _allVoters, uint256 _proposalId) internal {
+        (ISafeMinimalMultisig.Proposal storage p, bytes32 voter) = _getPendingProposalForVoter(s, _salt, _allVoters, _proposalId);
 
         s.confirmedBy[_proposalId][voter] = true;
         p.confirms = _getConfirmedCount(s, _allVoters, _proposalId);
@@ -274,7 +285,7 @@ library LibSafeMinimalMultisig {
      */
     function _execute(ISafeMinimalMultisig.Storage storage s, bytes32 _voter, uint256 _proposalId) private {
         ISafeMinimalMultisig.Proposal storage p = s.proposals[_proposalId];
-        p.executed = true;
+        p.status = ISafeMinimalMultisig.ProposalStatus.EXECUTED;
 
         (bool success, bytes memory data) = address(this).call(abi.encodePacked(p.selector, p.params));
         if (!success) {

@@ -60,6 +60,7 @@ interface ISignatureRoleTimelock {
         uint256 timelock;
     }
 
+    error DisabledFunction();
     error AlreadyHaveRole();
     error DoesntHaveRole();
     error RoleDontExist();

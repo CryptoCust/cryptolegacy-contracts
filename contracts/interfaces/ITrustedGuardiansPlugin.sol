@@ -13,6 +13,7 @@ interface ITrustedGuardiansPlugin {
     event GuardiansDistributionStartSet(bytes32 indexed guardian, uint256 distributionStartAt);
     event SetGuardiansConfig(uint8 guardiansThreshold, uint64 guardiansChallengeTimeout);
     event ResetGuardiansVoting();
+    event ClearGuardiansVoted();
 
     struct PluginStorage {
         EnumerableSet.Bytes32Set guardians;
@@ -28,7 +29,10 @@ interface ITrustedGuardiansPlugin {
     function isGuardiansInitialized() external view returns(bool);
 
     error NotGuardian();
+    error ZeroGuardian();
     error ThresholdDontMet();
+    error ThresholdTooBig();
     error GuardianAlreadyVoted();
+    error GuardiansTimeoutCantBeZero();
     error MaxGuardiansTimeout(uint64 guardiansThreshold);
 }

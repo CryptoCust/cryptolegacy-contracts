@@ -10,14 +10,14 @@ import "../interfaces/ICryptoLegacy.sol";
 import "../libraries/LibCryptoLegacy.sol";
 import "../interfaces/ICryptoLegacyPlugin.sol";
 import "../libraries/LibSafeMinimalBeneficiaryMultisig.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 /**
  * @title BeneficiaryPluginAddRights
  * @notice Empowers beneficiaries to add additional plugin functionality to tailor the distribution process. This plugin enhances control over asset distribution rights and ensures beneficiaries can manage their claims under predefined conditions.
 */
-contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuard {
+contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
     bytes32 public constant PLUGIN_MULTISIG_POSITION = keccak256("beneficiary_plugin_add_rights.multisig.plugin.storage");
@@ -27,16 +27,17 @@ contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuard {
      * @dev These selectors represent the externally accessible methods implemented in this plugin.
      * @return sigs An array of function selectors.
      */
-    function getSigs() external view returns (bytes4[] memory sigs) {
-        sigs = new bytes4[](8);
-        sigs[0] = BeneficiaryPluginAddRights(address(this)).barGetInitializationStatus.selector;
-        sigs[1] = BeneficiaryPluginAddRights(address(this)).barSetMultisigConfig.selector;
-        sigs[2] = BeneficiaryPluginAddRights(address(this)).barPropose.selector;
-        sigs[3] = BeneficiaryPluginAddRights(address(this)).barConfirm.selector;
-        sigs[4] = BeneficiaryPluginAddRights(address(this)).barAddPluginList.selector;
-        sigs[5] = BeneficiaryPluginAddRights(address(this)).barGetVotersAndConfirmations.selector;
-        sigs[6] = BeneficiaryPluginAddRights(address(this)).barGetProposalWithStatus.selector;
-        sigs[7] = BeneficiaryPluginAddRights(address(this)).barGetProposalListWithStatuses.selector;
+    function getSigs() external pure returns (bytes4[] memory sigs) {
+        sigs = new bytes4[](9);
+        sigs[0] = this.barGetInitializationStatus.selector;
+        sigs[1] = this.barSetMultisigConfig.selector;
+        sigs[2] = this.barPropose.selector;
+        sigs[3] = this.barCancel.selector;
+        sigs[4] = this.barConfirm.selector;
+        sigs[5] = this.barAddPluginList.selector;
+        sigs[6] = this.barGetVotersAndConfirmations.selector;
+        sigs[7] = this.barGetProposalWithStatus.selector;
+        sigs[8] = this.barGetProposalListWithStatuses.selector;
     }
 
     /**
@@ -53,10 +54,10 @@ contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuard {
      * @dev These allowed methods include adding plugin lists and setting multisig configuration.
      * @return sigs An array of function selectors for multisig proposals.
      */
-    function getMultisigAllowedMethods() public view returns (bytes4[] memory sigs) {
+    function getMultisigAllowedMethods() public pure returns (bytes4[] memory sigs) {
         sigs = new bytes4[](2);
-        sigs[0] = BeneficiaryPluginAddRights(address(this)).barAddPluginList.selector;
-        sigs[1] = BeneficiaryPluginAddRights(address(this)).barSetMultisigConfig.selector;
+        sigs[0] = this.barAddPluginList.selector;
+        sigs[1] = this.barSetMultisigConfig.selector;
     }
 
     /**
@@ -113,7 +114,7 @@ contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuard {
      *      Calls LibSafeMinimalBeneficiaryMultisig._setConfirmations() using the current beneficiaries.
      * @param _requiredConfirmations The number of confirmations required for multisig proposals.
      */
-    function barSetMultisigConfig(uint256 _requiredConfirmations) external {
+    function barSetMultisigConfig(uint8 _requiredConfirmations) external {
         if (msg.sender == address(this)) {
             LibCryptoLegacy._checkDistributionReady(LibCryptoLegacy.getCryptoLegacyStorage());
         } else {
@@ -130,8 +131,8 @@ contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuard {
      * @param _selector The function selector targeted by the proposal.
      * @param _params The ABI-encoded parameters to be passed when executing the proposal.
      */
-    function barPropose(bytes4 _selector, bytes memory _params) nonReentrant external onlyDistributionReady {
-        LibSafeMinimalBeneficiaryMultisig._propose(getPluginMultisigStorage(), getMultisigAllowedMethods(), _selector, _params);
+    function barPropose(bytes4 _selector, bytes memory _params) nonReentrant external onlyDistributionReady returns(uint256 proposalId) {
+        return LibSafeMinimalBeneficiaryMultisig._propose(getPluginMultisigStorage(), getMultisigAllowedMethods(), _selector, _params);
     }
 
     /**
@@ -141,6 +142,15 @@ contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuard {
      */
     function barConfirm(uint256 _proposalId) external nonReentrant onlyDistributionReady {
         LibSafeMinimalBeneficiaryMultisig._confirm(getPluginMultisigStorage(), _proposalId);
+    }
+
+    /**
+     * @notice Cancels a previously confirmed proposal, removing the caller’s confirmation and possibly voiding it.
+     * @dev Condition check: The proposal must not be executed or canceled; the caller must have confirmed it previously.
+     * @param _proposalId The ID of the proposal to cancel confirmation for.
+     */
+    function barCancel(uint256 _proposalId) external nonReentrant onlyDistributionReady {
+        LibSafeMinimalBeneficiaryMultisig._cancel(getPluginMultisigStorage(), _proposalId);
     }
 
     /**
@@ -172,9 +182,9 @@ contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuard {
      * @dev Returns the current configuration for multisig execution in this plugin.
      * @return A tuple containing:
      *  - An array of voter identifiers (bytes32[]).
-     *  - The required number of confirmations (uint256).
+     *  - The required number of confirmations (uint8).
      */
-    function barGetVotersAndConfirmations() external view returns(bytes32[] memory, uint256) {
+    function barGetVotersAndConfirmations() external view returns(bytes32[] memory, uint8) {
         return LibSafeMinimalBeneficiaryMultisig._getVotersAndConfirmations(getPluginMultisigStorage());
     }
 
@@ -189,7 +199,7 @@ contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuard {
      */
     function barGetProposalWithStatus(uint256 _proposalId) external view returns(
         bytes32[] memory voters,
-        uint256 requiredConfirmations,
+        uint8 requiredConfirmations,
         ISafeMinimalMultisig.ProposalWithStatus memory proposalWithStatus
     ) {
         return LibSafeMinimalBeneficiaryMultisig._getProposalWithStatus(
@@ -208,7 +218,7 @@ contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuard {
      */
     function barGetProposalListWithStatuses() external view returns(
         bytes32[] memory voters,
-        uint256 requiredConfirmations,
+        uint8 requiredConfirmations,
         ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses
     ) {
         return LibSafeMinimalBeneficiaryMultisig._getProposalListWithStatuses(

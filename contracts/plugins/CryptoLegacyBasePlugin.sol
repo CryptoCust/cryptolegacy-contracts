@@ -10,17 +10,16 @@ import "../interfaces/ICryptoLegacy.sol";
 import "../libraries/LibCryptoLegacy.sol";
 import "../libraries/LibCryptoLegacyPlugins.sol";
 import "../interfaces/ICryptoLegacyBuildManager.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 /**
  * @title CryptoLegacyBasePlugin
  * @notice Provides the core functionalities for the CryptoLegacy system—including fee management, beneficiary configuration, periodic updates, challenge initiation, and token distribution. It ensures automated and secure management of crypto asset inheritance.
 */
-contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, ReentrancyGuard {
+contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, ReentrancyGuardUpgradeable {
   using EnumerableSet for EnumerableSet.Bytes32Set;
   using SafeERC20 for IERC20;
 
@@ -29,25 +28,28 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
    * @dev These selectors represent the externally callable base methods for the CryptoLegacy contract.
    * @return sigs An array of function selectors.
    */
-  function getSigs() external view returns (bytes4[] memory sigs) {
-    sigs = new bytes4[](17);
-    sigs[0] = CryptoLegacyBasePlugin(address(this)).getCryptoLegacyVer.selector;
-    sigs[1] = CryptoLegacyBasePlugin(address(this)).owner.selector;
-    sigs[2] = CryptoLegacyBasePlugin(address(this)).buildManager.selector;
-    sigs[3] = CryptoLegacyBasePlugin(address(this)).renounceOwnership.selector;
-    sigs[4] = CryptoLegacyBasePlugin(address(this)).transferOwnership.selector;
-    sigs[5] = CryptoLegacyBasePlugin(address(this)).isPaused.selector;
-    sigs[6] = CryptoLegacyBasePlugin(address(this)).setPause.selector;
-    sigs[7] = CryptoLegacyBasePlugin(address(this)).payInitialFee.selector;
-    sigs[8] = CryptoLegacyBasePlugin(address(this)).initializeByBuildManager.selector;
-    sigs[9] = CryptoLegacyBasePlugin(address(this)).setBeneficiaries.selector;
-    sigs[10] = CryptoLegacyBasePlugin(address(this)).update.selector;
-    sigs[11] = CryptoLegacyBasePlugin(address(this)).initiateChallenge.selector;
-    sigs[12] = CryptoLegacyBasePlugin(address(this)).transferTreasuryTokensToLegacy.selector;
-    sigs[13] = CryptoLegacyBasePlugin(address(this)).beneficiaryClaim.selector;
-    sigs[14] = CryptoLegacyBasePlugin(address(this)).beneficiarySwitch.selector;
-    sigs[15] = CryptoLegacyBasePlugin(address(this)).sendMessagesToBeneficiary.selector;
-    sigs[16] = CryptoLegacyBasePlugin(address(this)).isLifetimeActive.selector;
+  function getSigs() external pure returns (bytes4[] memory sigs) {
+    sigs = new bytes4[](20);
+    sigs[0] = this.getCryptoLegacyVer.selector;
+    sigs[1] = this.owner.selector;
+    sigs[2] = this.pendingOwner.selector;
+    sigs[3] = this.buildManager.selector;
+    sigs[4] = this.transferOwnership.selector;
+    sigs[5] = this.acceptOwnership.selector;
+    sigs[6] = this.isPaused.selector;
+    sigs[7] = this.setPause.selector;
+    sigs[8] = this.payInitialFee.selector;
+    sigs[9] = this.initializeByBuildManager.selector;
+    sigs[10] = this.setBeneficiaries.selector;
+    sigs[11] = this.update.selector;
+    sigs[12] = this.initiateChallenge.selector;
+    sigs[13] = this.transferTreasuryTokensToLegacy.selector;
+    sigs[14] = this.beneficiaryClaim.selector;
+    sigs[15] = this.beneficiarySwitch.selector;
+    sigs[16] = this.sendMessagesToBeneficiary.selector;
+    sigs[17] = this.setGasLimitMultiplier.selector;
+    sigs[18] = this.isLifetimeActive.selector;
+    sigs[19] = this.getGasBySelector.selector;
   }
 
   /**
@@ -55,13 +57,13 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
    * @dev These selectors are used during the plugin setup process.
    * @return sigs An array of function selectors.
    */
-  function getSetupSigs() external view returns (bytes4[] memory sigs) {
+  function getSetupSigs() external pure returns (bytes4[] memory sigs) {
     sigs = new bytes4[](5);
-    sigs[0] = CryptoLegacyBasePlugin(address(this)).getCryptoLegacyVer.selector;
-    sigs[1] = CryptoLegacyBasePlugin(address(this)).owner.selector;
-    sigs[2] = CryptoLegacyBasePlugin(address(this)).buildManager.selector;
-    sigs[3] = CryptoLegacyBasePlugin(address(this)).isPaused.selector;
-    sigs[4] = CryptoLegacyBasePlugin(address(this)).isLifetimeActive.selector;
+    sigs[0] = this.getCryptoLegacyVer.selector;
+    sigs[1] = this.owner.selector;
+    sigs[2] = this.buildManager.selector;
+    sigs[3] = this.isPaused.selector;
+    sigs[4] = this.isLifetimeActive.selector;
   }
 
   event SetBeneficiary(bytes32 indexed beneficiary, uint64 indexed vestingPeriod, uint64 shareBps, uint64 claimDelay);
@@ -170,28 +172,15 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
   }
 
   /**
-   * @notice Renounces ownership of the contract.
-   * @dev Only the current owner may call this function.
-   * Transfers ownership to the zero address.
-   */
-  function renounceOwnership() public virtual onlyOwner {
-    _transferOwnership(address(0));
-  }
-
-  /**
    * @notice Transfers ownership of the contract to a new owner.
    * @dev Only the current owner may call this function.
    * Updates the Beneficiary Registry accordingly.
    * @param newOwner The address of the new owner.
    */
   function transferOwnership(address newOwner) public virtual onlyOwner {
-    if (newOwner == address(0)) {
-      revert ICryptoLegacy.ZeroAddress();
-    }
-
-    CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
+    ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
+    _transferOwnership(cls, newOwner);
     LibCryptoLegacy._updateOwnerInBeneficiaryRegistry(cls, newOwner);
-    _transferOwnership(newOwner);
   }
 
   /**
@@ -208,6 +197,9 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
     if (cls.lastFeePaidAt != 0) {
       revert ICryptoLegacy.InitialFeeAlreadyPaid();
     }
+    if (_lockToChainIds.length != _crossChainFees.length) {
+      revert ArrayLengthMismatch();
+    }
 
     LibCryptoLegacy._setPause(cls, false);
     cls.lastFeePaidAt = uint64(block.timestamp);
@@ -222,12 +214,13 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
     }
 
     // Attempt to pay the initial fee via the buildManager.
-    try cls.buildManager.payInitialFee{value: msg.value}(cls.invitedByRefCode, owner(), _lockToChainIds, _crossChainFees) {
-      emit FeePaidByDefault(cls.invitedByRefCode, true, msg.value, address(cls.buildManager), cls.lastFeePaidAt);
+    try cls.buildManager.payInitialFee{value: msg.value}(cls.invitedByRefCode, owner(), _lockToChainIds, _crossChainFees) returns(uint256 returned) {
+      LibCryptoLegacy._transferFee(cls, msg.sender, returned);
+      emit FeePaidByDefault(cls.invitedByRefCode, true, msg.value, returned, address(cls.buildManager), cls.lastFeePaidAt);
     } catch {
       // Check that the fee meets the minimum requirements.
       LibCryptoLegacy._checkFee(uint256(cls.initialFeeToPay));
-      payable(address(cls.buildManager)).transfer(msg.value);
+      LibCryptoLegacy._transferFee(cls, address(cls.buildManager), msg.value);
       emit FeePaidByTransfer(cls.invitedByRefCode, true, msg.value, address(cls.buildManager), cls.lastFeePaidAt);
     }
     cls.initialFeeToPay = 0;
@@ -278,12 +271,16 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
     bytes32[] memory allBeneficiaries = cls.beneficiaries.values();
     for (uint256 i = 0; i < allBeneficiaries.length; i++) {
       shareSum += cls.beneficiaryConfig[allBeneficiaries[i]].shareBps;
+      for (uint256 j = 0; j < allBeneficiaries.length; j++) {
+        if (i != j && cls.originalBeneficiaryHash[allBeneficiaries[i]] == cls.originalBeneficiaryHash[allBeneficiaries[j]]) {
+          revert ICryptoLegacy.OriginalHashDuplicate();
+        }
+      }
     }
     if (shareSum != LibCryptoLegacy.SHARE_BASE) {
       revert ICryptoLegacy.ShareSumDoesntMatchBase();
     }
   }
-
 
   /**
    * @notice Periodic update function to keep the contract active, pay any required update fee, and reset distributionStartAt to 0.
@@ -292,12 +289,29 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
    * @param _crossChainFees Array of fees for each chain ID in `_lockToChainIds`.
    */
   function update(uint256[] memory _lockToChainIds, uint256[] memory _crossChainFees) external payable onlyOwner nonReentrant {
+    if (_lockToChainIds.length != _crossChainFees.length) {
+      revert ArrayLengthMismatch();
+    }
     CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
     LibCryptoLegacy._takeFee(cls, owner(), address(0), 0, _lockToChainIds, _crossChainFees);
 
     cls.lastUpdateAt = uint64(block.timestamp);
     cls.distributionStartAt = uint64(0);
     emit Update(msg.value, bytes32(0));
+  }
+
+  /**
+   * @notice Sets the multiplier used to scale a predefined gas limit for certain cross-contract calls.
+   * @dev This is a setter for the `gasLimitMultiplier` storage variable in CryptoLegacy.
+   *      The resulting gas cost used in calls is computed as 
+   *      `baseGas * gasLimitMultiplier`, where `baseGas` comes from `_gasWithoutMultiplierBySelector`.
+   *      Only the contract owner may call this function.
+   * @param _gasLimitMultiplier The new multiplier (a uint8) to apply to the base gas limit.
+   */
+  function setGasLimitMultiplier(uint8 _gasLimitMultiplier) external payable onlyOwner nonReentrant {
+    CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
+    cls.gasLimitMultiplier = _gasLimitMultiplier;
+    emit SetGasLimitMultiplier(_gasLimitMultiplier);
   }
 
   /**
@@ -349,11 +363,11 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
   function _claimTokenWithVesting(CryptoLegacyStorage storage cls, TokenDistribution storage td, bytes32 _beneficiary, address _token, uint64 _startDate, uint64 _endDate) internal returns(uint256 amountToClaim) {
     (BeneficiaryConfig storage bc, BeneficiaryVesting storage bv) = LibCryptoLegacy._getBeneficiaryConfigAndVesting(cls, _beneficiary);
 
-    (uint256 vestedAmount, uint256 claimedAmount, ) = LibCryptoLegacy._getVestedAndClaimedAmount(td, bc, bv, _token, _startDate, _endDate);
-    amountToClaim = vestedAmount - claimedAmount;
-    bv.tokenAmountClaimed[_token] = vestedAmount;
-    td.totalClaimedAmount += amountToClaim;
+    (, amountToClaim, ) = LibCryptoLegacy._getVestedAndClaimedAmount(td, bc, bv, _token, _startDate, _endDate);
+    bv.tokenAmountClaimed[_token] += amountToClaim;
+
     IERC20(_token).safeTransfer(msg.sender, amountToClaim);
+    td.lastBalance = uint128(IERC20(_token).balanceOf(address(this)));
 
     emit BeneficiaryClaim(_token, amountToClaim, _beneficiary);
   }
@@ -398,6 +412,10 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
   function beneficiarySwitch(bytes32 _newBeneficiary) external {
     CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
     bytes32 oldBeneficiary = LibCryptoLegacy._checkAddressIsBeneficiary(cls, msg.sender);
+    bytes32 originalBeneficiary = cls.originalBeneficiaryHash[oldBeneficiary];
+    if (cls.beneficiarySwitchTimelock[originalBeneficiary] > block.timestamp) {
+      revert ICryptoLegacy.BeneficiarySwitchTimelock();
+    }
     if (cls.beneficiaries.contains(_newBeneficiary)) {
       revert ICryptoLegacy.AlreadySet();
     }
@@ -410,8 +428,10 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
     cls.beneficiaryConfig[_newBeneficiary] = cls.beneficiaryConfig[oldBeneficiary];
     delete cls.beneficiaryConfig[oldBeneficiary];
 
-    cls.originalBeneficiaryHash[_newBeneficiary] = cls.originalBeneficiaryHash[oldBeneficiary];
+    cls.originalBeneficiaryHash[_newBeneficiary] = originalBeneficiary;
     delete cls.originalBeneficiaryHash[oldBeneficiary];
+
+    cls.beneficiarySwitchTimelock[originalBeneficiary] = uint64(block.timestamp) + LibCryptoLegacy.BENEFICIARY_SWITCH_TIMELOCK_DURATION;
 
     emit SwitchBeneficiary(oldBeneficiary, _newBeneficiary);
   }
@@ -449,5 +469,10 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
   function isLifetimeActive() public view returns(bool isNftLocked) {
     CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
     return cls.buildManager.isLifetimeNftLocked(owner());
+  }
+
+  function getGasBySelector(bytes4 _selector) external view returns(uint) {
+    CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
+    return LibCryptoLegacy._gasBySelector(cls, _selector);
   }
 }

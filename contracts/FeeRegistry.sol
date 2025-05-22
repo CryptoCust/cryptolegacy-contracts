@@ -20,6 +20,10 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
   uint32 constant public PCT_BASE = 10000; // Denominator for percentage calculations.
   bytes32 constant internal FR_STORAGE_POSITION = keccak256("crypto_legacy.fee_registry.storage");
 
+  /**
+   * @notice Constructor (proxy-initialized) that disables direct initialization logic. 
+   * @dev The actual initialization is in `initialize()`.
+   */
   constructor() {}
 
   /**
@@ -35,24 +39,26 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
   }
 
   /**
-   * @notice Initializes the FeeRegistry.
-   * @param _owner The owner address.
-   * @param _defaultDiscountPct The default discount percentage.
-   * @param _defaultSharePct The default share percentage.
-   * @param _lifetimeNft The LifetimeNft contract.
-   * @param _lockPeriod The lock period for NFT locking.
+   * @notice Initializes the FeeRegistry by setting default discount/share percentages and hooking up the LifetimeNft + LockChainGate config.
+   * @param _owner The contract owner address.
+   * @param _defaultDiscountPct The default discount for fees, base is 10,000.
+   * @param _defaultSharePct The default share for referrals, base is 10,000.
+   * @param _lifetimeNft The LifetimeNft contract address.
+   * @param _lockPeriod The lock period for lifetime NFTs.
+   * @param _transferTimeout The time between lock and transfer for NFTs.
    */
-  function initialize(address _owner, uint32 _defaultDiscountPct, uint32 _defaultSharePct, ILifetimeNft _lifetimeNft, uint256 _lockPeriod) public initializer {
+  function initialize(address _owner, uint32 _defaultDiscountPct, uint32 _defaultSharePct, ILifetimeNft _lifetimeNft, uint64 _lockPeriod, uint64 _transferTimeout) external initializer {
     _setDefaultPct(lockFeeRegistryStorage(), _defaultDiscountPct, _defaultSharePct);
-    _initializeLockChainGate(_lifetimeNft, _lockPeriod, _owner);
+    _initializeLockChainGate(_lifetimeNft, _lockPeriod, _transferTimeout, _owner);
   }
 
   /**
-   * @notice Sets a operator address, that can manage referral codes.
+   * @notice Sets or unsets an operator that may manage referral codes. Operators can create or update referral codes on behalf of the system.
+   * @dev Only the owner can call this.
    * @param _operator The address of the operator.
-   * @param _isAdd True to add the operator; false to remove.
+   * @param _isAdd True to add, false to remove.
    */
-  function setCodeOperator(address _operator, bool _isAdd) public onlyOwner {
+  function setCodeOperator(address _operator, bool _isAdd) external onlyOwner {
     FRStorage storage fs = lockFeeRegistryStorage();
     if (_isAdd) {
       fs.codeOperators.add(_operator);
@@ -68,7 +74,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @param _chains Array of chain IDs.
    * @param _isAdd True to add; false to remove.
    */
-  function setSupportedRefCodeInChains(uint256[] memory _chains, bool _isAdd) public onlyOwner {
+  function setSupportedRefCodeInChains(uint256[] memory _chains, bool _isAdd) external onlyOwner {
     FRStorage storage fs = lockFeeRegistryStorage();
     for (uint256 i = 0; i < _chains.length; i++) {
       if (_isAdd) {
@@ -86,7 +92,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @dev The sum of all `sharePct` must be exactly 10,000.
    * @param _beneficiaries Array of FeeBeneficiary structs to define recipients and their share.
    */
-  function setFeeBeneficiaries(FeeBeneficiary[] memory _beneficiaries) public onlyOwner {
+  function setFeeBeneficiaries(FeeBeneficiary[] memory _beneficiaries) external onlyOwner {
     FRStorage storage fs = lockFeeRegistryStorage();
     delete fs.feeBeneficiaries;
     for (uint256 i = 0; i < _beneficiaries.length; i++) {
@@ -110,7 +116,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @param _defaultDiscountPct The new default discount percentage.
    * @param _defaultSharePct The new default share percentage.
    */
-  function setDefaultPct(uint32 _defaultDiscountPct, uint32 _defaultSharePct) public onlyOwner {
+  function setDefaultPct(uint32 _defaultDiscountPct, uint32 _defaultSharePct) external onlyOwner {
     _setDefaultPct(lockFeeRegistryStorage(), _defaultDiscountPct, _defaultSharePct);
   }
 
@@ -132,9 +138,9 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @param _discountPct The discount percentage.
    * @param _sharePct The share percentage.
    */
-  function setRefererSpecificPct(address _referrer, uint32 _discountPct, uint32 _sharePct) public onlyOwner {
+  function setRefererSpecificPct(address _referrer, uint32 _discountPct, uint32 _sharePct) external onlyOwner {
     FRStorage storage fs = lockFeeRegistryStorage();
-    if (_discountPct > PCT_BASE || _sharePct > PCT_BASE) {
+    if (_discountPct + _sharePct > PCT_BASE) {
       revert TooBigPct();
     }
     bytes8 code = fs.codeByReferrer[_referrer];
@@ -149,7 +155,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @param _case The case identifier.
    * @param _fee The fee amount.
    */
-  function setContractCaseFee(address _contract, uint8 _case, uint128 _fee) public onlyOwner {
+  function setContractCaseFee(address _contract, uint8 _case, uint128 _fee) external onlyOwner {
     FRStorage storage fs = lockFeeRegistryStorage();
     fs.feeByContractCase[_contract][_case] = _fee;
     emit SetContractCaseFee(_contract, _case, _fee);
@@ -164,20 +170,20 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @param _code The referral code.
    * @param _mul Multiplier for fee calculation.
    */
-  function takeFee(address _contract, uint8 _case, bytes8 _code, uint256 _mul) external payable {
+  function takeFee(address _contract, uint8 _case, bytes8 _code, uint256 _mul) external payable nonReentrant {
     FRStorage storage fs = lockFeeRegistryStorage();
     uint256 contractCaseFee = uint256(fs.feeByContractCase[_contract][_case]) * _mul;
     (uint256 discount, uint256 share, uint256 fee) = _calculateFee(fs, _code, contractCaseFee);
     _checkFee(fee);
+    fs.accumulatedFee += uint128(fee - share);
     address shareRecipient = fs.refererByCode[_code].recipient;
-    bool isTransferSuccess = payable(shareRecipient).send(share);
+    (bool isTransferSuccess, bytes memory response) = payable(shareRecipient).call{value: share, gas: 1e4}(new bytes(0));
     if (isTransferSuccess) {
       emit SentFee(fs.refererByCode[_code].owner, _code, shareRecipient, share);
     } else {
       fs.refererByCode[_code].accumulatedFee += uint128(share);
-      emit AccumulateFee(fs.refererByCode[_code].owner, _code, shareRecipient, share);
+      emit AccumulateFee(fs.refererByCode[_code].owner, _code, shareRecipient, share, response);
     }
-    fs.accumulatedFee += uint128(fee - share);
     emit TakeFee(_contract, _case, _code, discount, share, fee, msg.value);
   }
 
@@ -186,15 +192,19 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @dev Iterates over feeBeneficiaries and transfers fee shares calculated as:
    *      feeShare = (accumulatedFee * beneficiary.sharePct) / PCT_BASE.
    */
-  function withdrawAccumulatedFee() external {
+  function withdrawAccumulatedFee() external nonReentrant {
     FRStorage storage fs = lockFeeRegistryStorage();
     uint256 len = fs.feeBeneficiaries.length;
+    uint256 accFee = fs.accumulatedFee;
+    fs.accumulatedFee = 0;
     for (uint256 i = 0; i < len; i++) {
-      uint256 feeShare = fs.accumulatedFee * fs.feeBeneficiaries[i].sharePct / PCT_BASE;
-      payable(fs.feeBeneficiaries[i].recipient).transfer(feeShare);
+      uint256 feeShare = accFee * fs.feeBeneficiaries[i].sharePct / PCT_BASE;
+      (bool success, bytes memory data) = payable(fs.feeBeneficiaries[i].recipient).call{value: feeShare}(new bytes(0));
+      if (!success) {
+        revert WithdrawAccumulatedFeeFailed(data);
+      }
       emit WithdrawFee(fs.feeBeneficiaries[i].recipient, feeShare);
     }
-    fs.accumulatedFee = 0;
   }
 
   /**
@@ -202,11 +212,14 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @dev Transfers the referral accumulated fee to the referral recipient and resets its accumulated value.
    * @param _code The referral code.
    */
-  function withdrawReferralAccumulatedFee(bytes8 _code) external {
+  function withdrawReferralAccumulatedFee(bytes8 _code) external nonReentrant {
     Referrer storage ref = lockFeeRegistryStorage().refererByCode[_code];
     uint256 feeToSend = ref.accumulatedFee;
     ref.accumulatedFee = 0;
-    payable(ref.recipient).transfer(feeToSend);
+    (bool success, bytes memory data) = payable(ref.recipient).call{value: feeToSend}(new bytes(0));
+    if (!success) {
+      revert WithdrawAccumulatedFeeFailed(data);
+    }
     emit WithdrawRefFee(ref.recipient, feeToSend);
   }
 
@@ -249,7 +262,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
     if (fs.refererByCode[_shortCode].owner != address(0)) {
       revert RefAlreadyCreated();
     }
-    emit CreateCode(msg.sender, _referrer, _shortCode, _recipient, _fromChain);
+    emit CreateCode(msg.sender, _referrer, _shortCode, _recipient, _fromChain, _discountPct, _sharePct);
     return _setCustomCode(fs, _referrer, _recipient, _shortCode, _discountPct, _sharePct);
   }
 
@@ -284,12 +297,13 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @return shortCode The created referral code.
    * @return totalFee Total spent fee for crosschain operations
    */
-  function createCustomCode(address _referrer, address _recipient, bytes8 _shortCode, uint256[] memory _chainIds, uint256[] memory _crossChainFees) public payable returns(bytes8 shortCode, uint256 totalFee) {
+  function createCustomCode(address _referrer, address _recipient, bytes8 _shortCode, uint256[] memory _chainIds, uint256[] memory _crossChainFees) external payable nonReentrant returns(bytes8 shortCode, uint256 totalFee, uint256 returnValue) {
     FRStorage storage fs = lockFeeRegistryStorage();
     _checkSenderIsOperator(fs);
     _createCustomCode(fs, _referrer, _recipient, _shortCode, 0, uint32(0), uint32(0));
     totalFee = _setCrossChainsRef(fs, true, _shortCode, _chainIds, _crossChainFees);
-    return (_shortCode, totalFee);
+    returnValue = _calcAndReturnFee(totalFee);
+    return (_shortCode, totalFee, returnValue);
   }
 
   /**
@@ -301,13 +315,14 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @return shortCode The generated referral code.
    * @return totalFee Total spent fee for crosschain operations
    */
-  function createCode(address _referrer, address _recipient, uint256[] memory _chainIds, uint256[] memory _crossChainFees) public payable returns(bytes8 shortCode, uint256 totalFee) {
+  function createCode(address _referrer, address _recipient, uint256[] memory _chainIds, uint256[] memory _crossChainFees) external payable nonReentrant returns(bytes8 shortCode, uint256 totalFee, uint256 returnValue) {
     FRStorage storage fs = lockFeeRegistryStorage();
     _checkSenderIsOperator(fs);
     bytes32 fullCode = keccak256(abi.encodePacked(_referrer, block.timestamp, _referrer.balance));
     shortCode = bytes8(bytes20(fullCode));
     _createCustomCode(fs, _referrer, _recipient, shortCode, 0, uint32(0), uint32(0));
     totalFee = _setCrossChainsRef(fs, true, shortCode, _chainIds, _crossChainFees);
+    returnValue = _calcAndReturnFee(totalFee);
   }
 
   /**
@@ -322,8 +337,12 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @return totalFee Total fee spent for cross-chain operations.
    */
   function _setCrossChainsRef(FRStorage storage fs, bool _isCreate, bytes8 _shortCode, uint256[] memory _toChainIDs, uint256[] memory _crossChainFees) internal returns(uint256 totalFee) {
+    if (_toChainIDs.length != _crossChainFees.length) {
+      revert ArrayLengthMismatch();
+    }
     LCGStorage storage ls = lockChainGateStorage();
     for (uint256 i = 0; i < _toChainIDs.length; i++) {
+      _checkDestinationLockedChain(ls, _toChainIDs[i]);
       uint256 sendFee = _getDeBridgeChainNativeFee(ls, _toChainIDs[i], _crossChainFees[i]);
       bytes memory dstTxCall;
       Referrer storage ref = fs.refererByCode[_shortCode];
@@ -345,13 +364,14 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @param _chainIds Array of new chain IDs.
    * @param _crossChainFees Array of new fees.
    */
-  function updateCrossChainsRef(address _referrer, uint256[] memory _chainIds, uint256[] memory _crossChainFees) external payable returns(uint256 totalFee) {
+  function updateCrossChainsRef(address _referrer, uint256[] memory _chainIds, uint256[] memory _crossChainFees) external payable nonReentrant returns(uint256 totalFee, uint256 returnValue) {
     FRStorage storage fs = lockFeeRegistryStorage();
     _checkSenderIsOperator(fs);
     if (fs.codeByReferrer[_referrer] == bytes8(0)) {
       revert CodeNotCreated();
     }
-    return _setCrossChainsRef(fs, false, fs.codeByReferrer[_referrer], _chainIds, _crossChainFees);
+    totalFee = _setCrossChainsRef(fs, false, fs.codeByReferrer[_referrer], _chainIds, _crossChainFees);
+    returnValue = _calcAndReturnFee(totalFee);
   }
 
   /**
@@ -361,7 +381,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @param _recipient The recipient address.
    * @param _shortCode The referral code.
    */
-  function crossCreateCustomCode(uint256 _fromChainId, address _referrer, address _recipient, bytes8 _shortCode, uint32 _discountPct, uint32 _sharePct) external {
+  function crossCreateCustomCode(uint256 _fromChainId, address _referrer, address _recipient, bytes8 _shortCode, uint32 _discountPct, uint32 _sharePct) external nonReentrant {
     FRStorage storage fs = lockFeeRegistryStorage();
     LCGStorage storage ls = lockChainGateStorage();
     _checkSource(ls, _fromChainId);
@@ -377,7 +397,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @param _recipient The recipient address.
    * @param _shortCode The referral code.
    */
-  function crossUpdateCustomCode(uint256 _fromChainId, address _referrer, address _recipient, bytes8 _shortCode, uint32 _discountPct, uint32 _sharePct) external {
+  function crossUpdateCustomCode(uint256 _fromChainId, address _referrer, address _recipient, bytes8 _shortCode, uint32 _discountPct, uint32 _sharePct) external nonReentrant {
     FRStorage storage fs = lockFeeRegistryStorage();
     LCGStorage storage ls = lockChainGateStorage();
     _checkSource(ls, _fromChainId);
@@ -385,7 +405,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
 
     _setCustomCode(fs, _referrer, _recipient, _shortCode, _discountPct, _sharePct);
 
-    emit UpdateCode(msg.sender, _referrer, _shortCode, _recipient, _fromChainId);
+    emit UpdateCode(msg.sender, _referrer, _shortCode, _recipient, _fromChainId, _discountPct, _sharePct);
   }
 
   /**
@@ -437,7 +457,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @param _code The referral code.
    * @param _newReferer The new referrer address.
    */
-  function changeCodeReferrer(bytes8 _code, address _newReferer, address _newRecipient, uint256[] memory _chainIds, uint256[] memory _crossChainFees) public payable returns(uint256 totalFee) {
+  function changeCodeReferrer(bytes8 _code, address _newReferer, address _newRecipient, uint256[] memory _chainIds, uint256[] memory _crossChainFees) external payable nonReentrant returns(uint256 totalFee, uint256 returnValue) {
     FRStorage storage fs = lockFeeRegistryStorage();
     _checkSenderIsReferrer(fs, _code);
     _checkNewOwnerIsNotReferrer(fs, _newReferer);
@@ -446,6 +466,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
     fs.refererByCode[_code].recipient = _newRecipient;
     fs.codeByReferrer[_newReferer] = _code;
     totalFee = _setCrossChainsRef(fs, false, _code, _chainIds, _crossChainFees);
+    returnValue = _calcAndReturnFee(totalFee);
     emit ChangeCode(msg.sender, _newReferer, _code);
   }
 
@@ -454,11 +475,12 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @param _code The referral code.
    * @param _newRecipient The new recipient address.
    */
-  function changeRecipientReferrer(bytes8 _code, address _newRecipient, uint256[] memory _chainIds, uint256[] memory _crossChainFees) public payable returns(uint256 totalFee) {
+  function changeRecipientReferrer(bytes8 _code, address _newRecipient, uint256[] memory _chainIds, uint256[] memory _crossChainFees) external payable nonReentrant returns(uint256 totalFee, uint256 returnValue) {
     FRStorage storage fs = lockFeeRegistryStorage();
     _checkSenderIsReferrer(fs, _code);
     fs.refererByCode[_code].recipient = _newRecipient;
     totalFee = _setCrossChainsRef(fs, false, _code, _chainIds, _crossChainFees);
+    returnValue = _calcAndReturnFee(totalFee);
     emit ChangeRecipient(msg.sender, _newRecipient, _code);
   }
 
@@ -466,7 +488,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @notice Returns a list of all authorized referral code operator addresses.
    * @return An array of addresses currently designated as code operators.
    */
-  function getCodeOperatorsList() public view returns(address[] memory) {
+  function getCodeOperatorsList() external view returns(address[] memory) {
     return lockFeeRegistryStorage().codeOperators.values();
   }
 
@@ -475,7 +497,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @param _addr The address to check.
    * @return True if the address is an operator, false otherwise.
    */
-  function isCodeOperator(address _addr) public view returns(bool) {
+  function isCodeOperator(address _addr) external view returns(bool) {
     return lockFeeRegistryStorage().codeOperators.contains(_addr);
   }
 
@@ -483,7 +505,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @notice Retrieves the list of supported chain IDs for referral codes.
    * @return An array of chain IDs where referral codes are supported.
    */
-  function getSupportedRefInChainsList() public view returns(uint256[] memory) {
+  function getSupportedRefInChainsList() external view returns(uint256[] memory) {
     return lockFeeRegistryStorage().supportedRefInChains.values();
   }
 
@@ -492,7 +514,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @param _chainId The chain ID to check.
    * @return True if the chain ID is supported, false otherwise.
    */
-  function isSupportedRefInChain(uint256 _chainId) public view returns(bool) {
+  function isSupportedRefInChain(uint256 _chainId) external view returns(bool) {
     return lockFeeRegistryStorage().supportedRefInChains.contains(_chainId);
   }
 
@@ -500,7 +522,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @notice Retrieves the fee beneficiaries configured in the registry.
    * @return An array of FeeBeneficiary structs.
    */
-  function getFeeBeneficiaries() public view returns(FeeBeneficiary[] memory) {
+  function getFeeBeneficiaries() external view returns(FeeBeneficiary[] memory) {
     return lockFeeRegistryStorage().feeBeneficiaries;
   }
 
@@ -510,7 +532,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @return discountPct The effective discount percentage.
    * @return sharePct The effective share percentage.
    */
-  function getCodePct(bytes8 _code) public view returns(uint32 discountPct, uint32 sharePct) {
+  function getCodePct(bytes8 _code) external view returns(uint32 discountPct, uint32 sharePct) {
     return _getCodePct(lockFeeRegistryStorage(), _code);
   }
   /**
@@ -537,7 +559,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @return share The referral share amount.
    * @return fee The final fee after discount.
    */
-  function calculateFee(bytes8 _code, uint256 _fee) public view returns(uint256 discount, uint256 share, uint256 fee) {
+  function calculateFee(bytes8 _code, uint256 _fee) external view returns(uint256 discount, uint256 share, uint256 fee) {
     return _calculateFee(lockFeeRegistryStorage(), _code, _fee);
   }
   /**
@@ -552,6 +574,9 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    */
   function _calculateFee(FRStorage storage fs, bytes8 _code, uint256 _fee) internal view returns(uint256 discount, uint256 share, uint256 fee) {
     (uint32 discountPct, uint32 sharePct) = _getCodePct(fs, _code);
+    if (discountPct + sharePct > PCT_BASE) {
+      revert TooBigPct();
+    }
     discount = (_fee * uint256(discountPct)) / uint256(PCT_BASE);
     share = (_fee * uint256(sharePct)) / uint256(PCT_BASE);
     fee = _fee - discount;
@@ -563,7 +588,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @param _case The case identifier.
    * @return The fee amount.
    */
-  function getContractCaseFee(address _contract, uint8 _case) public view returns(uint256) {
+  function getContractCaseFee(address _contract, uint8 _case) external view returns(uint256) {
     return lockFeeRegistryStorage().feeByContractCase[_contract][_case];
   }
 
@@ -574,7 +599,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @param _code The referral code.
    * @return fee The fee amount.
    */
-  function getContractCaseFeeForCode(address _contract, uint8 _case, bytes8 _code) public view returns(uint256 fee) {
+  function getContractCaseFeeForCode(address _contract, uint8 _case, bytes8 _code) external view returns(uint256 fee) {
     FRStorage storage fs = lockFeeRegistryStorage();
     (, , fee) = _calculateFee(fs, _code, fs.feeByContractCase[_contract][_case]);
   }
@@ -584,7 +609,7 @@ contract FeeRegistry is LockChainGate, IFeeRegistry {
    * @param _referrer The referrer address.
    * @return ref The referrer struct.
    */
-  function getReferrerByAddress(address _referrer) public view returns(Referrer memory ref) {
+  function getReferrerByAddress(address _referrer) external view returns(Referrer memory ref) {
     return _getReferrerByAddress(lockFeeRegistryStorage(), _referrer);
   }
 

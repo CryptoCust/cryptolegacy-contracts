@@ -18,28 +18,28 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 contract LensPlugin is ICryptoLegacyPlugin, ICryptoLegacyLens {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
-    function getSigs() public view returns (bytes4[] memory sigs) {
+    function getSigs() public pure returns (bytes4[] memory sigs) {
         sigs = new bytes4[](20);
-        sigs[0] = LensPlugin(address(this)).updateInterval.selector;
-        sigs[1] = LensPlugin(address(this)).challengeTimeout.selector;
-        sigs[2] = LensPlugin(address(this)).initialFeeToPay.selector;
-        sigs[3] = LensPlugin(address(this)).updateFee.selector;
-        sigs[4] = LensPlugin(address(this)).lastFeePaidAt.selector;
-        sigs[5] = LensPlugin(address(this)).lastUpdateAt.selector;
-        sigs[6] = LensPlugin(address(this)).distributionStartAt.selector;
-        sigs[7] = LensPlugin(address(this)).invitedByRefCode.selector;
-        sigs[8] = LensPlugin(address(this)).getTransferBlockNumbers.selector;
-        sigs[9] = LensPlugin(address(this)).getBeneficiaries.selector;
-        sigs[10] = LensPlugin(address(this)).getBeneficiaryConfig.selector;
-        sigs[11] = LensPlugin(address(this)).getBeneficiaryVesting.selector;
-        sigs[12] = LensPlugin(address(this)).getOriginalBeneficiaryHash.selector;
-        sigs[13] = LensPlugin(address(this)).getTokensDistribution.selector;
-        sigs[14] = LensPlugin(address(this)).getMessagesBlockNumbersByRecipient.selector;
-        sigs[15] = LensPlugin(address(this)).getVestedAndClaimedData.selector;
-        sigs[16] = LensPlugin(address(this)).getPluginMetadata.selector;
-        sigs[17] = LensPlugin(address(this)).getPluginInfoList.selector;
-        sigs[18] = LensPlugin(address(this)).getCryptoLegacyBaseData.selector;
-        sigs[19] = LensPlugin(address(this)).getCryptoLegacyListData.selector;
+        sigs[0] = this.updateInterval.selector;
+        sigs[1] = this.challengeTimeout.selector;
+        sigs[2] = this.initialFeeToPay.selector;
+        sigs[3] = this.updateFee.selector;
+        sigs[4] = this.lastFeePaidAt.selector;
+        sigs[5] = this.lastUpdateAt.selector;
+        sigs[6] = this.distributionStartAt.selector;
+        sigs[7] = this.invitedByRefCode.selector;
+        sigs[8] = this.getTransferBlockNumbers.selector;
+        sigs[9] = this.getBeneficiaries.selector;
+        sigs[10] = this.getBeneficiaryConfig.selector;
+        sigs[11] = this.getBeneficiaryClaimed.selector;
+        sigs[12] = this.getOriginalBeneficiaryHash.selector;
+        sigs[13] = this.getTokensDistribution.selector;
+        sigs[14] = this.getMessagesBlockNumbersByRecipient.selector;
+        sigs[15] = this.getVestedAndClaimedData.selector;
+        sigs[16] = this.getPluginMetadata.selector;
+        sigs[17] = this.getPluginInfoList.selector;
+        sigs[18] = this.getCryptoLegacyBaseData.selector;
+        sigs[19] = this.getCryptoLegacyListData.selector;
     }
     function getSetupSigs() external pure returns (bytes4[] memory sigs) {
         sigs = new bytes4[](0);
@@ -97,7 +97,7 @@ contract LensPlugin is ICryptoLegacyPlugin, ICryptoLegacyLens {
      * @param _token The address of the token.
      * @return The claimed amount.
      */
-    function getBeneficiaryVesting(bytes32 _beneficiary, address _token) external view returns(uint256) {
+    function getBeneficiaryClaimed(bytes32 _beneficiary, address _token) external view returns(uint256) {
         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
         return cls.beneficiaryVesting[_beneficiary].tokenAmountClaimed[_token];
     }
@@ -157,7 +157,7 @@ contract LensPlugin is ICryptoLegacyPlugin, ICryptoLegacyLens {
      * @param _tokens An array of ERC20 token addresses.
      * @return list An array of TokenDistribution structs that include the total amount to distribute and the total claimed amount.
      */
-    function getTokensDistribution(address[] memory _tokens) external view returns(ICryptoLegacy.TokenDistribution[] memory list) {
+    function getTokensDistribution(address[] memory _tokens) external view returns(ICryptoLegacyLens.LensTokenDistribution[] memory list) {
         return _getTokensDistribution(_tokens);
     }
 
@@ -166,12 +166,13 @@ contract LensPlugin is ICryptoLegacyPlugin, ICryptoLegacyLens {
      * @param _tokens An array of ERC20 token addresses.
      * @return list An array of TokenDistribution structs that include the total amount to distribute and the total claimed amount.
      */
-    function _getTokensDistribution(address[] memory _tokens) internal view returns(ICryptoLegacy.TokenDistribution[] memory list) {
+    function _getTokensDistribution(address[] memory _tokens) internal view returns(ICryptoLegacyLens.LensTokenDistribution[] memory list) {
         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
 
-        list = new ICryptoLegacy.TokenDistribution[](_tokens.length);
+        list = new LensTokenDistribution[](_tokens.length);
         for(uint256 i = 0; i < _tokens.length; i++) {
-            list[i] = cls.tokenDistribution[_tokens[i]];
+            ICryptoLegacy.TokenDistribution storage td = cls.tokenDistribution[_tokens[i]];
+            list[i] = LensTokenDistribution(td.amountToDistribute, td.lastBalance, uint128(LibCryptoLegacy._getTotalClaimed(cls, _tokens[i])));
         }
     }
 
@@ -233,15 +234,14 @@ contract LensPlugin is ICryptoLegacyPlugin, ICryptoLegacyLens {
      */
     function getVestedAndClaimedData(bytes32 _beneficiary, address[] memory _tokens) external view returns(BeneficiaryTokenData[] memory result, uint64 startDate, uint64 endDate) {
         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
-        (ICryptoLegacy.BeneficiaryConfig storage bc, ICryptoLegacy.BeneficiaryVesting storage bv) = LibCryptoLegacy._getBeneficiaryConfigAndVesting(cls, _beneficiary);
-
-        (startDate, endDate) = LibCryptoLegacy._getStartAndEndDate(cls, bc);
 
         result = new BeneficiaryTokenData[](_tokens.length);
         for (uint256 i = 0; i < _tokens.length; i++) {
+            (ICryptoLegacy.BeneficiaryConfig storage bc, ICryptoLegacy.BeneficiaryVesting storage bv) = LibCryptoLegacy._getBeneficiaryConfigAndVesting(cls, _beneficiary);
+            (startDate, endDate) = LibCryptoLegacy._getStartAndEndDate(cls, bc);
             ICryptoLegacy.TokenDistribution storage td = cls.tokenDistribution[_tokens[i]];
-            (uint256 vestedAmount, uint256 claimedAmount, uint256 totalAmount) = LibCryptoLegacy._getVestedAndClaimedAmount(td, bc, bv, _tokens[i], startDate, endDate);
-            result[i] = BeneficiaryTokenData(vestedAmount, claimedAmount, totalAmount);
+            (uint256 totalAmount, uint256 claimableAmount, ) = LibCryptoLegacy._getVestedAndClaimedAmount(td, bc, bv, _tokens[i], startDate, endDate);
+            result[i] = BeneficiaryTokenData(claimableAmount, bv.tokenAmountClaimed[_tokens[i]], totalAmount);
         }
     }
 
