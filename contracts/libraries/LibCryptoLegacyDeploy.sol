@@ -25,22 +25,17 @@ library LibCryptoLegacyDeploy {
             revert BytecodeEmpty();
         }
 
+        if (_factorySalt == 0) {
+            _factorySalt = blockhash(block.number - 1);
+        }
         // Compute the expected contract address
         address predictedAddress = _computeAddress(_factorySalt, _contractOwner);
-
         // Ensure the computed address matches the expected deployed contract address
         if (_contractAddress != address(0) && predictedAddress != _contractAddress) {
             revert AddressMismatch();
         }
-
-        bytes32 salt;
-        if (_factorySalt == 0) {
-            salt = blockhash(block.number - 1);
-        } else {
-            salt = _factorySalt;
-        }
-        salt = _getContractOwnerSalt(salt, _contractOwner);
-
+        bytes32 salt = _getContractOwnerSalt(_factorySalt, _contractOwner);
+        
         addr = LibCreate3.create3(salt, _contractBytecode);
         emit CryptoLegacyCreation(addr, salt);
     }

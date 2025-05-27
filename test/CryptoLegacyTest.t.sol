@@ -2690,6 +2690,43 @@ contract CryptoLegacyTest is AbstractTestHelper {
     // LibCryptoLegacyDeploy._deployByCreate3(address(1), salt, address(2), new bytes(0));
   }
 
+  function testBuildWithZeroSaltAndPredictedAddress() public {
+    vm.prank(owner);
+    pluginsRegistry.addPlugin(lensPlugin, "");
+    
+    // salt = blockhash(block.number - 1) will underflow with block.number == 0 in LibCryptoLegacyDeploy.sol
+    vm.roll(1);
+
+    // Define a simple beneficiary array with one beneficiary
+    bytes32[] memory beneficiaryArr = new bytes32[](1);
+    beneficiaryArr[0] = keccak256(abi.encode(bobBeneficiary1));
+    // Define the configuration for the beneficiary (no claim delay, no vesting, 100% share)
+    ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr = new ICryptoLegacy.BeneficiaryConfig[](1);
+    beneficiaryConfigArr[0] = ICryptoLegacy.BeneficiaryConfig(0, 0, 10000);
+
+    // Prepare the arguments for building the CryptoLegacy contract
+    ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(
+      bytes8(0),
+      beneficiaryArr,
+      beneficiaryConfigArr,
+      _getBasePlugins(), 
+      updateInterval, 
+      challengeTimeout 
+    );
+    // Predict the address where the contract will be deployed using factory with zero salt
+    address predictedAddress = factory.computeAddress(bytes32(0), bob);
+
+    // Switch the context to `bob` who will be the owner of the CryptoLegacy contract
+    vm.prank(bob);
+    // Call the buildCryptoLegacy function with the pre-calculated `predictedAddress` and zero salt
+    vm.expectRevert(LibCryptoLegacyDeploy.AddressMismatch.selector);
+    buildManager.buildCryptoLegacy{value: buildFee}(
+      buildArgs,
+      _getRefArgsStruct(bob),
+      _getCreate2ArgsStruct(predictedAddress, bytes32(0))
+    );
+  }
+
   function testLegacyMessenger() public {
     vm.prank(owner);
     pluginsRegistry.addPlugin(lensPlugin, "");
