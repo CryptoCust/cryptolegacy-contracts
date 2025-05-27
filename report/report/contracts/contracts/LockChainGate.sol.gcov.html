@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-05-22 13:12:18</td>
+            <td class="headerValue">2025-05-27 13:15:43</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -100,8 +100,8 @@
 <span id="L29"><span class="lineNum">      29</span>                 :             :      * @notice Constructs the LockChainGate contract.</span>
 <span id="L30"><span class="lineNum">      30</span>                 :             :      * @dev Disables initializers to prevent re-initialization.</span>
 <span id="L31"><span class="lineNum">      31</span>                 :             :      */</span>
-<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC tlaBgGNC">         130 :     constructor() {</span></span>
-<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">         130 :         _disableInitializers();</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC tlaBgGNC">         131 :     constructor() {</span></span>
+<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">         131 :         _disableInitializers();</span></span>
 <span id="L34"><span class="lineNum">      34</span>                 :             :     }</span>
 <span id="L35"><span class="lineNum">      35</span>                 :             : </span>
 <span id="L36"><span class="lineNum">      36</span>                 :             :     /**</span>
@@ -109,10 +109,10 @@
 <span id="L38"><span class="lineNum">      38</span>                 :             :      * @dev Uses inline assembly to access the storage slot defined by LCG_STORAGE_POSITION.</span>
 <span id="L39"><span class="lineNum">      39</span>                 :             :      * @return ls The LCGStorage struct stored at the designated slot.</span>
 <span id="L40"><span class="lineNum">      40</span>                 :             :      */</span>
-<span id="L41"><span class="lineNum">      41</span>                 :<span class="tlaGNC">        1233 :     function lockChainGateStorage() internal pure returns (LCGStorage storage ls) {</span></span>
-<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">        1233 :         bytes32 position = LCG_STORAGE_POSITION;</span></span>
+<span id="L41"><span class="lineNum">      41</span>                 :<span class="tlaGNC">        1239 :     function lockChainGateStorage() internal pure returns (LCGStorage storage ls) {</span></span>
+<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">        1239 :         bytes32 position = LCG_STORAGE_POSITION;</span></span>
 <span id="L43"><span class="lineNum">      43</span>                 :             :         assembly {</span>
-<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">        1233 :             ls.slot := position</span></span>
+<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">        1239 :             ls.slot := position</span></span>
 <span id="L45"><span class="lineNum">      45</span>                 :             :         }</span>
 <span id="L46"><span class="lineNum">      46</span>                 :             :     }</span>
 <span id="L47"><span class="lineNum">      47</span>                 :             : </span>
@@ -124,13 +124,13 @@
 <span id="L53"><span class="lineNum">      53</span>                 :             :      * @param _transferTimeout The timeout between lock and transfer.</span>
 <span id="L54"><span class="lineNum">      54</span>                 :             :      * @param _owner The address to become the owner.</span>
 <span id="L55"><span class="lineNum">      55</span>                 :             :      */</span>
-<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">         129 :     function _initializeLockChainGate(ILifetimeNft _lifetimeNft, uint64 _lockPeriod, uint64 _transferTimeout, address _owner) internal {</span></span>
-<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">         129 :         LCGStorage storage ls = lockChainGateStorage();</span></span>
-<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">         129 :         ls.lifetimeNft = _lifetimeNft;</span></span>
-<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">         129 :         ls.lockPeriod = _lockPeriod;</span></span>
-<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">         129 :         ls.transferTimeout = _transferTimeout;</span></span>
-<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">         129 :         emit SetLockPeriodConfig(_lockPeriod, _transferTimeout);</span></span>
-<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">         129 :         _transferOwnership(_owner);</span></span>
+<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">         130 :     function _initializeLockChainGate(ILifetimeNft _lifetimeNft, uint64 _lockPeriod, uint64 _transferTimeout, address _owner) internal {</span></span>
+<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">         130 :         LCGStorage storage ls = lockChainGateStorage();</span></span>
+<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">         130 :         ls.lifetimeNft = _lifetimeNft;</span></span>
+<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">         130 :         ls.lockPeriod = _lockPeriod;</span></span>
+<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">         130 :         ls.transferTimeout = _transferTimeout;</span></span>
+<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">         130 :         emit SetLockPeriodConfig(_lockPeriod, _transferTimeout);</span></span>
+<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">         130 :         _transferOwnership(_owner);</span></span>
 <span id="L63"><span class="lineNum">      63</span>                 :             :     }</span>
 <span id="L64"><span class="lineNum">      64</span>                 :             : </span>
 <span id="L65"><span class="lineNum">      65</span>                 :             :     /**</span>
@@ -139,11 +139,11 @@
 <span id="L68"><span class="lineNum">      68</span>                 :             :      * @param _operator The address to add or remove.</span>
 <span id="L69"><span class="lineNum">      69</span>                 :             :      * @param _isAdd True to add the operator; false to remove.</span>
 <span id="L70"><span class="lineNum">      70</span>                 :             :      */</span>
-<span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC">         140 :     function setLockOperator(address _operator, bool _isAdd) external onlyOwner {</span></span>
-<span id="L72"><span class="lineNum">      72</span>                 :<span class="tlaGNC">         139 :         LCGStorage storage ls = lockChainGateStorage();</span></span>
-<span id="L73"><span class="lineNum">      73</span>         [<span class="tlaGBC" title="Branch 0 was taken 138 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">         138 :         if (_isAdd) {</span></span>
-<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">         138 :             ls.lockOperators.add(_operator);</span></span>
-<span id="L75"><span class="lineNum">      75</span>                 :<span class="tlaGNC">         138 :             emit AddLockOperator(_operator);</span></span>
+<span id="L71"><span class="lineNum">      71</span>                 :<span class="tlaGNC">         142 :     function setLockOperator(address _operator, bool _isAdd) external onlyOwner {</span></span>
+<span id="L72"><span class="lineNum">      72</span>                 :<span class="tlaGNC">         141 :         LCGStorage storage ls = lockChainGateStorage();</span></span>
+<span id="L73"><span class="lineNum">      73</span>         [<span class="tlaGBC" title="Branch 0 was taken 140 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">         140 :         if (_isAdd) {</span></span>
+<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">         140 :             ls.lockOperators.add(_operator);</span></span>
+<span id="L75"><span class="lineNum">      75</span>                 :<span class="tlaGNC">         140 :             emit AddLockOperator(_operator);</span></span>
 <span id="L76"><span class="lineNum">      76</span>                 :             :         } else {</span>
 <span id="L77"><span class="lineNum">      77</span>                 :<span class="tlaGNC">           1 :             ls.lockOperators.remove(_operator);</span></span>
 <span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">           1 :             emit RemoveLockOperator(_operator);</span></span>
@@ -291,9 +291,9 @@
 <span id="L220"><span class="lineNum">     220</span>                 :             :      * @param _totalFee The total fee amount in wei that needs to be deducted from `msg.value`.</span>
 <span id="L221"><span class="lineNum">     221</span>                 :             :      * @return returnValue The surplus amount returned to the caller (`msg.sender`).</span>
 <span id="L222"><span class="lineNum">     222</span>                 :             :      */</span>
-<span id="L223"><span class="lineNum">     223</span>                 :<span class="tlaGNC">         104 :     function _calcAndReturnFee(uint256 _totalFee) internal returns(uint256 returnValue) {</span></span>
-<span id="L224"><span class="lineNum">     224</span>                 :<span class="tlaGNC">         104 :         returnValue = msg.value - _totalFee;</span></span>
-<span id="L225"><span class="lineNum">     225</span>                 :<span class="tlaGNC">         104 :         _returnFee(returnValue); </span></span>
+<span id="L223"><span class="lineNum">     223</span>                 :<span class="tlaGNC">         105 :     function _calcAndReturnFee(uint256 _totalFee) internal returns(uint256 returnValue) {</span></span>
+<span id="L224"><span class="lineNum">     224</span>                 :<span class="tlaGNC">         105 :         returnValue = msg.value - _totalFee;</span></span>
+<span id="L225"><span class="lineNum">     225</span>                 :<span class="tlaGNC">         105 :         _returnFee(returnValue); </span></span>
 <span id="L226"><span class="lineNum">     226</span>                 :             :     }</span>
 <span id="L227"><span class="lineNum">     227</span>                 :             : </span>
 <span id="L228"><span class="lineNum">     228</span>                 :             :     /**</span>
@@ -301,8 +301,8 @@
 <span id="L230"><span class="lineNum">     230</span>                 :             :      * @dev Uses a low-level call to `msg.sender`. Reverts on failure with `TransferFeeFailed`.</span>
 <span id="L231"><span class="lineNum">     231</span>                 :             :      * @param _returnValue The amount of ether to send to `msg.sender`.</span>
 <span id="L232"><span class="lineNum">     232</span>                 :             :      */</span>
-<span id="L233"><span class="lineNum">     233</span>                 :<span class="tlaGNC">         104 :     function _returnFee(uint256 _returnValue) internal {</span></span>
-<span id="L234"><span class="lineNum">     234</span>            [<span class="tlaUNC" title="Branch 0 was not executed"> # </span>]:<span class="tlaGNC">         104 :         if (_returnValue &gt; 0) {</span></span>
+<span id="L233"><span class="lineNum">     233</span>                 :<span class="tlaGNC">         105 :     function _returnFee(uint256 _returnValue) internal {</span></span>
+<span id="L234"><span class="lineNum">     234</span>            [<span class="tlaUNC" title="Branch 0 was not executed"> # </span>]:<span class="tlaGNC">         105 :         if (_returnValue &gt; 0) {</span></span>
 <span id="L235"><span class="lineNum">     235</span>                 :<span class="tlaUNC tlaBgUNC">           0 :             (bool success, bytes memory data) = payable(msg.sender).call{value: _returnValue}(new bytes(0));</span></span>
 <span id="L236"><span class="lineNum">     236</span>            [<span class="tlaUNC" title="Branch 0 was not executed"> # </span>]:<span class="tlaUNC">           0 :             if (!success) {</span></span>
 <span id="L237"><span class="lineNum">     237</span>                 :<span class="tlaUNC">           0 :                 revert ILockChainGate.TransferFeeFailed(data);</span></span>
@@ -348,8 +348,8 @@
 <span id="L277"><span class="lineNum">     277</span>                 :<span class="tlaGNC">          25 :         _checkFee(totalFee);</span></span>
 <span id="L278"><span class="lineNum">     278</span>                 :             :     }</span>
 <span id="L279"><span class="lineNum">     279</span>                 :             : </span>
-<span id="L280"><span class="lineNum">     280</span>                 :<span class="tlaGNC">         216 :     function _checkFee(uint256 _fee) internal {</span></span>
-<span id="L281"><span class="lineNum">     281</span>            [<span class="tlaGBC" title="Branch 0 was taken 8 times"> + </span>]:<span class="tlaGNC">         216 :         if (msg.value &lt; _fee || msg.value - _fee &gt; 0.00001 ether) {</span></span>
+<span id="L280"><span class="lineNum">     280</span>                 :<span class="tlaGNC">         218 :     function _checkFee(uint256 _fee) internal {</span></span>
+<span id="L281"><span class="lineNum">     281</span>            [<span class="tlaGBC" title="Branch 0 was taken 8 times"> + </span>]:<span class="tlaGNC">         218 :         if (msg.value &lt; _fee || msg.value - _fee &gt; 0.00001 ether) {</span></span>
 <span id="L282"><span class="lineNum">     282</span>                 :<span class="tlaGNC">           8 :             revert IncorrectFee(_fee);</span></span>
 <span id="L283"><span class="lineNum">     283</span>                 :             :         }</span>
 <span id="L284"><span class="lineNum">     284</span>                 :             :     }</span>
@@ -955,13 +955,13 @@
 <span id="L884"><span class="lineNum">     884</span>                 :             :      * @param _crossChainFees Array of cross-chain fees.</span>
 <span id="L885"><span class="lineNum">     885</span>                 :             :      * @return The total native fee.</span>
 <span id="L886"><span class="lineNum">     886</span>                 :             :      */</span>
-<span id="L887"><span class="lineNum">     887</span>                 :<span class="tlaGNC">          74 :     function calculateCrossChainCreateRefNativeFee(uint256[] memory _chainIds, uint256[] memory _crossChainFees) external view returns(uint256) {</span></span>
-<span id="L888"><span class="lineNum">     888</span>                 :<span class="tlaGNC">          74 :         LCGStorage storage ls = lockChainGateStorage();</span></span>
-<span id="L889"><span class="lineNum">     889</span>                 :<span class="tlaGNC">          74 :         uint256 totalNativeFee = 0;</span></span>
-<span id="L890"><span class="lineNum">     890</span>                 :<span class="tlaGNC">          74 :         for (uint256 i = 0; i &lt; _chainIds.length; i++) {</span></span>
+<span id="L887"><span class="lineNum">     887</span>                 :<span class="tlaGNC">          75 :     function calculateCrossChainCreateRefNativeFee(uint256[] memory _chainIds, uint256[] memory _crossChainFees) external view returns(uint256) {</span></span>
+<span id="L888"><span class="lineNum">     888</span>                 :<span class="tlaGNC">          75 :         LCGStorage storage ls = lockChainGateStorage();</span></span>
+<span id="L889"><span class="lineNum">     889</span>                 :<span class="tlaGNC">          75 :         uint256 totalNativeFee = 0;</span></span>
+<span id="L890"><span class="lineNum">     890</span>                 :<span class="tlaGNC">          75 :         for (uint256 i = 0; i &lt; _chainIds.length; i++) {</span></span>
 <span id="L891"><span class="lineNum">     891</span>                 :<span class="tlaGNC">          10 :             totalNativeFee += _getDeBridgeChainNativeFee(ls, _chainIds[i], _crossChainFees[i]);</span></span>
 <span id="L892"><span class="lineNum">     892</span>                 :             :         }</span>
-<span id="L893"><span class="lineNum">     893</span>                 :<span class="tlaGNC">          74 :         return totalNativeFee;</span></span>
+<span id="L893"><span class="lineNum">     893</span>                 :<span class="tlaGNC">          75 :         return totalNativeFee;</span></span>
 <span id="L894"><span class="lineNum">     894</span>                 :             :     }</span>
 <span id="L895"><span class="lineNum">     895</span>                 :             : </span>
 <span id="L896"><span class="lineNum">     896</span>                 :             :     /**</span>
@@ -988,11 +988,11 @@
 <span id="L917"><span class="lineNum">     917</span>                 :             :      * @param _holder The address to check.</span>
 <span id="L918"><span class="lineNum">     918</span>                 :             :      * @return True if the NFT is locked, false otherwise.</span>
 <span id="L919"><span class="lineNum">     919</span>                 :             :      */</span>
-<span id="L920"><span class="lineNum">     920</span>                 :<span class="tlaGNC">         171 :     function isNftLockedAndUpdate(address _holder) external returns(bool) {</span></span>
-<span id="L921"><span class="lineNum">     921</span>                 :<span class="tlaGNC">         171 :         LCGStorage storage ls = lockChainGateStorage();</span></span>
-<span id="L922"><span class="lineNum">     922</span>                 :<span class="tlaGNC">         171 :         uint256 tokenId = ls.lockedNft[_holder].tokenId;</span></span>
-<span id="L923"><span class="lineNum">     923</span>            [<span class="tlaGBC" title="Branch 0 was taken 153 times"> + </span>]:<span class="tlaGNC">         171 :         if (tokenId == 0) {</span></span>
-<span id="L924"><span class="lineNum">     924</span>                 :<span class="tlaGNC">         153 :             return false;</span></span>
+<span id="L920"><span class="lineNum">     920</span>                 :<span class="tlaGNC">         172 :     function isNftLockedAndUpdate(address _holder) external returns(bool) {</span></span>
+<span id="L921"><span class="lineNum">     921</span>                 :<span class="tlaGNC">         172 :         LCGStorage storage ls = lockChainGateStorage();</span></span>
+<span id="L922"><span class="lineNum">     922</span>                 :<span class="tlaGNC">         172 :         uint256 tokenId = ls.lockedNft[_holder].tokenId;</span></span>
+<span id="L923"><span class="lineNum">     923</span>            [<span class="tlaGBC" title="Branch 0 was taken 154 times"> + </span>]:<span class="tlaGNC">         172 :         if (tokenId == 0) {</span></span>
+<span id="L924"><span class="lineNum">     924</span>                 :<span class="tlaGNC">         154 :             return false;</span></span>
 <span id="L925"><span class="lineNum">     925</span>                 :             :         }</span>
 <span id="L926"><span class="lineNum">     926</span>            [<span class="tlaGBC" title="Branch 0 was taken 3 times"> + </span>]:<span class="tlaGNC">          18 :         if (!ls.lockOperators.contains(msg.sender) &amp;&amp; _holder != msg.sender &amp;&amp; ls.lockedNftApprovedTo[tokenId] != msg.sender) {</span></span>
 <span id="L927"><span class="lineNum">     927</span>                 :<span class="tlaGNC">           3 :             revert NotAllowed();</span></span>

@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-05-22 13:12:18</td>
+            <td class="headerValue">2025-05-27 13:15:43</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -95,8 +95,8 @@
 <span id="L24"><span class="lineNum">      24</span>                 :             :    * @dev Sets the contract owner.</span>
 <span id="L25"><span class="lineNum">      25</span>                 :             :    * @param _owner The address which will become the owner.</span>
 <span id="L26"><span class="lineNum">      26</span>                 :             :    */</span>
-<span id="L27"><span class="lineNum">      27</span>                 :<span class="tlaGNC tlaBgGNC">          77 :   constructor(address _owner) Ownable() {</span></span>
-<span id="L28"><span class="lineNum">      28</span>                 :<span class="tlaGNC">          77 :     _transferOwnership(_owner);</span></span>
+<span id="L27"><span class="lineNum">      27</span>                 :<span class="tlaGNC tlaBgGNC">          78 :   constructor(address _owner) Ownable() {</span></span>
+<span id="L28"><span class="lineNum">      28</span>                 :<span class="tlaGNC">          78 :     _transferOwnership(_owner);</span></span>
 <span id="L29"><span class="lineNum">      29</span>                 :             :   }</span>
 <span id="L30"><span class="lineNum">      30</span>                 :             : </span>
 <span id="L31"><span class="lineNum">      31</span>                 :             :   /**</span>
@@ -105,10 +105,10 @@
 <span id="L34"><span class="lineNum">      34</span>                 :             :    * @param _plugin The address of the plugin contract.</span>
 <span id="L35"><span class="lineNum">      35</span>                 :             :    * @param _description A string providing a description of the plugin.</span>
 <span id="L36"><span class="lineNum">      36</span>                 :             :    */</span>
-<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">         153 :   function addPlugin(address _plugin, string memory _description) public onlyOwner {</span></span>
-<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">         152 :     pluginsList.add(_plugin);</span></span>
-<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">         152 :     pluginDescriptionBlockNumbers[_plugin].push(uint64(block.number));</span></span>
-<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">         152 :     emit AddPlugin(_plugin, _description);</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">         155 :   function addPlugin(address _plugin, string memory _description) public onlyOwner {</span></span>
+<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">         154 :     pluginsList.add(_plugin);</span></span>
+<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">         154 :     pluginDescriptionBlockNumbers[_plugin].push(uint64(block.number));</span></span>
+<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">         154 :     emit AddPlugin(_plugin, _description);</span></span>
 <span id="L41"><span class="lineNum">      41</span>                 :             :   }</span>
 <span id="L42"><span class="lineNum">      42</span>                 :             : </span>
 <span id="L43"><span class="lineNum">      43</span>                 :             :   /**</span>

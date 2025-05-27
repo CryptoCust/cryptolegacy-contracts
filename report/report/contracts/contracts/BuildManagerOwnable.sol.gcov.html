@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-05-22 13:12:18</td>
+            <td class="headerValue">2025-05-27 13:15:43</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -100,10 +100,10 @@
 <span id="L29"><span class="lineNum">      29</span>                 :             :      * @param _buildManager The address to be added or removed.</span>
 <span id="L30"><span class="lineNum">      30</span>                 :             :      * @param _isAdd True to add the build manager; false to remove.</span>
 <span id="L31"><span class="lineNum">      31</span>                 :             :      */</span>
-<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC tlaBgGNC">          82 :     function setBuildManager(address _buildManager, bool _isAdd) external onlyOwner {</span></span>
-<span id="L33"><span class="lineNum">      33</span>         [<span class="tlaGBC" title="Branch 0 was taken 81 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">          81 :         if (_isAdd) {</span></span>
-<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">          81 :             buildManagerAdded.add(_buildManager);</span></span>
-<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">          81 :             emit AddBuildManager(_buildManager);</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC tlaBgGNC">          83 :     function setBuildManager(address _buildManager, bool _isAdd) external onlyOwner {</span></span>
+<span id="L33"><span class="lineNum">      33</span>         [<span class="tlaGBC" title="Branch 0 was taken 82 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">          82 :         if (_isAdd) {</span></span>
+<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">          82 :             buildManagerAdded.add(_buildManager);</span></span>
+<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">          82 :             emit AddBuildManager(_buildManager);</span></span>
 <span id="L36"><span class="lineNum">      36</span>                 :             :         } else {</span>
 <span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">           1 :             buildManagerAdded.remove(_buildManager);</span></span>
 <span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">           1 :             emit RemoveBuildManager(_buildManager);</span></span>
