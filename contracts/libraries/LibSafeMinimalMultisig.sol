@@ -41,7 +41,7 @@ library LibSafeMinimalMultisig {
      * @param _voters An array of voter identifiers.
      * @param _requiredConfirmations The number of confirmations required to execute a proposal.
      */
-    function _setVotersAndConfirmations(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _voters, uint8 _requiredConfirmations) internal {
+    function _setVotersAndConfirmations(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _voters, uint128 _requiredConfirmations) internal {
         if (_requiredConfirmations > _voters.length || _requiredConfirmations == 0) {
             revert ISafeMinimalMultisig.MultisigIncorrectRequiredConfirmations();
         }
@@ -71,7 +71,7 @@ library LibSafeMinimalMultisig {
      * @param _voterCount The total count of voters.
      * @return The default number of required confirmations.
      */
-    function _calcDefaultConfirmations(uint8 _voterCount) internal pure returns(uint8) {
+    function _calcDefaultConfirmations(uint128 _voterCount) internal pure returns(uint128) {
         return (_voterCount / 2) + 1;
     }
 
@@ -115,7 +115,7 @@ library LibSafeMinimalMultisig {
      * @param _proposalId The proposal identifier.
      * @return confirmed The total number of confirmations for the proposal.
      */
-    function _getConfirmedCount(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _allVoters, uint256 _proposalId) internal view returns(uint8 confirmed) {
+    function _getConfirmedCount(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _allVoters, uint256 _proposalId) internal view returns(uint128 confirmed) {
         for (uint256 i = 0; i < _allVoters.length; i++) {
             if (s.confirmedBy[_proposalId][_allVoters[i]]) {
                 confirmed++;
@@ -135,7 +135,7 @@ library LibSafeMinimalMultisig {
      */
     function _getProposalListWithStatusesAndStorageVoters(ISafeMinimalMultisig.Storage storage s) internal view returns(
         bytes32[] memory voters,
-        uint8 requiredConfirmations,
+        uint128 requiredConfirmations,
         ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses
     ) {
         voters = s.voters;
@@ -159,7 +159,7 @@ library LibSafeMinimalMultisig {
     function _getProposalWithStatus(ISafeMinimalMultisig.Storage storage s, bytes32[] memory voters, uint256 _proposalId) internal view returns(ISafeMinimalMultisig.ProposalWithStatus memory proposalWithStatus) {
         bool[] memory confirmedBy = new bool[](voters.length);
         ISafeMinimalMultisig.Proposal memory proposal = s.proposals[_proposalId];
-        uint8 confirms = 0;
+        uint128 confirms = 0;
         for (uint256 j = 0; j < voters.length; j++) {
             confirmedBy[j] = s.confirmedBy[_proposalId][voters[j]];
             if (confirmedBy[j]) {
@@ -192,7 +192,7 @@ library LibSafeMinimalMultisig {
             revert ISafeMinimalMultisig.MultisigMethodNotAllowed();
         }
 
-        s.proposals.push(ISafeMinimalMultisig.Proposal(_params, uint8(1), _selector, ISafeMinimalMultisig.ProposalStatus.PENDING));
+        s.proposals.push(ISafeMinimalMultisig.Proposal(_params, uint128(1), _selector, ISafeMinimalMultisig.ProposalStatus.PENDING));
         proposalId = s.proposals.length - 1;
         s.confirmedBy[proposalId][voter] = true;
 

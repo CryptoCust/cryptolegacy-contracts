@@ -196,7 +196,7 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable
      */
     function lrGetProposalWithStatus(uint256 _proposalId) external view returns(
         bytes32[] memory voters,
-        uint8 requiredConfirmations,
+        uint128 requiredConfirmations,
         ISafeMinimalMultisig.ProposalWithStatus memory proposalWithStatus
     ) {
         ISafeMinimalMultisig.Storage storage pluginStorage = getPluginMultisigStorage();
@@ -216,7 +216,7 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable
      */
     function lrGetProposalListWithStatuses() external view returns(
         bytes32[] memory voters,
-        uint8 requiredConfirmations,
+        uint128 requiredConfirmations,
         ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses
     ) {
         return LibSafeMinimalMultisig._getProposalListWithStatusesAndStorageVoters(getPluginMultisigStorage());
