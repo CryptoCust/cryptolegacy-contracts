@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-05-27 13:15:43</td>
+            <td class="headerValue">2025-05-28 15:19:12</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -112,7 +112,7 @@
 <span id="L41"><span class="lineNum">      41</span>                 :             :      * @param _voters An array of voter identifiers.</span>
 <span id="L42"><span class="lineNum">      42</span>                 :             :      * @param _requiredConfirmations The number of confirmations required to execute a proposal.</span>
 <span id="L43"><span class="lineNum">      43</span>                 :             :      */</span>
-<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">          11 :     function _setVotersAndConfirmations(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _voters, uint8 _requiredConfirmations) internal {</span></span>
+<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">          11 :     function _setVotersAndConfirmations(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _voters, uint128 _requiredConfirmations) internal {</span></span>
 <span id="L45"><span class="lineNum">      45</span>            [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span>]:<span class="tlaGNC">          11 :         if (_requiredConfirmations &gt; _voters.length || _requiredConfirmations == 0) {</span></span>
 <span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">           2 :             revert ISafeMinimalMultisig.MultisigIncorrectRequiredConfirmations();</span></span>
 <span id="L47"><span class="lineNum">      47</span>                 :             :         }</span>
@@ -142,7 +142,7 @@
 <span id="L71"><span class="lineNum">      71</span>                 :             :      * @param _voterCount The total count of voters.</span>
 <span id="L72"><span class="lineNum">      72</span>                 :             :      * @return The default number of required confirmations.</span>
 <span id="L73"><span class="lineNum">      73</span>                 :             :      */</span>
-<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">          22 :     function _calcDefaultConfirmations(uint8 _voterCount) internal pure returns(uint8) {</span></span>
+<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">          22 :     function _calcDefaultConfirmations(uint128 _voterCount) internal pure returns(uint128) {</span></span>
 <span id="L75"><span class="lineNum">      75</span>                 :<span class="tlaGNC">          22 :         return (_voterCount / 2) + 1;</span></span>
 <span id="L76"><span class="lineNum">      76</span>                 :             :     }</span>
 <span id="L77"><span class="lineNum">      77</span>                 :             : </span>
@@ -186,7 +186,7 @@
 <span id="L115"><span class="lineNum">     115</span>                 :             :      * @param _proposalId The proposal identifier.</span>
 <span id="L116"><span class="lineNum">     116</span>                 :             :      * @return confirmed The total number of confirmations for the proposal.</span>
 <span id="L117"><span class="lineNum">     117</span>                 :             :      */</span>
-<span id="L118"><span class="lineNum">     118</span>                 :<span class="tlaGNC">          13 :     function _getConfirmedCount(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _allVoters, uint256 _proposalId) internal view returns(uint8 confirmed) {</span></span>
+<span id="L118"><span class="lineNum">     118</span>                 :<span class="tlaGNC">          13 :     function _getConfirmedCount(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _allVoters, uint256 _proposalId) internal view returns(uint128 confirmed) {</span></span>
 <span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">          13 :         for (uint256 i = 0; i &lt; _allVoters.length; i++) {</span></span>
 <span id="L120"><span class="lineNum">     120</span>            [<span class="tlaGBC" title="Branch 0 was taken 16 times"> + </span>]:<span class="tlaGNC">          16 :             if (s.confirmedBy[_proposalId][_allVoters[i]]) {</span></span>
 <span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">          16 :                 confirmed++;</span></span>
@@ -206,7 +206,7 @@
 <span id="L135"><span class="lineNum">     135</span>                 :             :      */</span>
 <span id="L136"><span class="lineNum">     136</span>                 :<span class="tlaGNC tlaBgGNC">          23 :     function _getProposalListWithStatusesAndStorageVoters(ISafeMinimalMultisig.Storage storage s) internal view returns(</span></span>
 <span id="L137"><span class="lineNum">     137</span>                 :             :         bytes32[] memory voters,</span>
-<span id="L138"><span class="lineNum">     138</span>                 :             :         uint8 requiredConfirmations,</span>
+<span id="L138"><span class="lineNum">     138</span>                 :             :         uint128 requiredConfirmations,</span>
 <span id="L139"><span class="lineNum">     139</span>                 :             :         ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses</span>
 <span id="L140"><span class="lineNum">     140</span>                 :             :     ) {</span>
 <span id="L141"><span class="lineNum">     141</span>                 :<span class="tlaGNC">          23 :         voters = s.voters;</span></span>
@@ -230,7 +230,7 @@
 <span id="L159"><span class="lineNum">     159</span>                 :<span class="tlaGNC">          28 :     function _getProposalWithStatus(ISafeMinimalMultisig.Storage storage s, bytes32[] memory voters, uint256 _proposalId) internal view returns(ISafeMinimalMultisig.ProposalWithStatus memory proposalWithStatus) {</span></span>
 <span id="L160"><span class="lineNum">     160</span>                 :<span class="tlaGNC">          28 :         bool[] memory confirmedBy = new bool[](voters.length);</span></span>
 <span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">          28 :         ISafeMinimalMultisig.Proposal memory proposal = s.proposals[_proposalId];</span></span>
-<span id="L162"><span class="lineNum">     162</span>                 :<span class="tlaGNC">          28 :         uint8 confirms = 0;</span></span>
+<span id="L162"><span class="lineNum">     162</span>                 :<span class="tlaGNC">          28 :         uint128 confirms = 0;</span></span>
 <span id="L163"><span class="lineNum">     163</span>                 :<span class="tlaGNC">          28 :         for (uint256 j = 0; j &lt; voters.length; j++) {</span></span>
 <span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">          60 :             confirmedBy[j] = s.confirmedBy[_proposalId][voters[j]];</span></span>
 <span id="L165"><span class="lineNum">     165</span>            [<span class="tlaGBC" title="Branch 0 was taken 35 times"> + </span>]:<span class="tlaGNC">          35 :             if (confirmedBy[j]) {</span></span>
@@ -263,7 +263,7 @@
 <span id="L192"><span class="lineNum">     192</span>                 :<span class="tlaGNC">           2 :             revert ISafeMinimalMultisig.MultisigMethodNotAllowed();</span></span>
 <span id="L193"><span class="lineNum">     193</span>                 :             :         }</span>
 <span id="L194"><span class="lineNum">     194</span>                 :             : </span>
-<span id="L195"><span class="lineNum">     195</span>                 :<span class="tlaGNC">          10 :         s.proposals.push(ISafeMinimalMultisig.Proposal(_params, uint8(1), _selector, ISafeMinimalMultisig.ProposalStatus.PENDING));</span></span>
+<span id="L195"><span class="lineNum">     195</span>                 :<span class="tlaGNC">          10 :         s.proposals.push(ISafeMinimalMultisig.Proposal(_params, uint128(1), _selector, ISafeMinimalMultisig.ProposalStatus.PENDING));</span></span>
 <span id="L196"><span class="lineNum">     196</span>                 :<span class="tlaGNC">          10 :         proposalId = s.proposals.length - 1;</span></span>
 <span id="L197"><span class="lineNum">     197</span>                 :<span class="tlaGNC">          10 :         s.confirmedBy[proposalId][voter] = true;</span></span>
 <span id="L198"><span class="lineNum">     198</span>                 :             : </span>

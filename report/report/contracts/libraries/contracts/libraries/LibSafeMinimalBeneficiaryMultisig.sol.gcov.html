@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-05-27 13:15:43</td>
+            <td class="headerValue">2025-05-28 15:19:12</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -112,9 +112,9 @@
 <span id="L41"><span class="lineNum">      41</span>                 :             :      * @param s The multisig storage structure.</span>
 <span id="L42"><span class="lineNum">      42</span>                 :             :      * @return A tuple containing:</span>
 <span id="L43"><span class="lineNum">      43</span>                 :             :      *  - An array of voter identifiers (bytes32[]).</span>
-<span id="L44"><span class="lineNum">      44</span>                 :             :      *  - The number of required confirmations (uint8).</span>
+<span id="L44"><span class="lineNum">      44</span>                 :             :      *  - The number of required confirmations (uint128).</span>
 <span id="L45"><span class="lineNum">      45</span>                 :             :      */</span>
-<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">           5 :     function _getVotersAndConfirmations(ISafeMinimalMultisig.Storage storage s) internal view returns(bytes32[] memory, uint8) {</span></span>
+<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">           5 :     function _getVotersAndConfirmations(ISafeMinimalMultisig.Storage storage s) internal view returns(bytes32[] memory, uint128) {</span></span>
 <span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">           5 :         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();</span></span>
 <span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">           5 :         return (_getVoters(cls), _getRequiredConfirmations(s, cls));</span></span>
 <span id="L49"><span class="lineNum">      49</span>                 :             :     }</span>
@@ -133,7 +133,7 @@
 <span id="L62"><span class="lineNum">      62</span>                 :             :         ISafeMinimalMultisig.Storage storage s</span>
 <span id="L63"><span class="lineNum">      63</span>                 :             :     ) internal view returns(</span>
 <span id="L64"><span class="lineNum">      64</span>                 :             :         bytes32[] memory voters,</span>
-<span id="L65"><span class="lineNum">      65</span>                 :             :         uint8 requiredConfirmations,</span>
+<span id="L65"><span class="lineNum">      65</span>                 :             :         uint128 requiredConfirmations,</span>
 <span id="L66"><span class="lineNum">      66</span>                 :             :         ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses</span>
 <span id="L67"><span class="lineNum">      67</span>                 :             :     ) {</span>
 <span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">           5 :         voters = _getVoters(cls);</span></span>
@@ -161,7 +161,7 @@
 <span id="L90"><span class="lineNum">      90</span>                 :             :         uint256 _proposalId</span>
 <span id="L91"><span class="lineNum">      91</span>                 :             :     ) internal view returns(</span>
 <span id="L92"><span class="lineNum">      92</span>                 :             :         bytes32[] memory voters,</span>
-<span id="L93"><span class="lineNum">      93</span>                 :             :         uint8 requiredConfirmations,</span>
+<span id="L93"><span class="lineNum">      93</span>                 :             :         uint128 requiredConfirmations,</span>
 <span id="L94"><span class="lineNum">      94</span>                 :             :         ISafeMinimalMultisig.ProposalWithStatus memory proposalWithStatus</span>
 <span id="L95"><span class="lineNum">      95</span>                 :             :     ) {</span>
 <span id="L96"><span class="lineNum">      96</span>                 :<span class="tlaGNC">           3 :         voters = _getVoters(cls);</span></span>
@@ -177,7 +177,7 @@
 <span id="L106"><span class="lineNum">     106</span>                 :             :      * @param cls The CryptoLegacy storage structure.</span>
 <span id="L107"><span class="lineNum">     107</span>                 :             :      * @return The number of required confirmations.</span>
 <span id="L108"><span class="lineNum">     108</span>                 :             :      */</span>
-<span id="L109"><span class="lineNum">     109</span>                 :<span class="tlaGNC">          13 :     function _getRequiredConfirmations(ISafeMinimalMultisig.Storage storage s, ICryptoLegacy.CryptoLegacyStorage storage cls) internal view returns(uint8) {</span></span>
+<span id="L109"><span class="lineNum">     109</span>                 :<span class="tlaGNC">          13 :     function _getRequiredConfirmations(ISafeMinimalMultisig.Storage storage s, ICryptoLegacy.CryptoLegacyStorage storage cls) internal view returns(uint128) {</span></span>
 <span id="L110"><span class="lineNum">     110</span>            [<span class="tlaGBC" title="Branch 0 was taken 3 times"> + </span>]:<span class="tlaGNC">          13 :         if (LibSafeMinimalMultisig._initializationStatus(s) != ISafeMinimalMultisig.InitializationStatus.INITIALIZED) {</span></span>
 <span id="L111"><span class="lineNum">     111</span>                 :<span class="tlaGNC">           3 :             return _getDefaultRequiredConfirmations(cls);</span></span>
 <span id="L112"><span class="lineNum">     112</span>                 :             :         }</span>
@@ -200,8 +200,8 @@
 <span id="L129"><span class="lineNum">     129</span>                 :             :      * @param cls The CryptoLegacy storage structure.</span>
 <span id="L130"><span class="lineNum">     130</span>                 :             :      * @return The default required confirmations.</span>
 <span id="L131"><span class="lineNum">     131</span>                 :             :      */</span>
-<span id="L132"><span class="lineNum">     132</span>                 :<span class="tlaGNC">           6 :     function _getDefaultRequiredConfirmations(ICryptoLegacy.CryptoLegacyStorage storage cls) internal view returns(uint8) {</span></span>
-<span id="L133"><span class="lineNum">     133</span>                 :<span class="tlaGNC">           6 :         return LibSafeMinimalMultisig._calcDefaultConfirmations(uint8(LibCryptoLegacy._getBeneficiariesCount(cls)));</span></span>
+<span id="L132"><span class="lineNum">     132</span>                 :<span class="tlaGNC">           6 :     function _getDefaultRequiredConfirmations(ICryptoLegacy.CryptoLegacyStorage storage cls) internal view returns(uint128) {</span></span>
+<span id="L133"><span class="lineNum">     133</span>                 :<span class="tlaGNC">           6 :         return LibSafeMinimalMultisig._calcDefaultConfirmations(uint128(LibCryptoLegacy._getBeneficiariesCount(cls)));</span></span>
 <span id="L134"><span class="lineNum">     134</span>                 :             :     }</span>
 <span id="L135"><span class="lineNum">     135</span>                 :             : </span>
 <span id="L136"><span class="lineNum">     136</span>                 :             :     /**</span>
@@ -212,7 +212,7 @@
 <span id="L141"><span class="lineNum">     141</span>                 :             :      * @param _voters An array of voter identifiers.</span>
 <span id="L142"><span class="lineNum">     142</span>                 :             :      * @param _requiredConfirmations The new number of required confirmations.</span>
 <span id="L143"><span class="lineNum">     143</span>                 :             :      */</span>
-<span id="L144"><span class="lineNum">     144</span>                 :<span class="tlaGNC">           6 :     function _setConfirmations(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _voters, uint8 _requiredConfirmations) internal {</span></span>
+<span id="L144"><span class="lineNum">     144</span>                 :<span class="tlaGNC">           6 :     function _setConfirmations(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _voters, uint128 _requiredConfirmations) internal {</span></span>
 <span id="L145"><span class="lineNum">     145</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           6 :         if (_requiredConfirmations &gt; _voters.length || _requiredConfirmations == 0) {</span></span>
 <span id="L146"><span class="lineNum">     146</span>                 :<span class="tlaGNC">           1 :             revert ISafeMinimalMultisig.MultisigIncorrectRequiredConfirmations();</span></span>
 <span id="L147"><span class="lineNum">     147</span>                 :             :         }</span>

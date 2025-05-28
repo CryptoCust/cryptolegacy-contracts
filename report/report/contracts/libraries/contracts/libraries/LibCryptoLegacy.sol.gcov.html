@@ -32,12 +32,12 @@
             <td></td>
             <td class="headerItem">Lines:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
-            <td class="headerCovTableEntry">228</td>
-            <td class="headerCovTableEntry">228</td>
+            <td class="headerCovTableEntry">230</td>
+            <td class="headerCovTableEntry">230</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-05-27 13:15:43</td>
+            <td class="headerValue">2025-05-28 15:19:12</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -590,103 +590,106 @@
 <span id="L519"><span class="lineNum">     519</span>            [<span class="tlaGBC" title="Branch 0 was taken 28 times"> + </span>]:<span class="tlaGNC">         664 :         if (cls.buildManager.payFee.selector == _selector) {</span></span>
 <span id="L520"><span class="lineNum">     520</span>                 :<span class="tlaGNC">          28 :             return 12e5;</span></span>
 <span id="L521"><span class="lineNum">     521</span>                 :             :         }</span>
-<span id="L522"><span class="lineNum">     522</span>            [<span class="tlaGBC" title="Branch 0 was taken 29 times"> + </span>]:<span class="tlaGNC">         636 :         if (cls.buildManager.getUpdateFee.selector == _selector) {</span></span>
-<span id="L523"><span class="lineNum">     523</span>                 :<span class="tlaGNC">          29 :             return 6e5;</span></span>
-<span id="L524"><span class="lineNum">     524</span>                 :             :         }</span>
-<span id="L525"><span class="lineNum">     525</span>            [<span class="tlaGBC" title="Branch 0 was taken 43 times"> + </span>]:<span class="tlaGNC">         607 :         if (transferValueSelector == _selector) {</span></span>
-<span id="L526"><span class="lineNum">     526</span>                 :<span class="tlaGNC">          43 :             return 4e4;</span></span>
+<span id="L522"><span class="lineNum">     522</span>                 :             :         if (</span>
+<span id="L523"><span class="lineNum">     523</span>                 :<span class="tlaGNC">         636 :             cls.buildManager.getUpdateFee.selector == _selector ||</span></span>
+<span id="L524"><span class="lineNum">     524</span>                 :<span class="tlaGNC">         607 :             cls.buildManager.isLifetimeNftLockedAndUpdate.selector == _selector</span></span>
+<span id="L525"><span class="lineNum">     525</span>            [<span class="tlaGBC" title="Branch 0 was taken 138 times"> + </span>]:<span class="tlaGNC">         138 :         ) {</span></span>
+<span id="L526"><span class="lineNum">     526</span>                 :<span class="tlaGNC">         138 :             return 6e5;</span></span>
 <span id="L527"><span class="lineNum">     527</span>                 :             :         }</span>
-<span id="L528"><span class="lineNum">     528</span>                 :<span class="tlaGNC">         564 :         IBeneficiaryRegistry br = IBeneficiaryRegistry(address(0));</span></span>
-<span id="L529"><span class="lineNum">     529</span>                 :             :         if (</span>
-<span id="L530"><span class="lineNum">     530</span>                 :<span class="tlaGNC">         564 :             lockNftSelector == _selector ||</span></span>
-<span id="L531"><span class="lineNum">     531</span>                 :<span class="tlaGNC">         536 :             br.setCryptoLegacyOwner.selector == _selector ||</span></span>
-<span id="L532"><span class="lineNum">     532</span>                 :<span class="tlaGNC">         477 :             br.setCryptoLegacyGuardian.selector == _selector ||</span></span>
-<span id="L533"><span class="lineNum">     533</span>                 :<span class="tlaGNC">         468 :             br.setCryptoLegacyBeneficiary.selector == _selector</span></span>
-<span id="L534"><span class="lineNum">     534</span>            [<span class="tlaGBC" title="Branch 0 was taken 230 times"> + </span>]:<span class="tlaGNC">         230 :         ) {</span></span>
-<span id="L535"><span class="lineNum">     535</span>                 :<span class="tlaGNC">         230 :             return 4e5;</span></span>
-<span id="L536"><span class="lineNum">     536</span>                 :             :         }</span>
-<span id="L537"><span class="lineNum">     537</span>                 :<span class="tlaGNC">         334 :         return 2e5;</span></span>
-<span id="L538"><span class="lineNum">     538</span>                 :             :     }</span>
-<span id="L539"><span class="lineNum">     539</span>                 :             : </span>
-<span id="L540"><span class="lineNum">     540</span>                 :             :     /**</span>
-<span id="L541"><span class="lineNum">     541</span>                 :             :      * @notice Updates the owner in the beneficiary registry.</span>
-<span id="L542"><span class="lineNum">     542</span>                 :             :      * @dev Unregisters the previous owner and registers the new owner using _setCryptoLegacyToBeneficiaryRegistry.</span>
-<span id="L543"><span class="lineNum">     543</span>                 :             :      * @param cls The CryptoLegacy storage structure.</span>
-<span id="L544"><span class="lineNum">     544</span>                 :             :      * @param _newOwner The address of the new owner.</span>
-<span id="L545"><span class="lineNum">     545</span>                 :             :      */</span>
-<span id="L546"><span class="lineNum">     546</span>                 :<span class="tlaGNC">           2 :     function _updateOwnerInBeneficiaryRegistry(ICryptoLegacy.CryptoLegacyStorage storage cls, address _newOwner) internal {</span></span>
-<span id="L547"><span class="lineNum">     547</span>                 :<span class="tlaGNC">           2 :         address oldOwner = LibDiamond.contractOwner();</span></span>
-<span id="L548"><span class="lineNum">     548</span>                 :<span class="tlaGNC">           2 :         _setCryptoLegacyToBeneficiaryRegistry(cls, LibCryptoLegacy._addressToHash(oldOwner), IBeneficiaryRegistry.EntityType.OWNER, false);</span></span>
-<span id="L549"><span class="lineNum">     549</span>                 :<span class="tlaGNC">           2 :         _setCryptoLegacyToBeneficiaryRegistry(cls, LibCryptoLegacy._addressToHash(_newOwner), IBeneficiaryRegistry.EntityType.OWNER, true);</span></span>
-<span id="L550"><span class="lineNum">     550</span>                 :             :     }</span>
-<span id="L551"><span class="lineNum">     551</span>                 :             : </span>
-<span id="L552"><span class="lineNum">     552</span>                 :             :     /**</span>
-<span id="L553"><span class="lineNum">     553</span>                 :             :      * @notice Transfers treasury tokens from specified holders to the legacy contract.</span>
-<span id="L554"><span class="lineNum">     554</span>                 :             :      * @dev Iterates over each token and holder combination, transferring the minimum of the holder's available balance</span>
-<span id="L555"><span class="lineNum">     555</span>                 :             :      * and the approved allowance from the holder to the contract.</span>
-<span id="L556"><span class="lineNum">     556</span>                 :             :      * After transfers, adjusts token distribution via _tokenPrepareToDistribute, emits a transfer event, and records the block number.</span>
-<span id="L557"><span class="lineNum">     557</span>                 :             :      * @param cls The CryptoLegacy storage structure.</span>
-<span id="L558"><span class="lineNum">     558</span>                 :             :      * @param _holders Array of addresses holding the tokens.</span>
-<span id="L559"><span class="lineNum">     559</span>                 :             :      * @param _tokens Array of ERC20 token addresses to be transferred.</span>
-<span id="L560"><span class="lineNum">     560</span>                 :             :      */</span>
-<span id="L561"><span class="lineNum">     561</span>                 :<span class="tlaGNC">          17 :     function _transferTreasuryTokensToLegacy(</span></span>
-<span id="L562"><span class="lineNum">     562</span>                 :             :         ICryptoLegacy.CryptoLegacyStorage storage cls,</span>
-<span id="L563"><span class="lineNum">     563</span>                 :             :         address[] memory _holders,</span>
-<span id="L564"><span class="lineNum">     564</span>                 :             :         address[] memory _tokens</span>
-<span id="L565"><span class="lineNum">     565</span>                 :             :     ) internal {</span>
-<span id="L566"><span class="lineNum">     566</span>                 :<span class="tlaGNC">          17 :         for (uint i = 0; i &lt; _tokens.length; i++) {</span></span>
-<span id="L567"><span class="lineNum">     567</span>                 :<span class="tlaGNC">          17 :             IERC20 t = IERC20(_tokens[i]);</span></span>
-<span id="L568"><span class="lineNum">     568</span>                 :<span class="tlaGNC">          17 :             for (uint j = 0; j &lt; _holders.length; j++) {</span></span>
-<span id="L569"><span class="lineNum">     569</span>                 :<span class="tlaGNC">          18 :                 uint256 availableBalance = t.balanceOf(_holders[j]);</span></span>
-<span id="L570"><span class="lineNum">     570</span>                 :<span class="tlaGNC">          18 :                 uint256 allowance = t.allowance(_holders[j], address(this));</span></span>
-<span id="L571"><span class="lineNum">     571</span>            [<span class="tlaGBC" title="Branch 0 was taken 14 times"> + </span>]:<span class="tlaGNC">          18 :                 if (availableBalance &gt; allowance) {</span></span>
-<span id="L572"><span class="lineNum">     572</span>                 :<span class="tlaGNC">          14 :                     availableBalance = allowance;</span></span>
-<span id="L573"><span class="lineNum">     573</span>                 :             :                 }</span>
-<span id="L574"><span class="lineNum">     574</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">          18 :                 if (availableBalance == 0) {</span></span>
-<span id="L575"><span class="lineNum">     575</span>                 :<span class="tlaGNC">           1 :                     continue;</span></span>
+<span id="L528"><span class="lineNum">     528</span>            [<span class="tlaGBC" title="Branch 0 was taken 43 times"> + </span>]:<span class="tlaGNC">         498 :         if (transferValueSelector == _selector) {</span></span>
+<span id="L529"><span class="lineNum">     529</span>                 :<span class="tlaGNC">          43 :             return 4e4;</span></span>
+<span id="L530"><span class="lineNum">     530</span>                 :             :         }</span>
+<span id="L531"><span class="lineNum">     531</span>                 :<span class="tlaGNC">         455 :         IBeneficiaryRegistry br = IBeneficiaryRegistry(address(0));</span></span>
+<span id="L532"><span class="lineNum">     532</span>                 :             :         if (</span>
+<span id="L533"><span class="lineNum">     533</span>                 :<span class="tlaGNC">         455 :             lockNftSelector == _selector ||</span></span>
+<span id="L534"><span class="lineNum">     534</span>                 :<span class="tlaGNC">         427 :             br.setCryptoLegacyOwner.selector == _selector ||</span></span>
+<span id="L535"><span class="lineNum">     535</span>                 :<span class="tlaGNC">         368 :             br.setCryptoLegacyGuardian.selector == _selector ||</span></span>
+<span id="L536"><span class="lineNum">     536</span>                 :<span class="tlaGNC">         359 :             br.setCryptoLegacyBeneficiary.selector == _selector</span></span>
+<span id="L537"><span class="lineNum">     537</span>            [<span class="tlaGBC" title="Branch 0 was taken 230 times"> + </span>]:<span class="tlaGNC">         230 :         ) {</span></span>
+<span id="L538"><span class="lineNum">     538</span>                 :<span class="tlaGNC">         230 :             return 4e5;</span></span>
+<span id="L539"><span class="lineNum">     539</span>                 :             :         }</span>
+<span id="L540"><span class="lineNum">     540</span>                 :<span class="tlaGNC">         225 :         return 2e5;</span></span>
+<span id="L541"><span class="lineNum">     541</span>                 :             :     }</span>
+<span id="L542"><span class="lineNum">     542</span>                 :             : </span>
+<span id="L543"><span class="lineNum">     543</span>                 :             :     /**</span>
+<span id="L544"><span class="lineNum">     544</span>                 :             :      * @notice Updates the owner in the beneficiary registry.</span>
+<span id="L545"><span class="lineNum">     545</span>                 :             :      * @dev Unregisters the previous owner and registers the new owner using _setCryptoLegacyToBeneficiaryRegistry.</span>
+<span id="L546"><span class="lineNum">     546</span>                 :             :      * @param cls The CryptoLegacy storage structure.</span>
+<span id="L547"><span class="lineNum">     547</span>                 :             :      * @param _newOwner The address of the new owner.</span>
+<span id="L548"><span class="lineNum">     548</span>                 :             :      */</span>
+<span id="L549"><span class="lineNum">     549</span>                 :<span class="tlaGNC">           2 :     function _updateOwnerInBeneficiaryRegistry(ICryptoLegacy.CryptoLegacyStorage storage cls, address _newOwner) internal {</span></span>
+<span id="L550"><span class="lineNum">     550</span>                 :<span class="tlaGNC">           2 :         address oldOwner = LibDiamond.contractOwner();</span></span>
+<span id="L551"><span class="lineNum">     551</span>                 :<span class="tlaGNC">           2 :         _setCryptoLegacyToBeneficiaryRegistry(cls, LibCryptoLegacy._addressToHash(oldOwner), IBeneficiaryRegistry.EntityType.OWNER, false);</span></span>
+<span id="L552"><span class="lineNum">     552</span>                 :<span class="tlaGNC">           2 :         _setCryptoLegacyToBeneficiaryRegistry(cls, LibCryptoLegacy._addressToHash(_newOwner), IBeneficiaryRegistry.EntityType.OWNER, true);</span></span>
+<span id="L553"><span class="lineNum">     553</span>                 :             :     }</span>
+<span id="L554"><span class="lineNum">     554</span>                 :             : </span>
+<span id="L555"><span class="lineNum">     555</span>                 :             :     /**</span>
+<span id="L556"><span class="lineNum">     556</span>                 :             :      * @notice Transfers treasury tokens from specified holders to the legacy contract.</span>
+<span id="L557"><span class="lineNum">     557</span>                 :             :      * @dev Iterates over each token and holder combination, transferring the minimum of the holder's available balance</span>
+<span id="L558"><span class="lineNum">     558</span>                 :             :      * and the approved allowance from the holder to the contract.</span>
+<span id="L559"><span class="lineNum">     559</span>                 :             :      * After transfers, adjusts token distribution via _tokenPrepareToDistribute, emits a transfer event, and records the block number.</span>
+<span id="L560"><span class="lineNum">     560</span>                 :             :      * @param cls The CryptoLegacy storage structure.</span>
+<span id="L561"><span class="lineNum">     561</span>                 :             :      * @param _holders Array of addresses holding the tokens.</span>
+<span id="L562"><span class="lineNum">     562</span>                 :             :      * @param _tokens Array of ERC20 token addresses to be transferred.</span>
+<span id="L563"><span class="lineNum">     563</span>                 :             :      */</span>
+<span id="L564"><span class="lineNum">     564</span>                 :<span class="tlaGNC">          17 :     function _transferTreasuryTokensToLegacy(</span></span>
+<span id="L565"><span class="lineNum">     565</span>                 :             :         ICryptoLegacy.CryptoLegacyStorage storage cls,</span>
+<span id="L566"><span class="lineNum">     566</span>                 :             :         address[] memory _holders,</span>
+<span id="L567"><span class="lineNum">     567</span>                 :             :         address[] memory _tokens</span>
+<span id="L568"><span class="lineNum">     568</span>                 :             :     ) internal {</span>
+<span id="L569"><span class="lineNum">     569</span>                 :<span class="tlaGNC">          17 :         for (uint i = 0; i &lt; _tokens.length; i++) {</span></span>
+<span id="L570"><span class="lineNum">     570</span>                 :<span class="tlaGNC">          17 :             IERC20 t = IERC20(_tokens[i]);</span></span>
+<span id="L571"><span class="lineNum">     571</span>                 :<span class="tlaGNC">          17 :             for (uint j = 0; j &lt; _holders.length; j++) {</span></span>
+<span id="L572"><span class="lineNum">     572</span>                 :<span class="tlaGNC">          18 :                 uint256 availableBalance = t.balanceOf(_holders[j]);</span></span>
+<span id="L573"><span class="lineNum">     573</span>                 :<span class="tlaGNC">          18 :                 uint256 allowance = t.allowance(_holders[j], address(this));</span></span>
+<span id="L574"><span class="lineNum">     574</span>            [<span class="tlaGBC" title="Branch 0 was taken 14 times"> + </span>]:<span class="tlaGNC">          18 :                 if (availableBalance &gt; allowance) {</span></span>
+<span id="L575"><span class="lineNum">     575</span>                 :<span class="tlaGNC">          14 :                     availableBalance = allowance;</span></span>
 <span id="L576"><span class="lineNum">     576</span>                 :             :                 }</span>
-<span id="L577"><span class="lineNum">     577</span>                 :<span class="tlaGNC">          17 :                 t.safeTransferFrom(_holders[j], address(this), availableBalance);</span></span>
-<span id="L578"><span class="lineNum">     578</span>                 :             :             }</span>
-<span id="L579"><span class="lineNum">     579</span>                 :<span class="tlaGNC">          16 :             ICryptoLegacy.TokenDistribution storage td = LibCryptoLegacy._tokenPrepareToDistribute(cls, _tokens[i]);</span></span>
-<span id="L580"><span class="lineNum">     580</span>                 :<span class="tlaGNC">          16 :             td.lastBalance = uint128(IERC20(_tokens[i]).balanceOf(address(this)));</span></span>
-<span id="L581"><span class="lineNum">     581</span>                 :             :         }</span>
-<span id="L582"><span class="lineNum">     582</span>                 :<span class="tlaGNC">          16 :         emit ICryptoLegacy.TransferTreasuryTokensToLegacy(_holders, _tokens);</span></span>
-<span id="L583"><span class="lineNum">     583</span>                 :<span class="tlaGNC">          16 :         cls.transfersGotByBlockNumber.push(uint64(block.number));</span></span>
-<span id="L584"><span class="lineNum">     584</span>                 :             :     }</span>
-<span id="L585"><span class="lineNum">     585</span>                 :             : </span>
-<span id="L586"><span class="lineNum">     586</span>                 :             :     /**</span>
-<span id="L587"><span class="lineNum">     587</span>                 :             :      * @notice Transfers tokens from the legacy contract to designated recipients.</span>
-<span id="L588"><span class="lineNum">     588</span>                 :             :      * @dev Iterates over an array of TokenTransferTo structs and transfers the specified token amounts.</span>
-<span id="L589"><span class="lineNum">     589</span>                 :             :      * Emits a transfer event and records the block number of the transfer.</span>
-<span id="L590"><span class="lineNum">     590</span>                 :             :      * @param cls The CryptoLegacy storage structure.</span>
-<span id="L591"><span class="lineNum">     591</span>                 :             :      * @param _transfers Array of TokenTransferTo structs containing token, recipient, and amount details.</span>
-<span id="L592"><span class="lineNum">     592</span>                 :             :      */</span>
-<span id="L593"><span class="lineNum">     593</span>                 :<span class="tlaGNC">           2 :     function _transferTokensFromLegacy(</span></span>
-<span id="L594"><span class="lineNum">     594</span>                 :             :         ICryptoLegacy.CryptoLegacyStorage storage cls,</span>
-<span id="L595"><span class="lineNum">     595</span>                 :             :         ICryptoLegacy.TokenTransferTo[] memory _transfers</span>
-<span id="L596"><span class="lineNum">     596</span>                 :             :     ) internal {</span>
-<span id="L597"><span class="lineNum">     597</span>                 :<span class="tlaGNC">           2 :         for (uint i = 0; i &lt; _transfers.length; i++) {</span></span>
-<span id="L598"><span class="lineNum">     598</span>                 :<span class="tlaGNC">           4 :             IERC20 t = IERC20(_transfers[i].token);</span></span>
-<span id="L599"><span class="lineNum">     599</span>                 :<span class="tlaGNC">           4 :             t.safeTransfer(_transfers[i].recipient, _transfers[i].amount);</span></span>
-<span id="L600"><span class="lineNum">     600</span>                 :             :         }</span>
-<span id="L601"><span class="lineNum">     601</span>                 :<span class="tlaGNC">           2 :         emit ICryptoLegacy.TransferTokensFromLegacy(_transfers);</span></span>
-<span id="L602"><span class="lineNum">     602</span>                 :<span class="tlaGNC">           2 :         cls.transfersGotByBlockNumber.push(uint64(block.number));</span></span>
-<span id="L603"><span class="lineNum">     603</span>                 :             :     }</span>
-<span id="L604"><span class="lineNum">     604</span>                 :             : </span>
-<span id="L605"><span class="lineNum">     605</span>                 :             :     /**</span>
-<span id="L606"><span class="lineNum">     606</span>                 :             :      * @notice Computes and returns the keccak256 hash of the given address.</span>
-<span id="L607"><span class="lineNum">     607</span>                 :             :      * @dev Uses abi.encode to safely encode the address before hashing.</span>
-<span id="L608"><span class="lineNum">     608</span>                 :             :      * @param _addr The address to be hashed.</span>
-<span id="L609"><span class="lineNum">     609</span>                 :             :      * @return The keccak256 hash of _addr.</span>
-<span id="L610"><span class="lineNum">     610</span>                 :             :      */</span>
-<span id="L611"><span class="lineNum">     611</span>                 :<span class="tlaGNC">         260 :     function _addressToHash(address _addr) internal pure returns(bytes32) {</span></span>
-<span id="L612"><span class="lineNum">     612</span>                 :<span class="tlaGNC">         260 :         return keccak256(abi.encode(_addr));</span></span>
-<span id="L613"><span class="lineNum">     613</span>                 :             :     }</span>
-<span id="L614"><span class="lineNum">     614</span>                 :             : </span>
-<span id="L615"><span class="lineNum">     615</span>                 :<span class="tlaGNC">           9 :     function _addressWithSaltToHash(address _addr, bytes32 _salt) internal pure returns(bytes32) {</span></span>
-<span id="L616"><span class="lineNum">     616</span>                 :<span class="tlaGNC">           9 :         return keccak256(abi.encodePacked(_addr, _salt));</span></span>
-<span id="L617"><span class="lineNum">     617</span>                 :             :     }</span>
-<span id="L618"><span class="lineNum">     618</span>                 :             : }</span>
+<span id="L577"><span class="lineNum">     577</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">          18 :                 if (availableBalance == 0) {</span></span>
+<span id="L578"><span class="lineNum">     578</span>                 :<span class="tlaGNC">           1 :                     continue;</span></span>
+<span id="L579"><span class="lineNum">     579</span>                 :             :                 }</span>
+<span id="L580"><span class="lineNum">     580</span>                 :<span class="tlaGNC">          17 :                 t.safeTransferFrom(_holders[j], address(this), availableBalance);</span></span>
+<span id="L581"><span class="lineNum">     581</span>                 :             :             }</span>
+<span id="L582"><span class="lineNum">     582</span>                 :<span class="tlaGNC">          16 :             ICryptoLegacy.TokenDistribution storage td = LibCryptoLegacy._tokenPrepareToDistribute(cls, _tokens[i]);</span></span>
+<span id="L583"><span class="lineNum">     583</span>                 :<span class="tlaGNC">          16 :             td.lastBalance = uint128(IERC20(_tokens[i]).balanceOf(address(this)));</span></span>
+<span id="L584"><span class="lineNum">     584</span>                 :             :         }</span>
+<span id="L585"><span class="lineNum">     585</span>                 :<span class="tlaGNC">          16 :         emit ICryptoLegacy.TransferTreasuryTokensToLegacy(_holders, _tokens);</span></span>
+<span id="L586"><span class="lineNum">     586</span>                 :<span class="tlaGNC">          16 :         cls.transfersGotByBlockNumber.push(uint64(block.number));</span></span>
+<span id="L587"><span class="lineNum">     587</span>                 :             :     }</span>
+<span id="L588"><span class="lineNum">     588</span>                 :             : </span>
+<span id="L589"><span class="lineNum">     589</span>                 :             :     /**</span>
+<span id="L590"><span class="lineNum">     590</span>                 :             :      * @notice Transfers tokens from the legacy contract to designated recipients.</span>
+<span id="L591"><span class="lineNum">     591</span>                 :             :      * @dev Iterates over an array of TokenTransferTo structs and transfers the specified token amounts.</span>
+<span id="L592"><span class="lineNum">     592</span>                 :             :      * Emits a transfer event and records the block number of the transfer.</span>
+<span id="L593"><span class="lineNum">     593</span>                 :             :      * @param cls The CryptoLegacy storage structure.</span>
+<span id="L594"><span class="lineNum">     594</span>                 :             :      * @param _transfers Array of TokenTransferTo structs containing token, recipient, and amount details.</span>
+<span id="L595"><span class="lineNum">     595</span>                 :             :      */</span>
+<span id="L596"><span class="lineNum">     596</span>                 :<span class="tlaGNC">           2 :     function _transferTokensFromLegacy(</span></span>
+<span id="L597"><span class="lineNum">     597</span>                 :             :         ICryptoLegacy.CryptoLegacyStorage storage cls,</span>
+<span id="L598"><span class="lineNum">     598</span>                 :             :         ICryptoLegacy.TokenTransferTo[] memory _transfers</span>
+<span id="L599"><span class="lineNum">     599</span>                 :             :     ) internal {</span>
+<span id="L600"><span class="lineNum">     600</span>                 :<span class="tlaGNC">           2 :         for (uint i = 0; i &lt; _transfers.length; i++) {</span></span>
+<span id="L601"><span class="lineNum">     601</span>                 :<span class="tlaGNC">           4 :             IERC20 t = IERC20(_transfers[i].token);</span></span>
+<span id="L602"><span class="lineNum">     602</span>                 :<span class="tlaGNC">           4 :             t.safeTransfer(_transfers[i].recipient, _transfers[i].amount);</span></span>
+<span id="L603"><span class="lineNum">     603</span>                 :             :         }</span>
+<span id="L604"><span class="lineNum">     604</span>                 :<span class="tlaGNC">           2 :         emit ICryptoLegacy.TransferTokensFromLegacy(_transfers);</span></span>
+<span id="L605"><span class="lineNum">     605</span>                 :<span class="tlaGNC">           2 :         cls.transfersGotByBlockNumber.push(uint64(block.number));</span></span>
+<span id="L606"><span class="lineNum">     606</span>                 :             :     }</span>
+<span id="L607"><span class="lineNum">     607</span>                 :             : </span>
+<span id="L608"><span class="lineNum">     608</span>                 :             :     /**</span>
+<span id="L609"><span class="lineNum">     609</span>                 :             :      * @notice Computes and returns the keccak256 hash of the given address.</span>
+<span id="L610"><span class="lineNum">     610</span>                 :             :      * @dev Uses abi.encode to safely encode the address before hashing.</span>
+<span id="L611"><span class="lineNum">     611</span>                 :             :      * @param _addr The address to be hashed.</span>
+<span id="L612"><span class="lineNum">     612</span>                 :             :      * @return The keccak256 hash of _addr.</span>
+<span id="L613"><span class="lineNum">     613</span>                 :             :      */</span>
+<span id="L614"><span class="lineNum">     614</span>                 :<span class="tlaGNC">         260 :     function _addressToHash(address _addr) internal pure returns(bytes32) {</span></span>
+<span id="L615"><span class="lineNum">     615</span>                 :<span class="tlaGNC">         260 :         return keccak256(abi.encode(_addr));</span></span>
+<span id="L616"><span class="lineNum">     616</span>                 :             :     }</span>
+<span id="L617"><span class="lineNum">     617</span>                 :             : </span>
+<span id="L618"><span class="lineNum">     618</span>                 :<span class="tlaGNC">           9 :     function _addressWithSaltToHash(address _addr, bytes32 _salt) internal pure returns(bytes32) {</span></span>
+<span id="L619"><span class="lineNum">     619</span>                 :<span class="tlaGNC">           9 :         return keccak256(abi.encodePacked(_addr, _salt));</span></span>
+<span id="L620"><span class="lineNum">     620</span>                 :             :     }</span>
+<span id="L621"><span class="lineNum">     621</span>                 :             : }</span>
         </pre>
               </td>
             </tr>
