@@ -519,7 +519,10 @@ library LibCryptoLegacy {
         if (cls.buildManager.payFee.selector == _selector) {
             return 12e5;
         }
-        if (cls.buildManager.getUpdateFee.selector == _selector) {
+        if (
+            cls.buildManager.getUpdateFee.selector == _selector ||
+            cls.buildManager.isLifetimeNftLockedAndUpdate.selector == _selector
+        ) {
             return 6e5;
         }
         if (transferValueSelector == _selector) {
