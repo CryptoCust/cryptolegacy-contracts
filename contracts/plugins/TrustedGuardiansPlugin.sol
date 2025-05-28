@@ -164,12 +164,12 @@ contract TrustedGuardiansPlugin is ICryptoLegacyPlugin, ITrustedGuardiansPlugin,
      * @dev If no threshold is explicitly set in the plugin storage (i.e. equals zero), calculates a default threshold using LibSafeMinimalMultisig.
      * @param _cls The CryptoLegacy storage reference.
      * @param _pluginStorage The plugin-specific storage reference.
-     * @return The threshold as a uint8.
+     * @return The threshold as a uint128.
      */
-    function _getGuardiansThreshold(ICryptoLegacy.CryptoLegacyStorage storage _cls, ITrustedGuardiansPlugin.PluginStorage storage _pluginStorage) internal view returns(uint8) {
+    function _getGuardiansThreshold(ICryptoLegacy.CryptoLegacyStorage storage _cls, ITrustedGuardiansPlugin.PluginStorage storage _pluginStorage) internal view returns(uint128) {
         EnumerableSet.Bytes32Set storage guardians = _getGuardians(_cls, _pluginStorage);
         if (_pluginStorage.guardiansThreshold == 0) {
-            return uint8(LibSafeMinimalMultisig._calcDefaultConfirmations( uint8(guardians.length())));
+            return uint128(LibSafeMinimalMultisig._calcDefaultConfirmations(uint128(guardians.length())));
         }
         return _pluginStorage.guardiansThreshold;
     }
@@ -194,7 +194,7 @@ contract TrustedGuardiansPlugin is ICryptoLegacyPlugin, ITrustedGuardiansPlugin,
      * @param _guardiansThreshold Required number of guardian votes.
      * @param _guardiansChallengeTimeout Timeout in seconds that is set for distribution if guardiansThreshold is met.
      */
-    function initializeGuardians(GuardianToChange[] memory _guardians, uint8 _guardiansThreshold, uint64 _guardiansChallengeTimeout) external onlyOwner nonReentrant {
+    function initializeGuardians(GuardianToChange[] memory _guardians, uint128 _guardiansThreshold, uint64 _guardiansChallengeTimeout) external onlyOwner nonReentrant {
         ITrustedGuardiansPlugin.PluginStorage storage pluginStorage = LibTrustedGuardiansPlugin.getPluginStorage();
         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
         _setGuardians(cls, pluginStorage, _guardians);
@@ -246,7 +246,7 @@ contract TrustedGuardiansPlugin is ICryptoLegacyPlugin, ITrustedGuardiansPlugin,
      * @param _guardiansThreshold The number of votes required.
      * @param _guardiansChallengeTimeout The timeout (in seconds) after which distribution can be triggered.
      */
-    function setGuardiansConfig(uint8 _guardiansThreshold, uint64 _guardiansChallengeTimeout) external onlyOwner nonReentrant {
+    function setGuardiansConfig(uint128 _guardiansThreshold, uint64 _guardiansChallengeTimeout) external onlyOwner nonReentrant {
         ITrustedGuardiansPlugin.PluginStorage storage pluginStorage = LibTrustedGuardiansPlugin.getPluginStorage();
         _setGuardiansConfig(pluginStorage, _guardiansThreshold, _guardiansChallengeTimeout);
         _afterGuardiansSet(LibCryptoLegacy.getCryptoLegacyStorage(), pluginStorage);
@@ -261,7 +261,7 @@ contract TrustedGuardiansPlugin is ICryptoLegacyPlugin, ITrustedGuardiansPlugin,
      * @param _guardiansThreshold The required number of votes.
      * @param _guardiansChallengeTimeout The challenge timeout in seconds.
      */
-    function _setGuardiansConfig(ITrustedGuardiansPlugin.PluginStorage storage _pluginStorage, uint8 _guardiansThreshold, uint64 _guardiansChallengeTimeout) internal {
+    function _setGuardiansConfig(ITrustedGuardiansPlugin.PluginStorage storage _pluginStorage, uint128 _guardiansThreshold, uint64 _guardiansChallengeTimeout) internal {
         if (_guardiansChallengeTimeout > MAX_GUARDIANS_CHALLENGE_TIMEOUT) {
             revert MaxGuardiansTimeout(MAX_GUARDIANS_CHALLENGE_TIMEOUT);
         }
@@ -294,7 +294,7 @@ contract TrustedGuardiansPlugin is ICryptoLegacyPlugin, ITrustedGuardiansPlugin,
         (ICryptoLegacy.CryptoLegacyStorage storage cls, ITrustedGuardiansPlugin.PluginStorage storage pluginStorage, bytes32 hash) = _checkGuardianNotVoted();
 
         pluginStorage.guardiansVoted.push(hash);
-        uint8 guardiansThreshold = _getGuardiansThreshold(cls, pluginStorage);
+        uint128 guardiansThreshold = _getGuardiansThreshold(cls, pluginStorage);
         uint64 guardiansChallengeTimeout = _getGuardiansChallengeTimeout(pluginStorage);
         if (pluginStorage.guardiansVoted.length >= guardiansThreshold) {
             uint64 maxDistributionStartAt = uint64(block.timestamp) + guardiansChallengeTimeout;
@@ -357,7 +357,7 @@ contract TrustedGuardiansPlugin is ICryptoLegacyPlugin, ITrustedGuardiansPlugin,
     function getGuardiansData() external view returns(
         bytes32[] memory guardians,
         bytes32[] memory guardiansVoted,
-        uint8 guardiansThreshold,
+        uint128 guardiansThreshold,
         uint64 guardiansChallengeTimeout
     ) {
         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
@@ -386,7 +386,7 @@ contract TrustedGuardiansPlugin is ICryptoLegacyPlugin, ITrustedGuardiansPlugin,
     function checkGuardiansVotedAndGetGuardiansData() external returns(
         bytes32[] memory guardians,
         bytes32[] memory guardiansVoted,
-        uint8 guardiansThreshold,
+        uint128 guardiansThreshold,
         uint64 guardiansChallengeTimeout,
         bool isGuardianVoted
     ) {

@@ -319,7 +319,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     emit ICryptoLegacy.SetCryptoLegacyRecoveryAddressesCatch(new bytes(0));
     vm.prank(bob);
     LegacyRecoveryPlugin(address(cryptoLegacy)).lrSetMultisigConfig(_getTwoBytes32List(addressToHash(alice), addressToHash(dan)), 1);
-    (bytes32[] memory voters, uint8 requiredConfirmations, ) = LegacyRecoveryPlugin(address(cryptoLegacy)).lrGetProposalListWithStatuses();
+    (bytes32[] memory voters, uint128 requiredConfirmations, ) = LegacyRecoveryPlugin(address(cryptoLegacy)).lrGetProposalListWithStatuses();
     assertEq(voters.length, 2);
     assertEq(voters[0], addressToHash(alice));
     assertEq(voters[1], addressToHash(dan));
@@ -1321,7 +1321,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     address[] memory _treasuries = new address[](1);
     _treasuries[0] = treasury;
 
-    (bytes32[] memory voters, uint8 requiredConfirmations) = cryptoLegacyBeneficiaryPluginLegacy.barGetVotersAndConfirmations();
+    (bytes32[] memory voters, uint128 requiredConfirmations) = cryptoLegacyBeneficiaryPluginLegacy.barGetVotersAndConfirmations();
     assertEq(requiredConfirmations, 2);
     assertEq(voters.length, 2);
     assertEq(voters[0], addressToHash(bobBeneficiary1));
@@ -1494,7 +1494,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.expectRevert(ICryptoLegacy.NotTheOwner.selector);
     cryptoLegacyBeneficiaryPluginLegacy.barSetMultisigConfig(1);
 
-    (bytes32[] memory voters, uint8 requiredConfirmations) = cryptoLegacyBeneficiaryPluginLegacy.barGetVotersAndConfirmations();
+    (bytes32[] memory voters, uint128 requiredConfirmations) = cryptoLegacyBeneficiaryPluginLegacy.barGetVotersAndConfirmations();
 
     assertEq(requiredConfirmations, 2);
     assertEq(uint(cryptoLegacyBeneficiaryPluginLegacy.barGetInitializationStatus()), uint(ISafeMinimalMultisig.InitializationStatus.NOT_INITIALIZED_NO_NEED));
@@ -1593,7 +1593,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     (
       bytes32[] memory guardians,
       bytes32[] memory guardiansVoted,
-      uint8 guardiansThreshold,
+      uint128 guardiansThreshold,
       uint64 guardiansChallengeTimeout
     ) = trustedGuardianPluginLegacy.getGuardiansData();
     assertEq(guardians.length, clListData.beneficiaries.length);
@@ -1843,7 +1843,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     bytes32[] memory guardiansVoted;
     {
       bytes32[] memory guardians;
-      uint8 guardiansThreshold;
+      uint128 guardiansThreshold;
       uint64 guardiansChallengeTimeout;
       (
         guardians,
@@ -2102,7 +2102,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     (
       bytes32[] memory voters,
-      uint8 requiredConfirmations,
+      uint128 requiredConfirmations,
       ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses
     ) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
     assertEq(voters.length, 0);
@@ -2270,7 +2270,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     (
       bytes32[] memory voters,
-      uint8 requiredConfirmations,
+      uint128 requiredConfirmations,
       ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses
     ) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
     assertEq(voters.length, 0);
@@ -2346,7 +2346,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     (
       bytes32[] memory voters,
-      uint8 requiredConfirmations,
+      uint128 requiredConfirmations,
       ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses
     ) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
     assertEq(voters.length, 0);
@@ -2440,7 +2440,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     (
       bytes32[] memory voters,
-      uint8 requiredConfirmations,
+      uint128 requiredConfirmations,
       ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses
     ) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
     assertEq(voters.length, 0);

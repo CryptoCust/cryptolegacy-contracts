@@ -41,9 +41,9 @@ library LibSafeMinimalBeneficiaryMultisig {
      * @param s The multisig storage structure.
      * @return A tuple containing:
      *  - An array of voter identifiers (bytes32[]).
-     *  - The number of required confirmations (uint8).
+     *  - The number of required confirmations (uint128).
      */
-    function _getVotersAndConfirmations(ISafeMinimalMultisig.Storage storage s) internal view returns(bytes32[] memory, uint8) {
+    function _getVotersAndConfirmations(ISafeMinimalMultisig.Storage storage s) internal view returns(bytes32[] memory, uint128) {
         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
         return (_getVoters(cls), _getRequiredConfirmations(s, cls));
     }
@@ -62,7 +62,7 @@ library LibSafeMinimalBeneficiaryMultisig {
         ISafeMinimalMultisig.Storage storage s
     ) internal view returns(
         bytes32[] memory voters,
-        uint8 requiredConfirmations,
+        uint128 requiredConfirmations,
         ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses
     ) {
         voters = _getVoters(cls);
@@ -90,7 +90,7 @@ library LibSafeMinimalBeneficiaryMultisig {
         uint256 _proposalId
     ) internal view returns(
         bytes32[] memory voters,
-        uint8 requiredConfirmations,
+        uint128 requiredConfirmations,
         ISafeMinimalMultisig.ProposalWithStatus memory proposalWithStatus
     ) {
         voters = _getVoters(cls);
@@ -106,7 +106,7 @@ library LibSafeMinimalBeneficiaryMultisig {
      * @param cls The CryptoLegacy storage structure.
      * @return The number of required confirmations.
      */
-    function _getRequiredConfirmations(ISafeMinimalMultisig.Storage storage s, ICryptoLegacy.CryptoLegacyStorage storage cls) internal view returns(uint8) {
+    function _getRequiredConfirmations(ISafeMinimalMultisig.Storage storage s, ICryptoLegacy.CryptoLegacyStorage storage cls) internal view returns(uint128) {
         if (LibSafeMinimalMultisig._initializationStatus(s) != ISafeMinimalMultisig.InitializationStatus.INITIALIZED) {
             return _getDefaultRequiredConfirmations(cls);
         }
@@ -129,8 +129,8 @@ library LibSafeMinimalBeneficiaryMultisig {
      * @param cls The CryptoLegacy storage structure.
      * @return The default required confirmations.
      */
-    function _getDefaultRequiredConfirmations(ICryptoLegacy.CryptoLegacyStorage storage cls) internal view returns(uint8) {
-        return LibSafeMinimalMultisig._calcDefaultConfirmations(uint8(LibCryptoLegacy._getBeneficiariesCount(cls)));
+    function _getDefaultRequiredConfirmations(ICryptoLegacy.CryptoLegacyStorage storage cls) internal view returns(uint128) {
+        return LibSafeMinimalMultisig._calcDefaultConfirmations(uint128(LibCryptoLegacy._getBeneficiariesCount(cls)));
     }
 
     /**
@@ -141,7 +141,7 @@ library LibSafeMinimalBeneficiaryMultisig {
      * @param _voters An array of voter identifiers.
      * @param _requiredConfirmations The new number of required confirmations.
      */
-    function _setConfirmations(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _voters, uint8 _requiredConfirmations) internal {
+    function _setConfirmations(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _voters, uint128 _requiredConfirmations) internal {
         if (_requiredConfirmations > _voters.length || _requiredConfirmations == 0) {
             revert ISafeMinimalMultisig.MultisigIncorrectRequiredConfirmations();
         }

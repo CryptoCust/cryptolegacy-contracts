@@ -114,7 +114,7 @@ contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuardUpgra
      *      Calls LibSafeMinimalBeneficiaryMultisig._setConfirmations() using the current beneficiaries.
      * @param _requiredConfirmations The number of confirmations required for multisig proposals.
      */
-    function barSetMultisigConfig(uint8 _requiredConfirmations) external {
+    function barSetMultisigConfig(uint128 _requiredConfirmations) external {
         if (msg.sender == address(this)) {
             LibCryptoLegacy._checkDistributionReady(LibCryptoLegacy.getCryptoLegacyStorage());
         } else {
@@ -182,9 +182,9 @@ contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuardUpgra
      * @dev Returns the current configuration for multisig execution in this plugin.
      * @return A tuple containing:
      *  - An array of voter identifiers (bytes32[]).
-     *  - The required number of confirmations (uint8).
+     *  - The required number of confirmations (uint128).
      */
-    function barGetVotersAndConfirmations() external view returns(bytes32[] memory, uint8) {
+    function barGetVotersAndConfirmations() external view returns(bytes32[] memory, uint128) {
         return LibSafeMinimalBeneficiaryMultisig._getVotersAndConfirmations(getPluginMultisigStorage());
     }
 
@@ -199,7 +199,7 @@ contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuardUpgra
      */
     function barGetProposalWithStatus(uint256 _proposalId) external view returns(
         bytes32[] memory voters,
-        uint8 requiredConfirmations,
+        uint128 requiredConfirmations,
         ISafeMinimalMultisig.ProposalWithStatus memory proposalWithStatus
     ) {
         return LibSafeMinimalBeneficiaryMultisig._getProposalWithStatus(
@@ -218,7 +218,7 @@ contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuardUpgra
      */
     function barGetProposalListWithStatuses() external view returns(
         bytes32[] memory voters,
-        uint8 requiredConfirmations,
+        uint128 requiredConfirmations,
         ISafeMinimalMultisig.ProposalWithStatus[] memory proposalsWithStatuses
     ) {
         return LibSafeMinimalBeneficiaryMultisig._getProposalListWithStatuses(
