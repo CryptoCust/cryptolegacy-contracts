@@ -363,7 +363,12 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
   function _claimTokenWithVesting(CryptoLegacyStorage storage cls, TokenDistribution storage td, bytes32 _beneficiary, address _token, uint64 _startDate, uint64 _endDate) internal returns(uint256 amountToClaim) {
     (BeneficiaryConfig storage bc, BeneficiaryVesting storage bv) = LibCryptoLegacy._getBeneficiaryConfigAndVesting(cls, _beneficiary);
 
-    (, amountToClaim, ) = LibCryptoLegacy._getVestedAndClaimedAmount(td, bc, bv, _token, _startDate, _endDate);
+    uint256 prevAmountToClaim;
+    (, , amountToClaim, prevAmountToClaim) = LibCryptoLegacy._getVestedAndClaimedAmount(td, bc, bv, _token, _startDate, _endDate);
+    
+    if (prevAmountToClaim != 0) {
+      emit BeneficiaryClaimAmountDecrease(_token, _beneficiary, prevAmountToClaim, amountToClaim);
+    }
     bv.tokenAmountClaimed[_token] += amountToClaim;
 
     IERC20(_token).safeTransfer(msg.sender, amountToClaim);

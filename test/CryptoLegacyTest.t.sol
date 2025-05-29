@@ -3323,6 +3323,8 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 60 ether - 1 gwei);
 
     vm.prank(bobBeneficiary3);
+    vm.expectEmit(true, true, true, true);
+    emit ICryptoLegacy.BeneficiaryClaimAmountDecrease(address(mockToken1), addressToHash(bobBeneficiary3), 60 ether, 60 ether - 1 gwei);
     cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0); 
 
     assertLt(mockToken1.balanceOf(address(cryptoLegacy)), 20);
@@ -3381,6 +3383,8 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 60 ether - 2 gwei);
 
     vm.prank(bobBeneficiary3);
+    vm.expectEmit(true, true, true, true);
+    emit ICryptoLegacy.BeneficiaryClaimAmountDecrease(address(mockToken1), addressToHash(bobBeneficiary3), 60 ether, 60 ether - 2 gwei);
     cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0); 
 
     assertLt(mockToken1.balanceOf(address(cryptoLegacy)), 20);

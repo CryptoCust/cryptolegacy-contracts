@@ -240,7 +240,7 @@ contract LensPlugin is ICryptoLegacyPlugin, ICryptoLegacyLens {
             (ICryptoLegacy.BeneficiaryConfig storage bc, ICryptoLegacy.BeneficiaryVesting storage bv) = LibCryptoLegacy._getBeneficiaryConfigAndVesting(cls, _beneficiary);
             (startDate, endDate) = LibCryptoLegacy._getStartAndEndDate(cls, bc);
             ICryptoLegacy.TokenDistribution storage td = cls.tokenDistribution[_tokens[i]];
-            (uint256 totalAmount, uint256 claimableAmount, ) = LibCryptoLegacy._getVestedAndClaimedAmount(td, bc, bv, _tokens[i], startDate, endDate);
+            (uint256 totalAmount, , uint256 claimableAmount, ) = LibCryptoLegacy._getVestedAndClaimedAmount(td, bc, bv, _tokens[i], startDate, endDate);
             result[i] = BeneficiaryTokenData(claimableAmount, bv.tokenAmountClaimed[_tokens[i]], totalAmount);
         }
     }
