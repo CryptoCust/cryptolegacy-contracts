@@ -3201,7 +3201,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(rebaseToken.balanceOf(address(cryptoLegacy)), 57272727272727272727);
 
     vm.prank(bobBeneficiary3);
-    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0); // @audit reverts, beacuse of incorrect balance calculations
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
   }
 
   function testAuditSubTransferToken() public {
@@ -3265,11 +3265,126 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 57300000000000000000);
 
     vm.prank(bobBeneficiary3);
-    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0); // @audit reverts, beacuse of incorrect balance calculations
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0); 
 
     assertLt(mockToken1.balanceOf(address(cryptoLegacy)), 20);
   }
 
+  function testAuditSubTransferSmallAmountToken() public {
+    vm.startPrank(owner);
+    pluginsRegistry.addPlugin(lensPlugin, "123");
+    pluginsRegistry.addPluginDescription(lensPlugin, "123");
+    vm.stopPrank();
+    (
+      CryptoLegacyBasePlugin cryptoLegacy, 
+      ICryptoLegacyLens cryptoLegacyLens, 
+      bytes32[] memory beneficiaryArr, 
+      ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr
+    ) = _buildCryptoLegacy(bob, buildFee, bytes8(0));
+
+    ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
+
+    vm.warp(block.timestamp + clData.updateInterval);
+
+    vm.startPrank(bob);
+    cryptoLegacy.update{value: 0.1 ether}(_getEmptyUintList(), _getEmptyUintList());
+    beneficiaryArr = new bytes32[](3);
+    beneficiaryArr[0] = keccak256(abi.encode(bobBeneficiary1));
+    beneficiaryArr[1] = keccak256(abi.encode(bobBeneficiary2));
+    beneficiaryArr[2] = keccak256(abi.encode(bobBeneficiary3));
+    beneficiaryConfigArr = new ICryptoLegacy.BeneficiaryConfig[](3);
+    beneficiaryConfigArr[0] = ICryptoLegacy.BeneficiaryConfig(0, 0, 4000);
+    beneficiaryConfigArr[1] = ICryptoLegacy.BeneficiaryConfig(0, 0, 0);
+    beneficiaryConfigArr[2] = ICryptoLegacy.BeneficiaryConfig(0, 0, 6000);
+    cryptoLegacy.setBeneficiaries(beneficiaryArr, beneficiaryConfigArr);
+    vm.stopPrank();
+
+    vm.prank(treasury);
+    mockToken1.approve(address(cryptoLegacy), 100 ether);
+
+    vm.warp(block.timestamp + clData.updateInterval + 1);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.initiateChallenge();
+    address[] memory _tokens = _getOneAddressList(address(mockToken1));
+
+    vm.warp(block.timestamp + clData.challengeTimeout + 1);
+
+    vm.startPrank(bobBeneficiary1);
+    cryptoLegacy.transferTreasuryTokensToLegacy(_getOneAddressList(treasury), _tokens);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+    vm.stopPrank();
+  
+    assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 60 ether);
+
+    vm.prank(owner);
+    mockToken1.mockTransferFrom(address(cryptoLegacy), address(1), 1e9);
+
+    assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 60 ether - 1 gwei);
+
+    vm.prank(bobBeneficiary3);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0); 
+
+    assertLt(mockToken1.balanceOf(address(cryptoLegacy)), 20);
+  }
+
+  function testAuditSubTransferDoubleSmallAmountToken() public {
+    vm.startPrank(owner);
+    pluginsRegistry.addPlugin(lensPlugin, "123");
+    pluginsRegistry.addPluginDescription(lensPlugin, "123");
+    vm.stopPrank();
+    (
+      CryptoLegacyBasePlugin cryptoLegacy, 
+      ICryptoLegacyLens cryptoLegacyLens, 
+      bytes32[] memory beneficiaryArr, 
+      ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr
+    ) = _buildCryptoLegacy(bob, buildFee, bytes8(0));
+
+    ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
+
+    vm.warp(block.timestamp + clData.updateInterval);
+
+    vm.startPrank(bob);
+    cryptoLegacy.update{value: 0.1 ether}(_getEmptyUintList(), _getEmptyUintList());
+    beneficiaryArr = new bytes32[](3);
+    beneficiaryArr[0] = keccak256(abi.encode(bobBeneficiary1));
+    beneficiaryArr[1] = keccak256(abi.encode(bobBeneficiary2));
+    beneficiaryArr[2] = keccak256(abi.encode(bobBeneficiary3));
+    beneficiaryConfigArr = new ICryptoLegacy.BeneficiaryConfig[](3);
+    beneficiaryConfigArr[0] = ICryptoLegacy.BeneficiaryConfig(0, 0, 4000);
+    beneficiaryConfigArr[1] = ICryptoLegacy.BeneficiaryConfig(0, 0, 0);
+    beneficiaryConfigArr[2] = ICryptoLegacy.BeneficiaryConfig(0, 0, 6000);
+    cryptoLegacy.setBeneficiaries(beneficiaryArr, beneficiaryConfigArr);
+    vm.stopPrank();
+
+    vm.prank(treasury);
+    mockToken1.approve(address(cryptoLegacy), 100 ether);
+
+    vm.warp(block.timestamp + clData.updateInterval + 1);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.initiateChallenge();
+    address[] memory _tokens = _getOneAddressList(address(mockToken1));
+
+    vm.warp(block.timestamp + clData.challengeTimeout + 1);
+
+    vm.startPrank(bobBeneficiary1);
+    cryptoLegacy.transferTreasuryTokensToLegacy(_getOneAddressList(treasury), _tokens);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+    vm.stopPrank();
+  
+    assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 60 ether);
+
+    vm.prank(owner);
+    mockToken1.mockTransferFrom(address(cryptoLegacy), address(1), 2e9);
+
+    assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 60 ether - 2 gwei);
+
+    vm.prank(bobBeneficiary3);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0); 
+
+    assertLt(mockToken1.balanceOf(address(cryptoLegacy)), 20);
+  }
 
   function testAuditRebaseSubAndAddToken() public {
     (CryptoLegacyBasePlugin cryptoLegacy, LensPlugin cryptoLegacyLens, , ) = _buildCryptoLegacyWithVesting();

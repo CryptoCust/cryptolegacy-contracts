@@ -396,10 +396,10 @@ library LibCryptoLegacy {
      * @param _startDate The timestamp marking the start of vesting.
      * @param _endDate The timestamp marking the end of vesting.
      * @return totalAmount The total amount of tokens allocated for the beneficiary.
-     * @return claimedAmount The amount of tokens that have already been claimed.
+     * @return claimableAmount The amount of tokens that can be claimed.
      * @return vestedAmount The amount of tokens that have vested so far.
      */
-    function _getVestedAndClaimedAmount(ICryptoLegacy.TokenDistribution storage td, ICryptoLegacy.BeneficiaryConfig storage bc, ICryptoLegacy.BeneficiaryVesting storage bv, address _token, uint64 _startDate, uint64 _endDate) internal view returns (uint256 totalAmount, uint256 claimedAmount, uint256 vestedAmount) {
+    function _getVestedAndClaimedAmount(ICryptoLegacy.TokenDistribution storage td, ICryptoLegacy.BeneficiaryConfig storage bc, ICryptoLegacy.BeneficiaryVesting storage bv, address _token, uint64 _startDate, uint64 _endDate) internal view returns (uint256 totalAmount, uint256 claimableAmount, uint256 vestedAmount) {
         uint256 vestingBps;
         if (_startDate > uint64(block.timestamp)) {
             vestingBps = 0;
@@ -408,7 +408,15 @@ library LibCryptoLegacy {
         }
         totalAmount = td.amountToDistribute * bc.shareBps / LibCryptoLegacy.SHARE_BASE;
         vestedAmount = totalAmount * vestingBps / LibCryptoLegacy.SHARE_BASE;
-        claimedAmount = vestedAmount - bv.tokenAmountClaimed[_token];
+        claimableAmount = vestedAmount - bv.tokenAmountClaimed[_token];
+        uint256 curBalance = IERC20(_token).balanceOf(address(this));
+
+        if (curBalance >= claimableAmount) {
+            return (totalAmount, claimableAmount, vestedAmount);
+        }
+        if ((claimableAmount - curBalance) * 1 ether / td.amountToDistribute <= 1e9) {
+            claimableAmount = curBalance;
+        }
     }
 
     /**
