@@ -119,13 +119,10 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
     bytes8 _refCode,
     uint64 _updateInterval,
     uint64 _challengeTimeout
-  ) external {
+  ) external initializer {
     CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
     if (msg.sender != address(cls.buildManager)) {
       revert ICryptoLegacy.NotBuildManager();
-    }
-    if (cls.beneficiaries.length() != 0) {
-      revert ICryptoLegacy.AlreadyInit();
     }
     _setBeneficiaries(_beneficiaryHashes, _beneficiaryConfig);
 
@@ -142,6 +139,7 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
     }
 
     LibCryptoLegacy._setCryptoLegacyToBeneficiaryRegistry(cls, LibCryptoLegacy._addressToHash(owner()), IBeneficiaryRegistry.EntityType.OWNER, true);
+    __ReentrancyGuard_init();
   }
 
   /**

@@ -52,7 +52,7 @@ contract SignatureRoleTimelock is ISignatureRoleTimelock, AccessControl, Reentra
         ISignatureRoleTimelock.AddressRoleInput[] memory _roles,
         SignatureToAdd[] memory _sigs,
         address _adminAccount
-    ) {
+    ) initializer {
         _addRoleAccount(ADMIN_ROLE, _adminAccount);
         // Add signature roles for functions that manage signature roles.
         _addSignatureRole(address(this), SignatureRoleTimelock(this).setRoleAccounts.selector, ADMIN_ROLE, _adminTimelock);
@@ -67,6 +67,7 @@ contract SignatureRoleTimelock is ISignatureRoleTimelock, AccessControl, Reentra
         for (uint256 i = 0; i < _sigs.length; i++) {
             _addSignatureRole(_sigs[i].target, _sigs[i].signature, _sigs[i].role, _sigs[i].timelock);
         }
+        __ReentrancyGuard_init();
     }
 
     /**

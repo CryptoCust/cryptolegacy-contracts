@@ -2731,7 +2731,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.prank(owner);
     pluginsRegistry.addPlugin(lensPlugin, "");
 
-    (CryptoLegacyBasePlugin cryptoLegacy, ICryptoLegacyLens cryptoLegacyLens, bytes32[] memory beneficiaryArr, ) = _buildCryptoLegacy(bob, buildFee, 0x0);
+    (CryptoLegacyBasePlugin cryptoLegacy, ICryptoLegacyLens cryptoLegacyLens, bytes32[] memory beneficiaryArr, ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr) = _buildCryptoLegacy(bob, buildFee, 0x0);
 
     vm.startPrank(owner);
     LegacyMessenger lm = new LegacyMessenger(owner);
@@ -2784,6 +2784,9 @@ contract CryptoLegacyTest is AbstractTestHelper {
     lm.sendMessagesTo(address(cryptoLegacy), beneficiaryArr, messagesHashArr, messagesArr, messageChecksArr, 1);
 
     CryptoLegacy mockCryptoLegacy = new CryptoLegacy(address(buildManager), bob, _getOneAddressList(address(cryptoLegacyBasePlugin)));
+
+    vm.expectRevert(ICryptoLegacy.NotBuildManager.selector);
+    CryptoLegacyBasePlugin(address(mockCryptoLegacy)).initializeByBuildManager(0, 0, beneficiaryArr, beneficiaryConfigArr, bytes8(0), uint64(0), uint64(0));
 
     vm.prank(bob);
     vm.expectRevert(IBuildManagerOwnable.CryptoLegacyNotRegistered.selector);

@@ -53,13 +53,14 @@ contract LockChainGate is Ownable, ReentrancyGuardUpgradeable, ILockChainGate {
      * @param _transferTimeout The timeout between lock and transfer.
      * @param _owner The address to become the owner.
      */
-    function _initializeLockChainGate(ILifetimeNft _lifetimeNft, uint64 _lockPeriod, uint64 _transferTimeout, address _owner) internal {
+    function _initializeLockChainGate(ILifetimeNft _lifetimeNft, uint64 _lockPeriod, uint64 _transferTimeout, address _owner) internal initializer {
         LCGStorage storage ls = lockChainGateStorage();
         ls.lifetimeNft = _lifetimeNft;
         ls.lockPeriod = _lockPeriod;
         ls.transferTimeout = _transferTimeout;
         emit SetLockPeriodConfig(_lockPeriod, _transferTimeout);
         _transferOwnership(_owner);
+        __ReentrancyGuard_init();
     }
 
     /**

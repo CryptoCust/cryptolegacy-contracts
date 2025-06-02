@@ -98,7 +98,6 @@ interface ICryptoLegacy {
     error InitialFeeNotPaid();
     error InitialFeeAlreadyPaid();
     error NotBuildManager();
-    error AlreadyInit();
     error LengthMismatch();
     error ShareSumDoesntMatchBase();
     error OriginalHashDuplicate();
