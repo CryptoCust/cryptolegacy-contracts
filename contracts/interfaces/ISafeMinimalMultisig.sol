@@ -49,8 +49,7 @@ interface ISafeMinimalMultisig {
         NOT_INITIALIZED_BUT_NEED
     }
 
-    error MultisigAlreadyExecuted();
-    error MultisigCanceled();
+    error MultisigProposalNotPending();
     error MultisigNotConfirmed();
     error MultisigExecutionFailed();
     error MultisigMethodNotAllowed();

@@ -2175,7 +2175,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.prank(dan);
     legacyRecoveryPluginLegacy.lrConfirm(0, bytes32(0));
 
-    vm.expectRevert(ISafeMinimalMultisig.MultisigAlreadyExecuted.selector);
+    vm.expectRevert(ISafeMinimalMultisig.MultisigProposalNotPending.selector);
     vm.prank(dan);
     legacyRecoveryPluginLegacy.lrConfirm(0, bytes32(0));
 
@@ -2311,7 +2311,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(proposalsWithStatuses[0].confirmedBy[1], false);
     assertProposalStatusEq(proposalsWithStatuses[0].proposal.status, ISafeMinimalMultisig.ProposalStatus.CANCELED);
 
-    vm.expectRevert(ISafeMinimalMultisig.MultisigCanceled.selector);
+    vm.expectRevert(ISafeMinimalMultisig.MultisigProposalNotPending.selector);
     vm.prank(dan);
     legacyRecoveryPluginLegacy.lrCancel(0, bytes32(0));
   }
@@ -2521,7 +2521,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.prank(dan);
     legacyRecoveryPluginLegacy.lrConfirm(0, danSaltHash);
 
-    vm.expectRevert(ISafeMinimalMultisig.MultisigAlreadyExecuted.selector);
+    vm.expectRevert(ISafeMinimalMultisig.MultisigProposalNotPending.selector);
     vm.prank(dan);
     legacyRecoveryPluginLegacy.lrConfirm(0, danSaltHash);
 

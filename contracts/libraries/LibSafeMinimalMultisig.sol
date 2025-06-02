@@ -219,11 +219,8 @@ library LibSafeMinimalMultisig {
         voter = _checkIsSenderAllowed(_allVoters, _salt);
 
         p = s.proposals[_proposalId];
-        if (p.status == ISafeMinimalMultisig.ProposalStatus.EXECUTED) {
-            revert ISafeMinimalMultisig.MultisigAlreadyExecuted();
-        }
-        if (p.status == ISafeMinimalMultisig.ProposalStatus.CANCELED) {
-            revert ISafeMinimalMultisig.MultisigCanceled();
+        if (p.status != ISafeMinimalMultisig.ProposalStatus.PENDING) {
+            revert ISafeMinimalMultisig.MultisigProposalNotPending();
         }
     }
 
