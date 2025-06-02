@@ -117,7 +117,7 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable
      * @param _params The ABI-encoded parameters to be passed when executing the proposal.
      * @param _salt Secret salt to improve address hash security. Optional, can be zero.
      */
-    function lrPropose(bytes4 _selector, bytes memory _params, bytes32 _salt) external returns(uint256 proposalId) {
+    function lrPropose(bytes4 _selector, bytes memory _params, bytes32 _salt) external payable returns(uint256 proposalId) {
         ISafeMinimalMultisig.Storage storage pluginStorage = getPluginMultisigStorage();
         return LibSafeMinimalMultisig._propose(pluginStorage, _salt, pluginStorage.voters, getMultisigAllowedMethods(), _selector, _params);
     }
@@ -128,7 +128,7 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable
      * @param _proposalId The identifier of the proposal to confirm.
      * @param _salt Secret salt to improve address hash security. Optional, can be zero.
      */
-    function lrConfirm(uint256 _proposalId, bytes32 _salt) external {
+    function lrConfirm(uint256 _proposalId, bytes32 _salt) external payable {
         ISafeMinimalMultisig.Storage storage pluginStorage = getPluginMultisigStorage();
         LibSafeMinimalMultisig._confirm(pluginStorage, _salt, pluginStorage.voters, _proposalId);
     }

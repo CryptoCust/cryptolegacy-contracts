@@ -1580,9 +1580,6 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     vm.warp(block.timestamp + updateInterval);
 
-    vm.prank(bob);
-    cryptoLegacy.update{value: updateFee}(_getEmptyUintList(), _getEmptyUintList());
-
     vm.prank(treasury);
     mockToken1.approve(address(cryptoLegacy), 100 ether);
 
@@ -1620,7 +1617,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     trustedGuardianPluginLegacy.resetGuardianVoting();
 
     vm.prank(bob);
-    trustedGuardianPluginLegacy.resetGuardianVoting();
+    trustedGuardianPluginLegacy.resetGuardianVoting{value: updateFee}();
 
     ( , guardiansVoted, ,) = trustedGuardianPluginLegacy.getGuardiansData();
     assertEq(guardiansVoted.length, 0);
@@ -1646,6 +1643,8 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     clList = beneficiaryRegistry.getCryptoLegacyListByGuardian(addressToHash(bobBeneficiary1));
     assertEq(clList.length, 0);
+
+    vm.warp(block.timestamp + clData.updateInterval + 1);
 
     vm.prank(bobBeneficiary1);
     vm.expectRevert(ITrustedGuardiansPlugin.NotGuardian.selector);
@@ -1690,8 +1689,12 @@ contract CryptoLegacyTest is AbstractTestHelper {
     legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrResetGuardianVoting.selector, new bytes(0), bytes32(0));
 
     vm.prank(alice);
+    vm.expectRevert(ISafeMinimalMultisig.MultisigExecutionFailed.selector);
     legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrResetGuardianVoting.selector, new bytes(0), bytes32(0));
 
+    vm.prank(alice);
+    legacyRecoveryPluginLegacy.lrPropose{value:updateFee}(LegacyRecoveryPlugin.lrResetGuardianVoting.selector, new bytes(0), bytes32(0));
+    
     {
       (
         bytes32[] memory voters,

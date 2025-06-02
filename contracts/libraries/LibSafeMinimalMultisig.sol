@@ -284,7 +284,7 @@ library LibSafeMinimalMultisig {
         ISafeMinimalMultisig.Proposal storage p = s.proposals[_proposalId];
         p.status = ISafeMinimalMultisig.ProposalStatus.EXECUTED;
 
-        (bool success, bytes memory data) = address(this).call(abi.encodePacked(p.selector, p.params));
+        (bool success, bytes memory data) = address(this).call{value: msg.value}(abi.encodePacked(p.selector, p.params));
         if (!success) {
             revert ISafeMinimalMultisig.MultisigExecutionFailed();
         }
