@@ -331,14 +331,14 @@ contract CryptoLegacyTest is AbstractTestHelper {
     
     assertEq(cryptoLegacy.pendingOwner(), address(0));
 
-    vm.expectEmit(true, false, false, false);
-    emit ICryptoLegacy.SetCryptoLegacyOwnerCatch(new bytes(0));
     vm.prank(bob);
     cryptoLegacy.transferOwnership(alice);
     assertEq(cryptoLegacy.pendingOwner(), alice);
     assertEq(cryptoLegacy.owner(), bob);
 
     vm.prank(alice);
+    vm.expectEmit(true, false, false, false);
+    emit ICryptoLegacy.SetCryptoLegacyOwnerCatch(new bytes(0));
     cryptoLegacy.acceptOwnership();
 
     assertEq(cryptoLegacy.pendingOwner(), address(0));
@@ -2891,6 +2891,16 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     vm.prank(bob);
     cryptoLegacy.transferOwnership(alice);
+
+    clList = beneficiaryRegistry.getCryptoLegacyListByOwner(addressToHash(bob));
+    assertEq(clList.length, 1);
+    assertEq(clList[0], address(cryptoLegacy));
+
+    clList = beneficiaryRegistry.getCryptoLegacyListByOwner(addressToHash(alice));
+    assertEq(clList.length, 0);
+
+    vm.prank(alice);
+    cryptoLegacy.acceptOwnership();
 
     clList = beneficiaryRegistry.getCryptoLegacyListByOwner(addressToHash(bob));
     assertEq(clList.length, 0);

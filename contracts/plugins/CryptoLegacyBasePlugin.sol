@@ -178,7 +178,6 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
   function transferOwnership(address newOwner) public virtual onlyOwner {
     ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
     _transferOwnership(cls, newOwner);
-    LibCryptoLegacy._updateOwnerInBeneficiaryRegistry(cls, newOwner);
   }
 
   /**

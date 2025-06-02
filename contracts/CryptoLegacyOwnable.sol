@@ -45,7 +45,8 @@ contract CryptoLegacyOwnable is ICryptoLegacyOwnable {
         if (cls.pendingOwner != msg.sender) {
             revert OwnableUnauthorizedAccount(msg.sender);
         }
-        LibDiamond.setContractOwner(cls.pendingOwner);
+        LibCryptoLegacy._updateOwnerInBeneficiaryRegistry(cls, msg.sender);
+        LibDiamond.setContractOwner(msg.sender);
         cls.pendingOwner = address(0);
     }
 
