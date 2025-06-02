@@ -326,7 +326,7 @@ library LibCryptoLegacy {
         uint bal = IERC20(_token).balanceOf(address(this));
         uint totalClaimed = _getTotalClaimed(cls, _token);
         if (td.amountToDistribute == 0) {
-            td.amountToDistribute = uint128(bal);
+            td.amountToDistribute = bal;
             return td;
         }
         uint balanceDiff;
@@ -350,7 +350,7 @@ library LibCryptoLegacy {
                 totalClaimed += newClaimed;
             }
         }
-        td.amountToDistribute = uint128(bal + totalClaimed);
+        td.amountToDistribute = bal + totalClaimed;
     }
 
     function _getBeneficiaryClaimed(ICryptoLegacy.CryptoLegacyStorage storage cls, bytes32 _hash, address _token) internal view returns(uint claimed) {
@@ -401,16 +401,16 @@ library LibCryptoLegacy {
      * @return prevClaimableAmount The previous claimableAmount, before the change due to lack of token balance (if it was made)
      */
     function _getVestedAndClaimedAmount(ICryptoLegacy.TokenDistribution storage td, ICryptoLegacy.BeneficiaryConfig storage bc, ICryptoLegacy.BeneficiaryVesting storage bv, address _token, uint64 _startDate, uint64 _endDate) internal view returns (uint256 totalAmount, uint256 vestedAmount, uint256 claimableAmount, uint256 prevClaimableAmount) {
-        uint256 vestingBps;
+        uint vestingBps;
         if (_startDate > uint64(block.timestamp)) {
             vestingBps = 0;
         } else {
             vestingBps = uint64(block.timestamp) > _endDate ? LibCryptoLegacy.SHARE_BASE : (uint64(block.timestamp) - _startDate) * LibCryptoLegacy.SHARE_BASE / bc.vestingPeriod;
         }
-        totalAmount = td.amountToDistribute * bc.shareBps / LibCryptoLegacy.SHARE_BASE;
-        vestedAmount = totalAmount * vestingBps / LibCryptoLegacy.SHARE_BASE;
+        totalAmount = td.amountToDistribute * uint(bc.shareBps) / LibCryptoLegacy.SHARE_BASE;
+        vestedAmount = totalAmount * uint(vestingBps) / LibCryptoLegacy.SHARE_BASE;
         claimableAmount = vestedAmount - bv.tokenAmountClaimed[_token];
-        uint256 curBalance = IERC20(_token).balanceOf(address(this));
+        uint curBalance = IERC20(_token).balanceOf(address(this));
 
         if (curBalance < claimableAmount) {
             prevClaimableAmount = claimableAmount;
@@ -587,7 +587,7 @@ library LibCryptoLegacy {
                 t.safeTransferFrom(_holders[j], address(this), availableBalance);
             }
             ICryptoLegacy.TokenDistribution storage td = LibCryptoLegacy._tokenPrepareToDistribute(cls, _tokens[i]);
-            td.lastBalance = uint128(IERC20(_tokens[i]).balanceOf(address(this)));
+            td.lastBalance = IERC20(_tokens[i]).balanceOf(address(this));
         }
         emit ICryptoLegacy.TransferTreasuryTokensToLegacy(_holders, _tokens);
         cls.transfersGotByBlockNumber.push(uint64(block.number));

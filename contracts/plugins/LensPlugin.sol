@@ -172,7 +172,7 @@ contract LensPlugin is ICryptoLegacyPlugin, ICryptoLegacyLens {
         list = new LensTokenDistribution[](_tokens.length);
         for(uint256 i = 0; i < _tokens.length; i++) {
             ICryptoLegacy.TokenDistribution storage td = cls.tokenDistribution[_tokens[i]];
-            list[i] = LensTokenDistribution(td.amountToDistribute, td.lastBalance, uint128(LibCryptoLegacy._getTotalClaimed(cls, _tokens[i])));
+            list[i] = LensTokenDistribution(td.amountToDistribute, td.lastBalance, LibCryptoLegacy._getTotalClaimed(cls, _tokens[i]));
         }
     }
 

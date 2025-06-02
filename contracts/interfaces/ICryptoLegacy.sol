@@ -43,8 +43,8 @@ interface ICryptoLegacy {
         mapping(address => uint256) tokenAmountClaimed; // token => claimedAmount
     }
     struct TokenDistribution {
-        uint128 amountToDistribute;
-        uint128 lastBalance;
+        uint256 amountToDistribute;
+        uint256 lastBalance;
     }
     struct CryptoLegacyStorage {
         bool isPaused;

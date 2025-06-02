@@ -372,7 +372,7 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
     bv.tokenAmountClaimed[_token] += amountToClaim;
 
     IERC20(_token).safeTransfer(msg.sender, amountToClaim);
-    td.lastBalance = uint128(IERC20(_token).balanceOf(address(this)));
+    td.lastBalance = IERC20(_token).balanceOf(address(this));
 
     emit BeneficiaryClaim(_token, amountToClaim, _beneficiary);
   }

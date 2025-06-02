@@ -39,9 +39,9 @@ interface ICryptoLegacyLens {
     function getCryptoLegacyBaseData() external view returns(CryptoLegacyBaseData memory data);
 
     struct LensTokenDistribution {
-        uint128 amountToDistribute;
-        uint128 lastBalance;
-        uint128 totalClaimed;
+        uint256 amountToDistribute;
+        uint256 lastBalance;
+        uint256 totalClaimed;
     }
     struct CryptoLegacyListData {
         bytes32[] beneficiaries;
