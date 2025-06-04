@@ -242,7 +242,7 @@ contract CryptoLegacyBuildManager is ICryptoLegacyBuildManager, IERC721Receiver,
    */
   function payForMultipleLifetimeNft(bytes8 _code, LifetimeNftMint[] memory _lifetimeNftMints) public payable {
     if (lifetimeNft.totalSupply() < minMassMintSupply) {
-      revert BellowMinimumSupply(minMassMintSupply);
+      revert BelowMinimumSupply(minMassMintSupply);
     }
 
     uint256 lifetimeFee = feeRegistry.getContractCaseFeeForCode(address(this), REGISTRY_LIFETIME_CASE, _code);

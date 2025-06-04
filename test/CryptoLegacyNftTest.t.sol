@@ -889,7 +889,7 @@ contract CryptoLegacyNftTest is AbstractTestHelper {
         mintList[0] = ICryptoLegacyBuildManager.LifetimeNftMint(bob, 2);
         mintList[1] = ICryptoLegacyBuildManager.LifetimeNftMint(alice, 3);
 
-        vm.expectRevert(abi.encodeWithSelector(ICryptoLegacyBuildManager.BellowMinimumSupply.selector, 2));
+        vm.expectRevert(abi.encodeWithSelector(ICryptoLegacyBuildManager.BelowMinimumSupply.selector, 2));
         buildManager.payForMultipleLifetimeNft{value: 10 ether}(bytes8(0), mintList);
 
         assertEq(feeRegistry.isNftLocked(alice), false);
@@ -897,7 +897,7 @@ contract CryptoLegacyNftTest is AbstractTestHelper {
         assertEq(lifetimeNft.totalSupply(), 1);
         assertEq(feeRegistry.isNftLocked(alice), true);
 
-        vm.expectRevert(abi.encodeWithSelector(ICryptoLegacyBuildManager.BellowMinimumSupply.selector, 2));
+        vm.expectRevert(abi.encodeWithSelector(ICryptoLegacyBuildManager.BelowMinimumSupply.selector, 2));
         buildManager.payForMultipleLifetimeNft{value: 10 ether}(bytes8(0), mintList);
 
         assertEq(feeRegistry.isNftLocked(dan), false);
