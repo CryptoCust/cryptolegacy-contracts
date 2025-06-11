@@ -2148,7 +2148,17 @@ contract CryptoLegacyTest is AbstractTestHelper {
     legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrConfirm.selector, abi.encode(0), bytes32(0));
 
     vm.prank(bobBeneficiary1);
-    legacyRecoveryPluginLegacy.lrPropose(LegacyRecoveryPlugin.lrTransferTreasuryTokensToLegacy.selector, abi.encode(_treasuries, _tokens), bytes32(0));
+    vm.expectEmit(true, true, false, false);
+    emit ISafeMinimalMultisig.AddHeldEth(addressToHash(bobBeneficiary1), 1.1 ether);
+    legacyRecoveryPluginLegacy.lrPropose{value: 1.1 ether}(LegacyRecoveryPlugin.lrTransferTreasuryTokensToLegacy.selector, abi.encode(_treasuries, _tokens), bytes32(0));
+  
+    assertEq(legacyRecoveryPluginLegacy.lrGetHeldEth(addressToHash(bobBeneficiary1)), 1.1 ether);
+    
+    assertEq(custFeeRecipient1.balance, 0);
+    vm.prank(bobBeneficiary1);
+    legacyRecoveryPluginLegacy.lrWithdrawHeldEth(bytes32(0), custFeeRecipient1);
+    assertEq(custFeeRecipient1.balance, 1.1 ether);
+    assertEq(legacyRecoveryPluginLegacy.lrGetHeldEth(addressToHash(bobBeneficiary1)), 0);
 
     (voters, requiredConfirmations, proposalsWithStatuses) = legacyRecoveryPluginLegacy.lrGetProposalListWithStatuses();
     assertEq(proposalsWithStatuses.length, 1);

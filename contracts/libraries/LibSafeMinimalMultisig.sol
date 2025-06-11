@@ -198,9 +198,11 @@ library LibSafeMinimalMultisig {
 
         emit ISafeMinimalMultisig.CreateSafeMinimalMultisigProposal(proposalId, voter, s.requiredConfirmations);
 
+        uint256 initialBalance = address(this).balance - msg.value;
         if (s.requiredConfirmations == 1) {
             _execute(s, voter, proposalId);
         }
+        _updateHeldEth(s, voter, initialBalance);
     }
 
     /**
@@ -266,9 +268,11 @@ library LibSafeMinimalMultisig {
 
         emit ISafeMinimalMultisig.ConfirmSafeMinimalMultisigProposal(_proposalId, voter, s.requiredConfirmations, p.confirms);
 
+        uint256 initialBalance = address(this).balance - msg.value;
         if (p.confirms >= s.requiredConfirmations) {
             _execute(s, voter, _proposalId);
         }
+        _updateHeldEth(s, voter, initialBalance);
     }
 
     /**
@@ -290,5 +294,42 @@ library LibSafeMinimalMultisig {
         }
 
         emit ISafeMinimalMultisig.ExecuteSafeMinimalMultisigProposal(_proposalId, _voter, success, data);
+    }
+
+    /**
+     * @notice Updates the stored.amount of ETH held for a voter after multisig operations.
+     * @dev Calculates the difference between current contract balance and given initial balance. If positive, credits the voter's heldEth.
+     * @param s The multisig storage structure.
+     * @param _voter The bytes32 identifier of the voter to credit.
+     * @param _initialBalance The contract balance before the operation.
+     */
+    function _updateHeldEth(ISafeMinimalMultisig.Storage storage s, bytes32 _voter, uint256 _initialBalance) internal {
+        uint256 remaining = address(this).balance - _initialBalance;
+        if (remaining > 0) {
+            s.heldEth[_voter] += remaining;
+            emit ISafeMinimalMultisig.AddHeldEth(_voter, remaining);
+        }
+    }
+
+    /**
+     * @notice Withdraws held ETH for an authorized voter and sends it to a recipient.
+     * @dev Checks sender authorization, reverts if no ETH to withdraw or if transfer fails.
+     * @param s The multisig storage structure.
+     * @param _salt Secret salt used for hashing the voter's address. Optional, can be zero.
+     * @param _allVoters The list of authorized voter identifiers.
+     * @param _recipient The address that will receive the withdrawn ETH.
+     */
+    function _withdrawHeldEth(ISafeMinimalMultisig.Storage storage s, bytes32 _salt, bytes32[] memory _allVoters, address _recipient) internal {
+        bytes32 voter = _checkIsSenderAllowed(_allVoters, _salt);
+        uint256 value = s.heldEth[voter];
+        if (value == 0) {
+            revert ISafeMinimalMultisig.MultisigNothingToWithdraw();
+        }
+        (bool success, bytes memory data) = payable(_recipient).call{value: value}(new bytes(0));
+        if (!success) {
+            revert ISafeMinimalMultisig.TransferFeeFailed(data);
+        }
+        emit ISafeMinimalMultisig.WithdrawHeldEth(voter, value);
+        s.heldEth[voter] = 0;
     }
 }
