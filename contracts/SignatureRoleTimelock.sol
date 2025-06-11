@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import "./interfaces/ISignatureRoleTimelock.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title SignatureRoleTimelock
@@ -12,7 +12,7 @@ import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol
  *         Role assignments and signature role associations are enforced with a timelock delay.
  * @dev Inherits from AccessControl for role management and ReentrancyGuard for security.
  */
-contract SignatureRoleTimelock is ISignatureRoleTimelock, AccessControl, ReentrancyGuardUpgradeable {
+contract SignatureRoleTimelock is ISignatureRoleTimelock, AccessControl, ReentrancyGuard {
     /// @notice The administrator role is the default admin role.
     bytes32 public constant ADMIN_ROLE = DEFAULT_ADMIN_ROLE;
     /// @notice The maximum timelock duration is 7 days.
@@ -52,7 +52,7 @@ contract SignatureRoleTimelock is ISignatureRoleTimelock, AccessControl, Reentra
         ISignatureRoleTimelock.AddressRoleInput[] memory _roles,
         SignatureToAdd[] memory _sigs,
         address _adminAccount
-    ) initializer {
+    ) ReentrancyGuard() {
         _addRoleAccount(ADMIN_ROLE, _adminAccount);
         // Add signature roles for functions that manage signature roles.
         _addSignatureRole(address(this), SignatureRoleTimelock(this).setRoleAccounts.selector, ADMIN_ROLE, _adminTimelock);
@@ -67,7 +67,6 @@ contract SignatureRoleTimelock is ISignatureRoleTimelock, AccessControl, Reentra
         for (uint256 i = 0; i < _sigs.length; i++) {
             _addSignatureRole(_sigs[i].target, _sigs[i].signature, _sigs[i].role, _sigs[i].timelock);
         }
-        __ReentrancyGuard_init();
     }
 
     /**
