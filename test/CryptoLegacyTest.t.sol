@@ -1366,7 +1366,18 @@ contract CryptoLegacyTest is AbstractTestHelper {
     cryptoLegacyBeneficiaryPluginLegacy.barPropose(BeneficiaryPluginAddRights.barConfirm.selector, abi.encode(0));
 
     vm.prank(bobBeneficiary1);
-    cryptoLegacyBeneficiaryPluginLegacy.barPropose(BeneficiaryPluginAddRights.barAddPluginList.selector, abi.encode(_getOneAddressList(mockClaimPlugin)));
+    vm.expectEmit(true, true, false, false);
+    emit ISafeMinimalMultisig.AddHeldEth(addressToHash(bobBeneficiary1), 1.1 ether);
+    cryptoLegacyBeneficiaryPluginLegacy.barPropose{value: 1.1 ether}(BeneficiaryPluginAddRights.barAddPluginList.selector, abi.encode(_getOneAddressList(mockClaimPlugin)));
+    
+    assertEq(cryptoLegacyBeneficiaryPluginLegacy.barGetHeldEth(addressToHash(bobBeneficiary1)), 1.1 ether);
+    
+    assertEq(custFeeRecipient1.balance, 0);
+    vm.prank(bobBeneficiary1);
+    cryptoLegacyBeneficiaryPluginLegacy.barWithdrawHeldEth(custFeeRecipient1);
+    assertEq(custFeeRecipient1.balance, 1.1 ether);
+    assertEq(cryptoLegacyBeneficiaryPluginLegacy.barGetHeldEth(addressToHash(bobBeneficiary1)), 0);
+
     (voters, requiredConfirmations, proposalsWithStatuses) = cryptoLegacyBeneficiaryPluginLegacy.barGetProposalListWithStatuses();
     assertEq(requiredConfirmations, 2);
     assertEq(voters.length, 2);

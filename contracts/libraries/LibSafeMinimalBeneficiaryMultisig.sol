@@ -202,4 +202,15 @@ library LibSafeMinimalBeneficiaryMultisig {
         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
         LibSafeMinimalMultisig._cancel(s, bytes32(0), _getVoters(cls), _proposalId);
     }
+
+     /**
+     * @notice Withdraws held ETH for an authorized voter and sends it to a recipient.
+     * @dev Checks sender authorization, reverts if no ETH to withdraw or if transfer fails.
+     * @param s The multisig storage structure.
+     * @param _allVoters The list of authorized voter identifiers.
+     * @param _recipient The address that will receive the withdrawn ETH.
+     */
+    function _withdrawHeldEth(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _allVoters, address _recipient) internal {
+        LibSafeMinimalMultisig._withdrawHeldEth(s, bytes32(0), _allVoters, _recipient);
+    }
 }

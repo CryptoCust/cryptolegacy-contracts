@@ -184,7 +184,7 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable
      * @param _salt   Secret salt used to derive the voter’s hash; use zero for plain address hashing.  
      * @param _recipient Address that will receive the withdrawn ETH.  
      */
-    function lrWithdrawHeldEth(bytes32 _salt, address _recipient) external payable nonReentrant {
+    function lrWithdrawHeldEth(bytes32 _salt, address _recipient) external nonReentrant {
         ISafeMinimalMultisig.Storage storage pluginStorage = getPluginMultisigStorage();
         LibSafeMinimalMultisig._withdrawHeldEth(pluginStorage, _salt, pluginStorage.voters, _recipient);
     }

@@ -28,7 +28,7 @@ contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuardUpgra
      * @return sigs An array of function selectors.
      */
     function getSigs() external pure returns (bytes4[] memory sigs) {
-        sigs = new bytes4[](9);
+        sigs = new bytes4[](11);
         sigs[0] = this.barGetInitializationStatus.selector;
         sigs[1] = this.barSetMultisigConfig.selector;
         sigs[2] = this.barPropose.selector;
@@ -38,6 +38,8 @@ contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuardUpgra
         sigs[6] = this.barGetVotersAndConfirmations.selector;
         sigs[7] = this.barGetProposalWithStatus.selector;
         sigs[8] = this.barGetProposalListWithStatuses.selector;
+        sigs[9] = this.barWithdrawHeldEth.selector;
+        sigs[10] = this.barGetHeldEth.selector;
     }
 
     /**
@@ -131,7 +133,7 @@ contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuardUpgra
      * @param _selector The function selector targeted by the proposal.
      * @param _params The ABI-encoded parameters to be passed when executing the proposal.
      */
-    function barPropose(bytes4 _selector, bytes memory _params) nonReentrant external onlyDistributionReady returns(uint256 proposalId) {
+    function barPropose(bytes4 _selector, bytes memory _params) nonReentrant external payable onlyDistributionReady returns(uint256 proposalId) {
         return LibSafeMinimalBeneficiaryMultisig._propose(getPluginMultisigStorage(), getMultisigAllowedMethods(), _selector, _params);
     }
 
@@ -140,7 +142,7 @@ contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuardUpgra
      * @dev Records a confirmation from the caller and executes the proposal if the confirmations threshold is met.
      * @param _proposalId The identifier of the proposal to confirm.
      */
-    function barConfirm(uint256 _proposalId) external nonReentrant onlyDistributionReady {
+    function barConfirm(uint256 _proposalId) external payable nonReentrant onlyDistributionReady {
         LibSafeMinimalBeneficiaryMultisig._confirm(getPluginMultisigStorage(), _proposalId);
     }
 
@@ -166,6 +168,26 @@ contract BeneficiaryPluginAddRights is ICryptoLegacyPlugin, ReentrancyGuardUpgra
 
         LibCryptoLegacy._checkDistributionReady(cls);
         LibCryptoLegacyPlugins._addPluginList(cls,_plugins);
+    }
+
+    /**
+     * @notice Withdraws any accumulated ETH held for the caller and sends it to the specified recipient.
+     * @param _recipient Address that will receive the withdrawn ETH.  
+     */
+    function barWithdrawHeldEth(address _recipient) external nonReentrant {
+        ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
+        ISafeMinimalMultisig.Storage storage pluginStorage = getPluginMultisigStorage();
+        LibSafeMinimalBeneficiaryMultisig._withdrawHeldEth(pluginStorage, cls.beneficiaries.values(), _recipient);
+    }
+    
+    /**
+     * @notice Returns the amount of ETH currently held for a given voter identifier.
+     * @param _hash Bytes32 identifier of the voter (e.g., from _addressToHash or _addressWithSaltToHash).  
+     * @return heldEthBalance The ETH balance available for withdrawal by that voter.  
+     */
+    function barGetHeldEth(bytes32 _hash) external view returns(uint256) {
+        ISafeMinimalMultisig.Storage storage pluginStorage = getPluginMultisigStorage();
+        return pluginStorage.heldEth[_hash];
     }
 
     /**
