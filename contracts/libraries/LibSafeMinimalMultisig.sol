@@ -325,11 +325,11 @@ library LibSafeMinimalMultisig {
         if (value == 0) {
             revert ISafeMinimalMultisig.MultisigNothingToWithdraw();
         }
+        s.heldEth[voter] = 0;
         (bool success, bytes memory data) = payable(_recipient).call{value: value}(new bytes(0));
         if (!success) {
             revert ISafeMinimalMultisig.TransferFeeFailed(data);
         }
         emit ISafeMinimalMultisig.WithdrawHeldEth(voter, value);
-        s.heldEth[voter] = 0;
     }
 }
