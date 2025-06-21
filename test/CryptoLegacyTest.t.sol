@@ -365,6 +365,10 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(cryptoLegacy.getGasBySelector(bytes4(uint32(1))), 4e4);
 
     vm.prank(bob);
+    vm.expectRevert(abi.encodeWithSelector(ICryptoLegacy.TooBigMultiplier.selector, 10));
+    cryptoLegacy.setGasLimitMultiplier(12);
+
+    vm.prank(bob);
     cryptoLegacy.setGasLimitMultiplier(2);
 
     assertEq(cryptoLegacy.getGasBySelector(bytes4(uint32(1))), 8e4);

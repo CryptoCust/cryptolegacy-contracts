@@ -17,6 +17,7 @@ library LibCryptoLegacy {
     uint256 constant internal MAX_CHAINS_ARRAY_LENGTH = 100;
     uint64 constant internal BENEFICIARY_SWITCH_TIMELOCK_DURATION = 1 days;
     uint8 constant internal CLAIM_FUNC_FLAG = 1;
+    uint8 constant internal MAX_GAS_MULTIPLIER = 10;
     bytes32 constant internal CRYPTO_LEGACY_STORAGE_POSITION = keccak256("crypto_legacy.storage");
     bytes4 constant internal transferValueSelector = bytes4(uint32(1));
     bytes4 constant internal lockNftSelector = ILockChainGate(address(0)).lockLifetimeNft.selector;

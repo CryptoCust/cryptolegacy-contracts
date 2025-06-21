@@ -307,6 +307,9 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
    */
   function setGasLimitMultiplier(uint8 _gasLimitMultiplier) external payable onlyOwner nonReentrant {
     CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
+    if (_gasLimitMultiplier > LibCryptoLegacy.MAX_GAS_MULTIPLIER) {
+      revert TooBigMultiplier(LibCryptoLegacy.MAX_GAS_MULTIPLIER);
+    }
     cls.gasLimitMultiplier = _gasLimitMultiplier;
     emit SetGasLimitMultiplier(_gasLimitMultiplier);
   }

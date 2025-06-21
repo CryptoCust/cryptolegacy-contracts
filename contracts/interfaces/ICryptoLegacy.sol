@@ -122,4 +122,5 @@ interface ICryptoLegacy {
     error InitCalldataZeroButAddressIsNot();
     error PluginNotRegistered();
     error TransferFeeFailed(bytes response);
+    error TooBigMultiplier(uint8 maxMultiplier);
 }
