@@ -104,6 +104,7 @@ interface ICryptoLegacy {
     error DistributionStarted();
     error DistributionStartAlreadySet();
     error DistributionDelay();
+    error ChallengePeriodStarted();
     error AlreadySet();
     error BeneficiaryNotSet();
     error Pause();

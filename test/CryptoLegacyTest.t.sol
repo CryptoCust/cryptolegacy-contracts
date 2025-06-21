@@ -2852,6 +2852,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.startPrank(bobBeneficiary1);
     ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
     vm.warp(block.timestamp + clData.updateInterval + 1);
+
     cryptoLegacy.initiateChallenge();
     vm.warp(block.timestamp + clData.challengeTimeout + 1);
 
@@ -2941,6 +2942,10 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.warp(block.timestamp + clData.updateInterval + 1);
     vm.prank(bobBeneficiary1);
     cryptoLegacy.initiateChallenge();
+
+    vm.prank(bob);
+    vm.expectRevert(ICryptoLegacy.ChallengePeriodStarted.selector);
+    cryptoLegacy.setPause(true);
 
     address[] memory cryptoLegacyGot = beneficiaryRegistry.getCryptoLegacyListByBeneficiary(addressToHash(bobBeneficiary1));
     assertEq(cryptoLegacyGot.length, 1);
@@ -3229,6 +3234,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.startPrank(bobBeneficiary1);
     cryptoLegacy.transferTreasuryTokensToLegacy(_treasuries, _tokens);
     cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+    cryptoLegacy.transferTreasuryTokensToLegacy(_getOneAddressList(treasury), _tokens);
     vm.stopPrank();
   
     assertEq(rebaseToken.balanceOf(address(cryptoLegacy)), 60000000000000000000);
@@ -3292,6 +3298,7 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.startPrank(bobBeneficiary1);
     cryptoLegacy.transferTreasuryTokensToLegacy(_treasuries, _tokens);
     cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+    cryptoLegacy.transferTreasuryTokensToLegacy(_getOneAddressList(treasury), _tokens);
     vm.stopPrank();
   
     assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 60000000000000000000);
@@ -3357,6 +3364,9 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.prank(owner);
     mockToken1.mockTransferFrom(address(cryptoLegacy), address(1), 1e9);
 
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.transferTreasuryTokensToLegacy(_getOneAddressList(treasury), _tokens);
+
     assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 60 ether - 1 gwei);
 
     vm.prank(bobBeneficiary3);
@@ -3410,12 +3420,15 @@ contract CryptoLegacyTest is AbstractTestHelper {
     vm.startPrank(bobBeneficiary1);
     cryptoLegacy.transferTreasuryTokensToLegacy(_getOneAddressList(treasury), _tokens);
     cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+    cryptoLegacy.transferTreasuryTokensToLegacy(_getOneAddressList(treasury), _tokens);
     vm.stopPrank();
   
     assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 60 ether);
 
     vm.prank(owner);
     mockToken1.mockTransferFrom(address(cryptoLegacy), address(1), 2e9);
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.transferTreasuryTokensToLegacy(_getOneAddressList(treasury), _tokens);
 
     assertEq(mockToken1.balanceOf(address(cryptoLegacy)), 60 ether - 2 gwei);
 

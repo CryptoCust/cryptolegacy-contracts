@@ -106,6 +106,9 @@ library LibCryptoLegacy {
     }
 
     function _setPause(ICryptoLegacy.CryptoLegacyStorage storage cls, bool _isPaused) internal {
+        if (cls.distributionStartAt != 0) {
+            revert ICryptoLegacy.ChallengePeriodStarted();
+        }
         cls.isPaused = _isPaused;
         emit ICryptoLegacy.PauseSet(_isPaused);
     }
