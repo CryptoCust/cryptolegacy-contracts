@@ -407,8 +407,11 @@ library LibCryptoLegacy {
         uint vestingBps;
         if (_startDate > uint64(block.timestamp)) {
             vestingBps = 0;
+        } else if (uint64(block.timestamp) >= _endDate) {
+            vestingBps = LibCryptoLegacy.SHARE_BASE;
         } else {
-            vestingBps = uint64(block.timestamp) > _endDate ? LibCryptoLegacy.SHARE_BASE : (uint64(block.timestamp) - _startDate) * LibCryptoLegacy.SHARE_BASE / bc.vestingPeriod;
+            uint64 vestingPeriod = _endDate - _startDate;
+            vestingBps = (uint64(block.timestamp) - _startDate) * LibCryptoLegacy.SHARE_BASE / vestingPeriod;
         }
         totalAmount = td.amountToDistribute * uint(bc.shareBps) / LibCryptoLegacy.SHARE_BASE;
         vestedAmount = totalAmount * uint(vestingBps) / LibCryptoLegacy.SHARE_BASE;
