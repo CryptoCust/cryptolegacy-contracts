@@ -1529,6 +1529,93 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(requiredConfirmations, 2);
   }
 
+  function testBarMulisigRequiredConfirmations() public {
+    CryptoLegacyBasePlugin cryptoLegacy;
+    ICryptoLegacyLens cryptoLegacyLens;
+    address beneficiaryDistributionRightsPlugin = address(new BeneficiaryPluginAddRights());
+
+    vm.startPrank(owner);
+    pluginsRegistry.addPlugin(lensPlugin, "");
+    pluginsRegistry.addPlugin(beneficiaryDistributionRightsPlugin, "");
+    vm.stopPrank();
+
+    (cryptoLegacy, cryptoLegacyLens, , ) = _buildCryptoLegacyWithPlugins(bob, buildFee, bytes8(0), _getTwoInitPluginsList(lensPlugin, beneficiaryDistributionRightsPlugin));
+    ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
+    vm.warp(block.timestamp + clData.updateInterval + 1);
+    
+    (bytes32[] memory beneficiaryArr, ICryptoLegacy.BeneficiaryConfig[] memory beneficiaryConfigArr) = _getFourBeneficiaries();
+    vm.prank(bob);
+    cryptoLegacy.setBeneficiaries(beneficiaryArr, beneficiaryConfigArr);
+
+    BeneficiaryPluginAddRights cryptoLegacyBeneficiaryPluginLegacy = BeneficiaryPluginAddRights(address(cryptoLegacy));
+
+    vm.prank(bob);
+    cryptoLegacyBeneficiaryPluginLegacy.barSetMultisigConfig(4);
+
+    (bytes32[] memory voters, uint128 requiredConfirmations) = cryptoLegacyBeneficiaryPluginLegacy.barGetVotersAndConfirmations();
+    assertEq(requiredConfirmations, 4);
+    assertEq(requiredConfirmations, voters.length);
+
+    beneficiaryArr = new bytes32[](4);
+    beneficiaryArr[0] = keccak256(abi.encode(bobBeneficiary1));
+    beneficiaryArr[1] = keccak256(abi.encode(bobBeneficiary2));
+    beneficiaryArr[2] = keccak256(abi.encode(bobBeneficiary3));
+    beneficiaryArr[3] = keccak256(abi.encode(bobBeneficiary4));
+    beneficiaryConfigArr = new ICryptoLegacy.BeneficiaryConfig[](4);
+    beneficiaryConfigArr[0] = ICryptoLegacy.BeneficiaryConfig(0, 0, 5000);
+    beneficiaryConfigArr[1] = ICryptoLegacy.BeneficiaryConfig(0, 0, 5000);
+    beneficiaryConfigArr[2] = ICryptoLegacy.BeneficiaryConfig(0, 0, 0);
+    beneficiaryConfigArr[3] = ICryptoLegacy.BeneficiaryConfig(0, 0, 0);
+    vm.prank(bob);
+    cryptoLegacy.setBeneficiaries(beneficiaryArr, beneficiaryConfigArr);
+
+    (voters, requiredConfirmations) = cryptoLegacyBeneficiaryPluginLegacy.barGetVotersAndConfirmations();
+    assertEq(requiredConfirmations, 2);
+    assertEq(requiredConfirmations, voters.length);
+  
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.initiateChallenge();
+
+    uint256 distributionStartAt = block.timestamp + clData.challengeTimeout;
+    vm.warp(distributionStartAt + 1);
+
+    (voters, requiredConfirmations) = cryptoLegacyBeneficiaryPluginLegacy.barGetVotersAndConfirmations();
+    assertEq(requiredConfirmations, 2);
+
+    vm.prank(bobBeneficiary1);
+    uint256 proposalId = cryptoLegacyBeneficiaryPluginLegacy.barPropose(BeneficiaryPluginAddRights.barSetMultisigConfig.selector, abi.encode(1));
+    
+    ISafeMinimalMultisig.ProposalWithStatus memory proposalWithStatus;
+
+    (
+      voters,
+      requiredConfirmations,
+      proposalWithStatus
+    ) = cryptoLegacyBeneficiaryPluginLegacy.barGetProposalWithStatus(proposalId);
+    assertEq(requiredConfirmations, 2);
+    assertEq(proposalWithStatus.proposal.confirms, 1);
+    assertProposalStatusEq(proposalWithStatus.proposal.status, ISafeMinimalMultisig.ProposalStatus.PENDING);
+    assertEq(proposalWithStatus.confirmedBy[0], true);
+    assertEq(proposalWithStatus.confirmedBy[1], false);
+
+    vm.prank(bobBeneficiary2);
+    cryptoLegacyBeneficiaryPluginLegacy.barConfirm(proposalId);
+
+    (
+      voters,
+      requiredConfirmations,
+      proposalWithStatus
+    ) = cryptoLegacyBeneficiaryPluginLegacy.barGetProposalWithStatus(proposalId);
+    assertEq(requiredConfirmations, 1);
+    assertEq(proposalWithStatus.proposal.confirms, 2);
+    assertProposalStatusEq(proposalWithStatus.proposal.status, ISafeMinimalMultisig.ProposalStatus.EXECUTED);
+    assertEq(proposalWithStatus.confirmedBy[0], true);
+    assertEq(proposalWithStatus.confirmedBy[1], true);
+
+    (voters, requiredConfirmations) = cryptoLegacyBeneficiaryPluginLegacy.barGetVotersAndConfirmations();
+    assertEq(requiredConfirmations, 1);
+  }
+
   function testDefaultMultisigConfirmations() public pure {
     assertEq(LibSafeMinimalMultisig._calcDefaultConfirmations(1), 1);
     assertEq(LibSafeMinimalMultisig._calcDefaultConfirmations(2), 2);

@@ -168,8 +168,12 @@ contract TrustedGuardiansPlugin is ICryptoLegacyPlugin, ITrustedGuardiansPlugin,
      */
     function _getGuardiansThreshold(ICryptoLegacy.CryptoLegacyStorage storage _cls, ITrustedGuardiansPlugin.PluginStorage storage _pluginStorage) internal view returns(uint128) {
         EnumerableSet.Bytes32Set storage guardians = _getGuardians(_cls, _pluginStorage);
+        uint128 guardiansLength = uint128(guardians.length());
         if (_pluginStorage.guardiansThreshold == 0) {
-            return uint128(LibSafeMinimalMultisig._calcDefaultConfirmations(uint128(guardians.length())));
+            return uint128(LibSafeMinimalMultisig._calcDefaultConfirmations(guardiansLength));
+        }
+        if (_pluginStorage.guardiansThreshold > guardiansLength) {
+            return guardiansLength;
         }
         return _pluginStorage.guardiansThreshold;
     }

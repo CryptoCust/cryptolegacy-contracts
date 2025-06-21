@@ -121,7 +121,7 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable
      */
     function lrPropose(bytes4 _selector, bytes memory _params, bytes32 _salt) external payable returns(uint256 proposalId) {
         ISafeMinimalMultisig.Storage storage pluginStorage = getPluginMultisigStorage();
-        return LibSafeMinimalMultisig._propose(pluginStorage, _salt, pluginStorage.voters, getMultisigAllowedMethods(), _selector, _params);
+        return LibSafeMinimalMultisig._propose(pluginStorage, _salt, pluginStorage.requiredConfirmations, pluginStorage.voters, getMultisigAllowedMethods(), _selector, _params);
     }
 
     /**
@@ -132,7 +132,7 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable
      */
     function lrConfirm(uint256 _proposalId, bytes32 _salt) external payable {
         ISafeMinimalMultisig.Storage storage pluginStorage = getPluginMultisigStorage();
-        LibSafeMinimalMultisig._confirm(pluginStorage, _salt, pluginStorage.voters, _proposalId);
+        LibSafeMinimalMultisig._confirm(pluginStorage, _salt, pluginStorage.requiredConfirmations, pluginStorage.voters, _proposalId);
     }
 
     /**
@@ -143,7 +143,7 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable
      */
     function lrCancel(uint256 _proposalId, bytes32 _salt) external {
         ISafeMinimalMultisig.Storage storage pluginStorage = getPluginMultisigStorage();
-        LibSafeMinimalMultisig._cancel(pluginStorage, _salt, pluginStorage.voters, _proposalId);
+        LibSafeMinimalMultisig._cancel(pluginStorage, _salt, pluginStorage.requiredConfirmations, pluginStorage.voters, _proposalId);
     }
 
     /**
