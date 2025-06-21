@@ -19,8 +19,10 @@ import "../contracts/mocks/MockMaliciousERC20.sol";
 import "../contracts/mocks/MockMaliciousERC721.sol";
 import "../contracts/libraries/LibCryptoLegacy.sol";
 import "../contracts/mocks/AuditMockERC20Rebase.sol";
-import "../contracts/plugins/LegacyRecoveryPlugin.sol";
+import "../contracts/mocks/MockERC20TransferFee.sol";
+import "../contracts/mocks/MockERC20TransferBurn.sol";
 import "../contracts/interfaces/ICryptoLegacyLens.sol";
+import "../contracts/plugins/LegacyRecoveryPlugin.sol";
 import "../contracts/plugins/TrustedGuardiansPlugin.sol";
 import "../contracts/interfaces/ITrustedGuardiansPlugin.sol";
 import "../contracts/plugins/BeneficiaryPluginAddRights.sol";
@@ -3593,6 +3595,156 @@ contract CryptoLegacyTest is AbstractTestHelper {
 
     vm.prank(bobBeneficiary1);
     cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertLt(rebaseToken.balanceOf(address(cryptoLegacy)), 20);
+  }
+
+  function testAuditRebaseTransferFeeToken() public {
+    (CryptoLegacyBasePlugin cryptoLegacy, LensPlugin cryptoLegacyLens, , ) = _buildCryptoLegacyWithVesting();
+
+    ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
+
+    vm.warp(block.timestamp + clData.updateInterval);
+
+    vm.prank(bob);
+    cryptoLegacy.update{value: 0.1 ether}(_getEmptyUintList(), _getEmptyUintList());
+    vm.stopPrank();
+
+    vm.startPrank(treasury);
+    MockERC20TransferFee rebaseToken = new MockERC20TransferFee();
+    rebaseToken.approve(address(cryptoLegacy), 100 ether);
+    vm.stopPrank();
+
+    vm.warp(block.timestamp + clData.updateInterval + 1);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.initiateChallenge();
+
+    vm.warp(block.timestamp + clData.challengeTimeout + 1);
+
+    address[] memory _tokens = _getOneAddressList(address(rebaseToken));
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.transferTreasuryTokensToLegacy(_getOneAddressList(treasury), _tokens);
+
+    assertEq(rebaseToken.balanceOf(address(cryptoLegacy)), 99 ether);
+
+    vm.prank(treasury);
+    rebaseToken.transfer(address(cryptoLegacy), 50 ether);
+
+    assertEq(rebaseToken.balanceOf(address(cryptoLegacy)), 99 ether + 49.5 ether);
+
+    vm.warp(block.timestamp + 11);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertEq(rebaseToken.balanceOf(address(cryptoLegacy)), 147.312 ether);
+
+    vm.warp(block.timestamp + 21);
+
+    vm.prank(bobBeneficiary2);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertEq(rebaseToken.balanceOf(address(cryptoLegacy)), 135.729 ether);
+
+    vm.warp(block.timestamp + 10);
+
+    vm.prank(treasury);
+    rebaseToken.mockTransferFrom(address(cryptoLegacy), address(1), 75 ether);
+
+    assertEq(rebaseToken.balanceOf(address(cryptoLegacy)), 60.729 ether);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertEq(rebaseToken.balanceOf(address(cryptoLegacy)), 52.490054704595185997 ether);
+
+    vm.warp(block.timestamp + 100);
+
+    vm.prank(bobBeneficiary2);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertEq(rebaseToken.balanceOf(bobBeneficiary2), 45.803638949671772431 ether);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertEq(rebaseToken.balanceOf(bobBeneficiary1), 26.961361050328227570 ether);
+
+    assertLt(rebaseToken.balanceOf(address(cryptoLegacy)), 20);
+  }
+
+  function testAuditRebaseBurnToken() public {
+    (CryptoLegacyBasePlugin cryptoLegacy, LensPlugin cryptoLegacyLens, , ) = _buildCryptoLegacyWithVesting();
+
+    ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
+
+    vm.warp(block.timestamp + clData.updateInterval);
+
+    vm.prank(bob);
+    cryptoLegacy.update{value: 0.1 ether}(_getEmptyUintList(), _getEmptyUintList());
+    vm.stopPrank();
+
+    vm.startPrank(treasury);
+    MockERC20TransferBurn rebaseToken = new MockERC20TransferBurn();
+    rebaseToken.approve(address(cryptoLegacy), 100 ether);
+    vm.stopPrank();
+
+    vm.warp(block.timestamp + clData.updateInterval + 1);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.initiateChallenge();
+
+    vm.warp(block.timestamp + clData.challengeTimeout + 1);
+
+    address[] memory _tokens = _getOneAddressList(address(rebaseToken));
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.transferTreasuryTokensToLegacy(_getOneAddressList(treasury), _tokens);
+
+    assertEq(rebaseToken.balanceOf(address(cryptoLegacy)), 98 ether);
+
+    vm.prank(treasury);
+    rebaseToken.transfer(address(cryptoLegacy), 50 ether);
+
+    assertEq(rebaseToken.balanceOf(address(cryptoLegacy)), 98 ether + 49 ether);
+
+    vm.warp(block.timestamp + 11);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertEq(rebaseToken.balanceOf(address(cryptoLegacy)), 145.824 ether);
+
+    vm.warp(block.timestamp + 21);
+
+    vm.prank(bobBeneficiary2);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertEq(rebaseToken.balanceOf(address(cryptoLegacy)), 134.358 ether);
+
+    vm.warp(block.timestamp + 10);
+
+    vm.prank(treasury);
+    rebaseToken.mockTransferFrom(address(cryptoLegacy), address(1), 75 ether);
+
+    assertEq(rebaseToken.balanceOf(address(cryptoLegacy)), 59.358 ether);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertEq(rebaseToken.balanceOf(address(cryptoLegacy)), 51.305054704595185997 ether);
+
+    vm.warp(block.timestamp + 100);
+
+    vm.prank(bobBeneficiary2);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertEq(rebaseToken.balanceOf(bobBeneficiary2), 44.458975929978118164 ether);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertEq(rebaseToken.balanceOf(bobBeneficiary1), 26.101024070021881837 ether);
 
     assertLt(rebaseToken.balanceOf(address(cryptoLegacy)), 20);
   }
