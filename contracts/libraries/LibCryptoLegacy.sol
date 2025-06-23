@@ -582,7 +582,6 @@ library LibCryptoLegacy {
     ) internal {
         for (uint i = 0; i < _tokens.length; i++) {
             IERC20 t = IERC20(_tokens[i]);
-            uint256 balanceBefore = IERC20(_tokens[i]).balanceOf(address(this));
             for (uint j = 0; j < _holders.length; j++) {
                 uint256 availableBalance = t.balanceOf(_holders[j]);
                 uint256 allowance = t.allowance(_holders[j], address(this));
@@ -595,7 +594,7 @@ library LibCryptoLegacy {
                 t.safeTransferFrom(_holders[j], address(this), availableBalance);
             }
             ICryptoLegacy.TokenDistribution storage td = LibCryptoLegacy._tokenPrepareToDistribute(cls, _tokens[i]);
-            td.lastBalance += IERC20(_tokens[i]).balanceOf(address(this)) - balanceBefore;
+            td.lastBalance = IERC20(_tokens[i]).balanceOf(address(this));
         }
         emit ICryptoLegacy.TransferTreasuryTokensToLegacy(_holders, _tokens);
         cls.transfersGotByBlockNumber.push(uint64(block.number));
