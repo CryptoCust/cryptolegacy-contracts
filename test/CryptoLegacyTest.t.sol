@@ -7,6 +7,7 @@ import "../contracts/LegacyMessenger.sol";
 import "../contracts/PluginsRegistry.sol";
 import "../contracts/mocks/MockERC20.sol";
 import "../contracts/mocks/MockERC721.sol";
+import "../contracts/mocks/MockSafeMoon.sol";
 import "../contracts/plugins/LensPlugin.sol";
 import "../contracts/mocks/MockTestPlugin.sol";
 import "../contracts/mocks/MockTest2Plugin.sol";
@@ -3747,5 +3748,75 @@ contract CryptoLegacyTest is AbstractTestHelper {
     assertEq(rebaseToken.balanceOf(bobBeneficiary1), 26.101024070021881837 ether);
 
     assertLt(rebaseToken.balanceOf(address(cryptoLegacy)), 20);
+  }
+
+  function testAuditRebaseSafeMoonToken() public {
+    (CryptoLegacyBasePlugin cryptoLegacy, LensPlugin cryptoLegacyLens, , ) = _buildCryptoLegacyWithVesting();
+
+    ICryptoLegacyLens.CryptoLegacyBaseData memory clData = cryptoLegacyLens.getCryptoLegacyBaseData();
+
+    vm.warp(block.timestamp + clData.updateInterval);
+
+    vm.prank(bob);
+    cryptoLegacy.update{value: 0.1 ether}(_getEmptyUintList(), _getEmptyUintList());
+    vm.stopPrank();
+
+    vm.startPrank(treasury);
+    MockSafeMoon mockSafeMoon = new MockSafeMoon();
+    mockSafeMoon.transfer(dan, 100 ether);
+    vm.stopPrank();
+
+    vm.prank(dan);
+    mockSafeMoon.approve(address(cryptoLegacy), 90.000450002250011250 ether);
+
+    vm.warp(block.timestamp + clData.updateInterval + 1);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.initiateChallenge();
+
+    vm.warp(block.timestamp + clData.challengeTimeout + 1);
+
+    address[] memory _tokens = _getOneAddressList(address(mockSafeMoon));
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.transferTreasuryTokensToLegacy(_getOneAddressList(dan), _tokens);
+
+    assertEq(mockSafeMoon.balanceOf(address(cryptoLegacy)), 81.000769507310319448 ether);
+
+    vm.warp(block.timestamp + 11);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertEq(mockSafeMoon.balanceOf(address(cryptoLegacy)), 80.352765954706186642 ether);
+
+    vm.warp(block.timestamp + 21);
+
+    vm.prank(bobBeneficiary2);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertEq(mockSafeMoon.balanceOf(address(cryptoLegacy)), 74.034729320929158243 ether);
+
+    vm.warp(block.timestamp + 10);
+
+    assertEq(mockSafeMoon.balanceOf(address(cryptoLegacy)), 74.034729320929158243 ether);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertEq(mockSafeMoon.balanceOf(address(cryptoLegacy)), 63.990666038440459105 ether);
+
+    vm.warp(block.timestamp + 100);
+
+    vm.prank(bobBeneficiary2);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertEq(mockSafeMoon.balanceOf(bobBeneficiary2), 43.740512658615385381 ether);
+
+    vm.prank(bobBeneficiary1);
+    cryptoLegacy.beneficiaryClaim(_tokens, address(0), 0);
+
+    assertEq(mockSafeMoon.balanceOf(bobBeneficiary1), 29.160371501249354733 ether);
+
+    assertLt(mockSafeMoon.balanceOf(address(cryptoLegacy)), 0.000072413051742807 ether);
   }
 }
