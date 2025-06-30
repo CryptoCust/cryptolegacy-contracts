@@ -6,7 +6,7 @@ pragma solidity 0.8.24;
 import "./LibCreate3.sol";
 
 library LibCryptoLegacyDeploy {
-    event CryptoLegacyCreation(address addr, bytes32 salt);
+    event CryptoLegacyCreation(address addr, bytes32 salt, bytes32 userSalt);
    /**
      * @dev Deploys a contract using CREATE3 if it does not already exist.
      * @param _contractOwner The expected deployed contract owner.
@@ -37,7 +37,7 @@ library LibCryptoLegacyDeploy {
         bytes32 salt = _getContractOwnerSalt(_factorySalt, _contractOwner);
         
         addr = LibCreate3.create3(salt, _contractBytecode);
-        emit CryptoLegacyCreation(addr, salt);
+        emit CryptoLegacyCreation(addr, salt, _factorySalt);
     }
 
     function _getContractOwnerSalt(bytes32 _salt, address _contractOwner) internal pure returns(bytes32) {
