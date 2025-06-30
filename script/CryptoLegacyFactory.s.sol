@@ -27,6 +27,8 @@ contract MockCryptoLegacyFactoryDeploy is Script {
     uint128 internal buildFee =          uint128(0.000000000001 ether);
     uint128 internal updateFee =         uint128(0.000000000001 ether);
 
+    address internal create3Factory;
+
     address internal multiSig1;
     address internal multiSig2;
     address internal multiSig3;
@@ -37,11 +39,13 @@ contract MockCryptoLegacyFactoryDeploy is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
+        create3Factory = vm.envAddress("CREATE_3_FACTORY");
+
         multiSig1 = vm.envAddress("MULTISIG_1");
         multiSig2 = vm.envAddress("MULTISIG_2");
         multiSig3 = vm.envAddress("MULTISIG_3");
 
-        Create3Factory factory = LibDeploy._deployCreate3Factory(salt, msg.sender);
+        Create3Factory factory = Create3Factory(create3Factory);
 
         LifetimeNft lifetimeNft;
         if (LibDeploy._getNftMainnetId() == block.chainid) {
@@ -63,7 +67,8 @@ contract MockCryptoLegacyFactoryDeploy is Script {
         LibDeploy._setFeeRegistryCrossChains(feeRegistry);
         LegacyMessenger legacyMessenger = LibDeploy._deployLegacyMessenger(factory, salt, msg.sender, buildManager);
 
-        LibDeploy._deployZeroCryptoLegacy(factory, salt);
+        //TODO: change from mock to simple one
+        LibMockDeploy._deployZeroCryptoLegacy(factory, salt);
 
         SignatureRoleTimelock srt = LibDeploy._deploySignatureRoleTimelock(factory, salt, buildManager, proxyBuilder, legacyMessenger, multiSig1, multiSig2, multiSig3);
 

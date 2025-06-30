@@ -35,6 +35,26 @@ library LibMockDeploy {
         ));
     }
 
+    function _deployZeroCryptoLegacy(Create3Factory _factory, bytes32 _salt) internal returns(MockCryptoLegacy clToVerify) {
+        clToVerify = MockCryptoLegacy(payable(LibDeploy.c3(
+            _factory,
+            _salt,
+            LibDeploy.CryptoLegacyName,
+            cryptoLegacyBytecode(address(0), address(0), new address[](0))
+        )));
+    }
+
+    function cryptoLegacyBytecode(
+        address _buildManager,
+        address _owner,
+        address[] memory _plugins
+    ) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            type(MockCryptoLegacy).creationCode,
+            abi.encode(_buildManager, _owner, _plugins)
+        );
+    }
+
     function cryptoLegacyBuildManagerBytecode(
         address _owner,
         IFeeRegistry _feeRegistry,

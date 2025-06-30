@@ -251,7 +251,7 @@ library LibDeploy {
 
     function getSignatureRoleTimeLockSigsLength(ILifetimeNft lifetimeNft) internal view returns(uint256) {
         (bool lifetimeNftExist, ) = address(lifetimeNft).staticcall(abi.encodeWithSelector(IERC721Enumerable.totalSupply.selector));
-        return lifetimeNftExist ? 30 : 28;
+        return lifetimeNftExist ? 31 : 29;
     }
 
     function _deploySignatureRoleTimelock(Create3Factory _factory, bytes32 _salt, CryptoLegacyBuildManager _buildManager, ProxyBuilder _proxyBuilder, LegacyMessenger _legacyMessenger, address _msig1, address _msig2, address _msig3) internal returns(SignatureRoleTimelock signatureRoleTimelock) {
@@ -267,30 +267,31 @@ library LibDeploy {
         sigs[4] = _signatureMsig2(address(_buildManager), _buildManager.setSupplyLimit.selector);
         sigs[5] = _signatureMsig2(address(_buildManager), _buildManager.setExternalLens.selector);
         sigs[6] = _signatureMsig2(address(_buildManager), _buildManager.withdrawFee.selector);
-        sigs[7] = _signatureMsig3(address(_buildManager.factory()), _buildManager.factory().setBuildOperator.selector);
-        sigs[8] = _signatureMsig2(address(feeRegistry), feeRegistry.setCodeOperator.selector);
-        sigs[9] = _signatureMsig2(address(feeRegistry), feeRegistry.setSupportedRefCodeInChains.selector);
-        sigs[10] = _signatureMsig2(address(feeRegistry), feeRegistry.setFeeBeneficiaries.selector);
-        sigs[11] = _signatureMsig2(address(feeRegistry), feeRegistry.setDefaultPct.selector);
-        sigs[12] = _signatureZeroDaysMsig2(address(feeRegistry), feeRegistry.setRefererSpecificPct.selector);
-        sigs[13] = _signatureMsig2(address(feeRegistry), feeRegistry.setContractCaseFee.selector);
-        sigs[14] = _signatureMsig3(address(feeRegistry), feeRegistry.setDebridgeGate.selector);
-        sigs[15] = _signatureMsig2(address(feeRegistry), feeRegistry.setDebridgeNativeFee.selector);
-        sigs[16] = _signatureMsig2(address(feeRegistry), feeRegistry.setDestinationChainContract.selector);
-        sigs[17] = _signatureMsig2(address(feeRegistry), feeRegistry.setSourceChainContract.selector);
-        sigs[18] = _signatureMsig2(address(feeRegistry), feeRegistry.setSourceAndDestinationChainContract.selector);
-        sigs[19] = _signatureMsig2(address(feeRegistry), feeRegistry.setLockPeriod.selector);
-        sigs[20] = _signatureZeroDaysMsig2(address(feeRegistry), feeRegistry.setReferralCode.selector);
-        sigs[21] = _signatureMsig2(address(feeRegistry), feeRegistry.setCustomChainId.selector);
-        sigs[22] = _signatureMsig3(address(_buildManager.pluginsRegistry()), _buildManager.pluginsRegistry().addPlugin.selector);
-        sigs[23] = _signatureMsig3(address(_buildManager.pluginsRegistry()), _buildManager.pluginsRegistry().addPluginDescription.selector);
-        sigs[24] = _signatureMsig3(address(_buildManager.pluginsRegistry()), _buildManager.pluginsRegistry().removePlugin.selector);
-        sigs[25] = _signatureMsig3(address(_proxyBuilder.proxyAdmin()), _proxyBuilder.proxyAdmin().upgrade.selector);
-        sigs[26] = _signatureMsig3(address(_proxyBuilder.proxyAdmin()), _proxyBuilder.proxyAdmin().upgradeAndCall.selector);
-        sigs[27] = _signatureMsig3(address(_proxyBuilder.proxyAdmin()), _proxyBuilder.proxyAdmin().changeProxyAdmin.selector);
-        if (arrLength == 30) {
-            sigs[28] = _signatureZeroDaysMsig2(address(_buildManager.lifetimeNft()), _buildManager.lifetimeNft().setBaseUri.selector);
-            sigs[29] = _signatureMsig3(address(_buildManager.lifetimeNft()), _buildManager.lifetimeNft().setMinterOperator.selector);
+        sigs[7] = _signatureMsig2(address(_buildManager), _buildManager.transferStuckNft.selector);
+        sigs[8] = _signatureMsig3(address(_buildManager.factory()), _buildManager.factory().setBuildOperator.selector);
+        sigs[9] = _signatureMsig2(address(feeRegistry), feeRegistry.setCodeOperator.selector);
+        sigs[10] = _signatureMsig2(address(feeRegistry), feeRegistry.setSupportedRefCodeInChains.selector);
+        sigs[11] = _signatureMsig2(address(feeRegistry), feeRegistry.setFeeBeneficiaries.selector);
+        sigs[12] = _signatureMsig2(address(feeRegistry), feeRegistry.setDefaultPct.selector);
+        sigs[13] = _signatureZeroDaysMsig2(address(feeRegistry), feeRegistry.setRefererSpecificPct.selector);
+        sigs[14] = _signatureMsig2(address(feeRegistry), feeRegistry.setContractCaseFee.selector);
+        sigs[15] = _signatureMsig3(address(feeRegistry), feeRegistry.setDebridgeGate.selector);
+        sigs[16] = _signatureMsig2(address(feeRegistry), feeRegistry.setDebridgeNativeFee.selector);
+        sigs[17] = _signatureMsig2(address(feeRegistry), feeRegistry.setDestinationChainContract.selector);
+        sigs[18] = _signatureMsig2(address(feeRegistry), feeRegistry.setSourceChainContract.selector);
+        sigs[19] = _signatureMsig2(address(feeRegistry), feeRegistry.setSourceAndDestinationChainContract.selector);
+        sigs[20] = _signatureMsig2(address(feeRegistry), feeRegistry.setLockPeriod.selector);
+        sigs[21] = _signatureZeroDaysMsig2(address(feeRegistry), feeRegistry.setReferralCode.selector);
+        sigs[22] = _signatureMsig2(address(feeRegistry), feeRegistry.setCustomChainId.selector);
+        sigs[23] = _signatureMsig3(address(_buildManager.pluginsRegistry()), _buildManager.pluginsRegistry().addPlugin.selector);
+        sigs[24] = _signatureMsig3(address(_buildManager.pluginsRegistry()), _buildManager.pluginsRegistry().addPluginDescription.selector);
+        sigs[25] = _signatureMsig3(address(_buildManager.pluginsRegistry()), _buildManager.pluginsRegistry().removePlugin.selector);
+        sigs[26] = _signatureMsig3(address(_proxyBuilder.proxyAdmin()), _proxyBuilder.proxyAdmin().upgrade.selector);
+        sigs[27] = _signatureMsig3(address(_proxyBuilder.proxyAdmin()), _proxyBuilder.proxyAdmin().upgradeAndCall.selector);
+        sigs[28] = _signatureMsig3(address(_proxyBuilder.proxyAdmin()), _proxyBuilder.proxyAdmin().changeProxyAdmin.selector);
+        if (arrLength == 31) {
+            sigs[29] = _signatureZeroDaysMsig2(address(_buildManager.lifetimeNft()), _buildManager.lifetimeNft().setBaseUri.selector);
+            sigs[30] = _signatureMsig3(address(_buildManager.lifetimeNft()), _buildManager.lifetimeNft().setMinterOperator.selector);
         }
         signatureRoleTimelock = SignatureRoleTimelock(c3(
             _factory,
