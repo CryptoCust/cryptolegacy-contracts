@@ -146,10 +146,7 @@ contract FeeRegistryTest is CrossChainTestHelper {
     ICryptoLegacyBuildManager.BuildArgs memory buildArgs = ICryptoLegacyBuildManager.BuildArgs(bytes8(0), beneficiaryArr, beneficiaryConfigArr, plugins, updateInterval, challengeTimeout);
     address payable cl = buildManager.buildCryptoLegacy{value: buildFee}(buildArgs, _getRefArgsStruct(bob), _getCreate2ArgsStruct(address(0), bytes32(uint(0))));
 
-    vm.expectRevert(ICryptoLegacy.NotBuildManager.selector);
-    CryptoLegacyBasePlugin(cl).initializeByBuildManager(0, 0, buildArgs.beneficiaryHashes, buildArgs.beneficiaryConfig, bytes8(0), uint64(0), uint64(0));
-
-    vm.expectRevert(ICryptoLegacy.AlreadyInit.selector);
+    vm.expectRevert(Initializable.InvalidInitialization.selector);
     vm.prank(address(buildManager));
     CryptoLegacyBasePlugin(cl).initializeByBuildManager(0, 0, buildArgs.beneficiaryHashes, buildArgs.beneficiaryConfig, bytes8(0), uint64(0), uint64(0));
 

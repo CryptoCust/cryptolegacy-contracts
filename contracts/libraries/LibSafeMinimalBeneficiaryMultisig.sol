@@ -45,7 +45,8 @@ library LibSafeMinimalBeneficiaryMultisig {
      */
     function _getVotersAndConfirmations(ISafeMinimalMultisig.Storage storage s) internal view returns(bytes32[] memory, uint128) {
         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
-        return (_getVoters(cls), _getRequiredConfirmations(s, cls));
+        bytes32[] memory voters = _getVoters(cls);
+        return (voters, _getRequiredConfirmations(s, cls, voters.length));
     }
 
     /**
@@ -67,7 +68,7 @@ library LibSafeMinimalBeneficiaryMultisig {
     ) {
         voters = _getVoters(cls);
         uint256 length = s.proposals.length;
-        requiredConfirmations = _getRequiredConfirmations(s, cls);
+        requiredConfirmations = _getRequiredConfirmations(s, cls, voters.length);
         proposalsWithStatuses = new ISafeMinimalMultisig.ProposalWithStatus[](length);
         for (uint256 i = 0; i < length; i++) {
             proposalsWithStatuses[i] = LibSafeMinimalMultisig._getProposalWithStatus(s, voters, i);
@@ -95,7 +96,7 @@ library LibSafeMinimalBeneficiaryMultisig {
     ) {
         voters = _getVoters(cls);
         proposalWithStatus = LibSafeMinimalMultisig._getProposalWithStatus(s, voters, _proposalId);
-        requiredConfirmations = _getRequiredConfirmations(s, cls);
+        requiredConfirmations = _getRequiredConfirmations(s, cls, voters.length);
     }
 
     /**
@@ -104,11 +105,15 @@ library LibSafeMinimalBeneficiaryMultisig {
      * Otherwise, returns the stored requiredConfirmations.
      * @param s The multisig storage structure.
      * @param cls The CryptoLegacy storage structure.
+     * @param _votersLength The length of the voters array
      * @return The number of required confirmations.
      */
-    function _getRequiredConfirmations(ISafeMinimalMultisig.Storage storage s, ICryptoLegacy.CryptoLegacyStorage storage cls) internal view returns(uint128) {
+    function _getRequiredConfirmations(ISafeMinimalMultisig.Storage storage s, ICryptoLegacy.CryptoLegacyStorage storage cls, uint256 _votersLength) internal view returns(uint128) {
         if (LibSafeMinimalMultisig._initializationStatus(s) != ISafeMinimalMultisig.InitializationStatus.INITIALIZED) {
             return _getDefaultRequiredConfirmations(cls);
+        }
+        if (s.requiredConfirmations > _votersLength) {
+            return uint128(_votersLength);
         }
         return s.requiredConfirmations;
     }
@@ -175,7 +180,7 @@ library LibSafeMinimalBeneficiaryMultisig {
         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
         bytes32[] memory voters = _getVoters(cls);
         _initializeIfNot(s, voters);
-        return LibSafeMinimalMultisig._propose(s, bytes32(0), voters, _allowedMethods, _selector, _params);
+        return LibSafeMinimalMultisig._propose(s, bytes32(0), _getRequiredConfirmations(s, cls, voters.length), voters, _allowedMethods, _selector, _params);
     }
 
     /**
@@ -189,7 +194,7 @@ library LibSafeMinimalBeneficiaryMultisig {
         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
         bytes32[] memory voters = _getVoters(cls);
         _initializeIfNot(s, voters);
-        LibSafeMinimalMultisig._confirm(s, bytes32(0), voters, _proposalId);
+        LibSafeMinimalMultisig._confirm(s, bytes32(0), _getRequiredConfirmations(s, cls, voters.length), voters, _proposalId);
     }
 
     /**
@@ -200,6 +205,18 @@ library LibSafeMinimalBeneficiaryMultisig {
      */
     function _cancel(ISafeMinimalMultisig.Storage storage s, uint256 _proposalId) internal {
         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
-        LibSafeMinimalMultisig._cancel(s, bytes32(0), _getVoters(cls), _proposalId);
+        bytes32[] memory voters = _getVoters(cls);
+        LibSafeMinimalMultisig._cancel(s, bytes32(0), _getRequiredConfirmations(s, cls, voters.length), voters, _proposalId);
+    }
+
+     /**
+     * @notice Withdraws held ETH for an authorized voter and sends it to a recipient.
+     * @dev Checks sender authorization, reverts if no ETH to withdraw or if transfer fails.
+     * @param s The multisig storage structure.
+     * @param _allVoters The list of authorized voter identifiers.
+     * @param _recipient The address that will receive the withdrawn ETH.
+     */
+    function _withdrawHeldEth(ISafeMinimalMultisig.Storage storage s, bytes32[] memory _allVoters, address _recipient) internal {
+        LibSafeMinimalMultisig._withdrawHeldEth(s, bytes32(0), _allVoters, _recipient);
     }
 }

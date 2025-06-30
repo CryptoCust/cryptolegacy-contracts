@@ -69,7 +69,7 @@ interface ICryptoLegacyBuildManager {
     error WithdrawFeeFailed(bytes reason);
     error NotValidTimeout();
     error IncorrectFee(uint256 feeToTake);
-    error BellowMinimumSupply(uint256 supplyLimit);
+    error BelowMinimumSupply(uint256 supplyLimit);
     error NotRegisteredCryptoLegacy();
     error NotOwnerOfCryptoLegacy();
     error TransferFeeFailed(bytes response);

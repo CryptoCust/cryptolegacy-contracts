@@ -23,7 +23,7 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable
      * @return sigs An array of function selectors.
      */
     function getSigs() external pure returns (bytes4[] memory sigs) {
-        sigs = new bytes4[](10);
+        sigs = new bytes4[](12);
         sigs[0] = this.lrSetMultisigConfig.selector;
         sigs[1] = this.lrPropose.selector;
         sigs[2] = this.lrConfirm.selector;
@@ -34,6 +34,8 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable
         sigs[7] = this.lrGetInitializationStatus.selector;
         sigs[8] = this.lrGetProposalWithStatus.selector;
         sigs[9] = this.lrGetProposalListWithStatuses.selector;
+        sigs[10] = this.lrWithdrawHeldEth.selector;
+        sigs[11] = this.lrGetHeldEth.selector;
     }
 
     /**
@@ -117,9 +119,9 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable
      * @param _params The ABI-encoded parameters to be passed when executing the proposal.
      * @param _salt Secret salt to improve address hash security. Optional, can be zero.
      */
-    function lrPropose(bytes4 _selector, bytes memory _params, bytes32 _salt) external returns(uint256 proposalId) {
+    function lrPropose(bytes4 _selector, bytes memory _params, bytes32 _salt) external payable returns(uint256 proposalId) {
         ISafeMinimalMultisig.Storage storage pluginStorage = getPluginMultisigStorage();
-        return LibSafeMinimalMultisig._propose(pluginStorage, _salt, pluginStorage.voters, getMultisigAllowedMethods(), _selector, _params);
+        return LibSafeMinimalMultisig._propose(pluginStorage, _salt, pluginStorage.requiredConfirmations, pluginStorage.voters, getMultisigAllowedMethods(), _selector, _params);
     }
 
     /**
@@ -128,9 +130,9 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable
      * @param _proposalId The identifier of the proposal to confirm.
      * @param _salt Secret salt to improve address hash security. Optional, can be zero.
      */
-    function lrConfirm(uint256 _proposalId, bytes32 _salt) external {
+    function lrConfirm(uint256 _proposalId, bytes32 _salt) external payable {
         ISafeMinimalMultisig.Storage storage pluginStorage = getPluginMultisigStorage();
-        LibSafeMinimalMultisig._confirm(pluginStorage, _salt, pluginStorage.voters, _proposalId);
+        LibSafeMinimalMultisig._confirm(pluginStorage, _salt, pluginStorage.requiredConfirmations, pluginStorage.voters, _proposalId);
     }
 
     /**
@@ -141,7 +143,7 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable
      */
     function lrCancel(uint256 _proposalId, bytes32 _salt) external {
         ISafeMinimalMultisig.Storage storage pluginStorage = getPluginMultisigStorage();
-        LibSafeMinimalMultisig._cancel(pluginStorage, _salt, pluginStorage.voters, _proposalId);
+        LibSafeMinimalMultisig._cancel(pluginStorage, _salt, pluginStorage.requiredConfirmations, pluginStorage.voters, _proposalId);
     }
 
     /**
@@ -175,6 +177,26 @@ contract LegacyRecoveryPlugin is ICryptoLegacyPlugin, ReentrancyGuardUpgradeable
         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
         LibCryptoLegacy._checkDistributionStart(cls);
         LibTrustedGuardiansPlugin._resetGuardianVoting(cls);
+    }
+
+    /**
+     * @notice Withdraws any accumulated ETH held for the caller and sends it to the specified recipient.
+     * @param _salt   Secret salt used to derive the voter’s hash; use zero for plain address hashing.  
+     * @param _recipient Address that will receive the withdrawn ETH.  
+     */
+    function lrWithdrawHeldEth(bytes32 _salt, address _recipient) external nonReentrant {
+        ISafeMinimalMultisig.Storage storage pluginStorage = getPluginMultisigStorage();
+        LibSafeMinimalMultisig._withdrawHeldEth(pluginStorage, _salt, pluginStorage.voters, _recipient);
+    }
+    
+    /**
+     * @notice Returns the amount of ETH currently held for a given voter identifier.
+     * @param _hash Bytes32 identifier of the voter (e.g., from _addressToHash or _addressWithSaltToHash).  
+     * @return heldEthBalance The ETH balance available for withdrawal by that voter.  
+     */
+    function lrGetHeldEth(bytes32 _hash) external view returns(uint256) {
+        ISafeMinimalMultisig.Storage storage pluginStorage = getPluginMultisigStorage();
+        return pluginStorage.heldEth[_hash];
     }
 
     /**

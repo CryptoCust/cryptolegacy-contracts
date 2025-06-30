@@ -180,12 +180,13 @@ library LibSafeMinimalMultisig {
      * If the required confirmations equal 1, the proposal is executed immediately.
      * @param s The multisig storage structure.
      * @param _salt Secret salt to improve address hash security. Optional, can be zero.
+     * @param _requiredConfirmations The number of confirmations required to execute a proposal.
      * @param _allVoters The array of allowed voter identifiers.
      * @param _allowedMethods An array of permitted function selectors.
      * @param _selector The function selector representing the action of the proposal.
      * @param _params The ABI-encoded parameters for the proposed action.
      */
-    function _propose(ISafeMinimalMultisig.Storage storage s, bytes32 _salt, bytes32[] memory _allVoters, bytes4[] memory _allowedMethods, bytes4 _selector, bytes memory _params) internal returns(uint256 proposalId) {
+    function _propose(ISafeMinimalMultisig.Storage storage s, bytes32 _salt, uint128 _requiredConfirmations, bytes32[] memory _allVoters, bytes4[] memory _allowedMethods, bytes4 _selector, bytes memory _params) internal returns(uint256 proposalId) {
         bytes32 voter = _checkIsSenderAllowed(_allVoters, _salt);
 
         if (!_isMethodAllowed(_allowedMethods, _selector)) {
@@ -196,11 +197,13 @@ library LibSafeMinimalMultisig {
         proposalId = s.proposals.length - 1;
         s.confirmedBy[proposalId][voter] = true;
 
-        emit ISafeMinimalMultisig.CreateSafeMinimalMultisigProposal(proposalId, voter, s.requiredConfirmations);
+        emit ISafeMinimalMultisig.CreateSafeMinimalMultisigProposal(proposalId, voter, _requiredConfirmations);
 
-        if (s.requiredConfirmations == 1) {
+        uint256 initialBalance = address(this).balance - msg.value;
+        if (_requiredConfirmations == 1) {
             _execute(s, voter, proposalId);
         }
+        _updateHeldEth(s, voter, initialBalance);
     }
 
     /**
@@ -219,11 +222,8 @@ library LibSafeMinimalMultisig {
         voter = _checkIsSenderAllowed(_allVoters, _salt);
 
         p = s.proposals[_proposalId];
-        if (p.status == ISafeMinimalMultisig.ProposalStatus.EXECUTED) {
-            revert ISafeMinimalMultisig.MultisigAlreadyExecuted();
-        }
-        if (p.status == ISafeMinimalMultisig.ProposalStatus.CANCELED) {
-            revert ISafeMinimalMultisig.MultisigCanceled();
+        if (p.status != ISafeMinimalMultisig.ProposalStatus.PENDING) {
+            revert ISafeMinimalMultisig.MultisigProposalNotPending();
         }
     }
 
@@ -232,10 +232,11 @@ library LibSafeMinimalMultisig {
      *         potentially causing the proposal to become canceled if no other confirmations remain.
      * @param s The multisig storage struct referencing the proposals array and confirmations mapping.
      * @param _salt Secret salt to improve address hash security. Optional, can be zero.
+     * @param _requiredConfirmations The number of required confirmations.
      * @param _allVoters An array of bytes32-encoded voter identifiers.
      * @param _proposalId The index of the proposal to remove caller's confirmation from.
      */
-    function _cancel(ISafeMinimalMultisig.Storage storage s, bytes32 _salt, bytes32[] memory _allVoters, uint256 _proposalId) internal {
+    function _cancel(ISafeMinimalMultisig.Storage storage s, bytes32 _salt, uint128 _requiredConfirmations, bytes32[] memory _allVoters, uint256 _proposalId) internal {
         (ISafeMinimalMultisig.Proposal storage p, bytes32 voter) = _getPendingProposalForVoter(s, _salt, _allVoters, _proposalId);
 
         if (!s.confirmedBy[_proposalId][voter]) {
@@ -248,7 +249,7 @@ library LibSafeMinimalMultisig {
         if (p.confirms == 0) {
             p.status = ISafeMinimalMultisig.ProposalStatus.CANCELED;
         }
-        emit ISafeMinimalMultisig.CancelSafeMinimalMultisigProposal(_proposalId, voter, s.requiredConfirmations, p.status);
+        emit ISafeMinimalMultisig.CancelSafeMinimalMultisigProposal(_proposalId, voter, _requiredConfirmations, p.status);
     }
 
     /**
@@ -258,20 +259,23 @@ library LibSafeMinimalMultisig {
      * If the total confirmations reach the required threshold, the proposal is executed.
      * @param s The multisig storage structure.
      * @param _salt Secret salt to improve address hash security. Optional, can be zero.
+     * @param _requiredConfirmations The number of required confirmations.
      * @param _allVoters The array of allowed voter identifiers.
      * @param _proposalId The proposal identifier.
      */
-    function _confirm(ISafeMinimalMultisig.Storage storage s, bytes32 _salt, bytes32[] memory _allVoters, uint256 _proposalId) internal {
+    function _confirm(ISafeMinimalMultisig.Storage storage s, bytes32 _salt, uint128 _requiredConfirmations, bytes32[] memory _allVoters, uint256 _proposalId) internal {
         (ISafeMinimalMultisig.Proposal storage p, bytes32 voter) = _getPendingProposalForVoter(s, _salt, _allVoters, _proposalId);
 
         s.confirmedBy[_proposalId][voter] = true;
         p.confirms = _getConfirmedCount(s, _allVoters, _proposalId);
 
-        emit ISafeMinimalMultisig.ConfirmSafeMinimalMultisigProposal(_proposalId, voter, s.requiredConfirmations, p.confirms);
+        emit ISafeMinimalMultisig.ConfirmSafeMinimalMultisigProposal(_proposalId, voter, _requiredConfirmations, p.confirms);
 
-        if (p.confirms >= s.requiredConfirmations) {
+        uint256 initialBalance = address(this).balance - msg.value;
+        if (p.confirms >= _requiredConfirmations) {
             _execute(s, voter, _proposalId);
         }
+        _updateHeldEth(s, voter, initialBalance);
     }
 
     /**
@@ -287,11 +291,48 @@ library LibSafeMinimalMultisig {
         ISafeMinimalMultisig.Proposal storage p = s.proposals[_proposalId];
         p.status = ISafeMinimalMultisig.ProposalStatus.EXECUTED;
 
-        (bool success, bytes memory data) = address(this).call(abi.encodePacked(p.selector, p.params));
+        (bool success, bytes memory data) = address(this).call{value: msg.value}(abi.encodePacked(p.selector, p.params));
         if (!success) {
             revert ISafeMinimalMultisig.MultisigExecutionFailed();
         }
 
         emit ISafeMinimalMultisig.ExecuteSafeMinimalMultisigProposal(_proposalId, _voter, success, data);
+    }
+
+    /**
+     * @notice Updates the stored.amount of ETH held for a voter after multisig operations.
+     * @dev Calculates the difference between current contract balance and given initial balance. If positive, credits the voter's heldEth.
+     * @param s The multisig storage structure.
+     * @param _voter The bytes32 identifier of the voter to credit.
+     * @param _initialBalance The contract balance before the operation.
+     */
+    function _updateHeldEth(ISafeMinimalMultisig.Storage storage s, bytes32 _voter, uint256 _initialBalance) internal {
+        uint256 remaining = address(this).balance - _initialBalance;
+        if (remaining > 0) {
+            s.heldEth[_voter] += remaining;
+            emit ISafeMinimalMultisig.AddHeldEth(_voter, remaining);
+        }
+    }
+
+    /**
+     * @notice Withdraws held ETH for an authorized voter and sends it to a recipient.
+     * @dev Checks sender authorization, reverts if no ETH to withdraw or if transfer fails.
+     * @param s The multisig storage structure.
+     * @param _salt Secret salt used for hashing the voter's address. Optional, can be zero.
+     * @param _allVoters The list of authorized voter identifiers.
+     * @param _recipient The address that will receive the withdrawn ETH.
+     */
+    function _withdrawHeldEth(ISafeMinimalMultisig.Storage storage s, bytes32 _salt, bytes32[] memory _allVoters, address _recipient) internal {
+        bytes32 voter = _checkIsSenderAllowed(_allVoters, _salt);
+        uint256 value = s.heldEth[voter];
+        if (value == 0) {
+            revert ISafeMinimalMultisig.MultisigNothingToWithdraw();
+        }
+        s.heldEth[voter] = 0;
+        (bool success, bytes memory data) = payable(_recipient).call{value: value}(new bytes(0));
+        if (!success) {
+            revert ISafeMinimalMultisig.TransferFeeFailed(data);
+        }
+        emit ISafeMinimalMultisig.WithdrawHeldEth(voter, value);
     }
 }

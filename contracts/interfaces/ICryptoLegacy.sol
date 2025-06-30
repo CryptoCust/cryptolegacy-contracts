@@ -16,6 +16,7 @@ interface ICryptoLegacy {
     event FeePaidByTransfer(bytes8 indexed refCode, bool indexed initial, uint256 value, address factory, uint64 lastFeePaidAt);
     event FeeSentToRefByTransfer(bytes8 indexed refCode, uint256 value, address referral);
     event BeneficiaryClaim(address indexed token, uint256 amount, bytes32 indexed beneficiary);
+    event BeneficiaryClaimAmountDecrease(address indexed token, bytes32 indexed beneficiary, uint256 prevAmount, uint256 newAmount);
     event TransferTreasuryTokensToLegacy(address[] holders, address[] tokens);
     event TransferTokensFromLegacy(ICryptoLegacy.TokenTransferTo[] transfers);
     event SetGasLimitMultiplier(uint gasLimitMultiplier);
@@ -42,8 +43,8 @@ interface ICryptoLegacy {
         mapping(address => uint256) tokenAmountClaimed; // token => claimedAmount
     }
     struct TokenDistribution {
-        uint128 amountToDistribute;
-        uint128 lastBalance;
+        uint256 amountToDistribute;
+        uint256 lastBalance;
     }
     struct CryptoLegacyStorage {
         bool isPaused;
@@ -97,13 +98,13 @@ interface ICryptoLegacy {
     error InitialFeeNotPaid();
     error InitialFeeAlreadyPaid();
     error NotBuildManager();
-    error AlreadyInit();
     error LengthMismatch();
     error ShareSumDoesntMatchBase();
     error OriginalHashDuplicate();
     error DistributionStarted();
     error DistributionStartAlreadySet();
     error DistributionDelay();
+    error ChallengePeriodStarted();
     error AlreadySet();
     error BeneficiaryNotSet();
     error Pause();
@@ -121,4 +122,5 @@ interface ICryptoLegacy {
     error InitCalldataZeroButAddressIsNot();
     error PluginNotRegistered();
     error TransferFeeFailed(bytes response);
+    error TooBigMultiplier(uint8 maxMultiplier);
 }

@@ -15,12 +15,15 @@ interface ISafeMinimalMultisig {
     event ExecuteSafeMinimalMultisigProposal(uint256 proposalId, bytes32 voter, bool executed, bytes returnData);
     event SetVotersAndConfirmations(bytes32[] voters, uint128 requiredConfirmations);
     event SetConfirmations(uint128 requiredConfirmations);
+    event AddHeldEth(bytes32 voter, uint256 value);
+    event WithdrawHeldEth(bytes32 voter, uint256 value);
 
     struct Storage {
         uint128 requiredConfirmations;
         bytes32[] voters;
         Proposal[] proposals;
         mapping(uint256 => mapping(bytes32 => bool)) confirmedBy;
+        mapping(bytes32 => uint256) heldEth;
     }
 
     enum ProposalStatus {
@@ -49,12 +52,13 @@ interface ISafeMinimalMultisig {
         NOT_INITIALIZED_BUT_NEED
     }
 
-    error MultisigAlreadyExecuted();
-    error MultisigCanceled();
+    error MultisigProposalNotPending();
     error MultisigNotConfirmed();
     error MultisigExecutionFailed();
     error MultisigMethodNotAllowed();
     error MultisigVoterNotAllowed();
     error MultisigOnlyExecutor();
     error MultisigIncorrectRequiredConfirmations();
+    error MultisigNothingToWithdraw();
+    error TransferFeeFailed(bytes response);
 }

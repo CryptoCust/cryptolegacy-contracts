@@ -119,13 +119,10 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
     bytes8 _refCode,
     uint64 _updateInterval,
     uint64 _challengeTimeout
-  ) external {
+  ) external initializer {
     CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
     if (msg.sender != address(cls.buildManager)) {
       revert ICryptoLegacy.NotBuildManager();
-    }
-    if (cls.beneficiaries.length() != 0) {
-      revert ICryptoLegacy.AlreadyInit();
     }
     _setBeneficiaries(_beneficiaryHashes, _beneficiaryConfig);
 
@@ -142,6 +139,7 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
     }
 
     LibCryptoLegacy._setCryptoLegacyToBeneficiaryRegistry(cls, LibCryptoLegacy._addressToHash(owner()), IBeneficiaryRegistry.EntityType.OWNER, true);
+    __ReentrancyGuard_init();
   }
 
   /**
@@ -180,7 +178,6 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
   function transferOwnership(address newOwner) public virtual onlyOwner {
     ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
     _transferOwnership(cls, newOwner);
-    LibCryptoLegacy._updateOwnerInBeneficiaryRegistry(cls, newOwner);
   }
 
   /**
@@ -310,6 +307,9 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
    */
   function setGasLimitMultiplier(uint8 _gasLimitMultiplier) external payable onlyOwner nonReentrant {
     CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();
+    if (_gasLimitMultiplier > LibCryptoLegacy.MAX_GAS_MULTIPLIER) {
+      revert TooBigMultiplier(LibCryptoLegacy.MAX_GAS_MULTIPLIER);
+    }
     cls.gasLimitMultiplier = _gasLimitMultiplier;
     emit SetGasLimitMultiplier(_gasLimitMultiplier);
   }
@@ -363,11 +363,16 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
   function _claimTokenWithVesting(CryptoLegacyStorage storage cls, TokenDistribution storage td, bytes32 _beneficiary, address _token, uint64 _startDate, uint64 _endDate) internal returns(uint256 amountToClaim) {
     (BeneficiaryConfig storage bc, BeneficiaryVesting storage bv) = LibCryptoLegacy._getBeneficiaryConfigAndVesting(cls, _beneficiary);
 
-    (, amountToClaim, ) = LibCryptoLegacy._getVestedAndClaimedAmount(td, bc, bv, _token, _startDate, _endDate);
+    uint256 prevAmountToClaim;
+    (, , amountToClaim, prevAmountToClaim) = LibCryptoLegacy._getVestedAndClaimedAmount(td, bc, bv, _token, _startDate, _endDate);
+    
+    if (prevAmountToClaim != 0) {
+      emit BeneficiaryClaimAmountDecrease(_token, _beneficiary, prevAmountToClaim, amountToClaim);
+    }
     bv.tokenAmountClaimed[_token] += amountToClaim;
 
     IERC20(_token).safeTransfer(msg.sender, amountToClaim);
-    td.lastBalance = uint128(IERC20(_token).balanceOf(address(this)));
+    td.lastBalance = IERC20(_token).balanceOf(address(this));
 
     emit BeneficiaryClaim(_token, amountToClaim, _beneficiary);
   }

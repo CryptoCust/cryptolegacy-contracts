@@ -17,6 +17,7 @@ library LibCryptoLegacy {
     uint256 constant internal MAX_CHAINS_ARRAY_LENGTH = 100;
     uint64 constant internal BENEFICIARY_SWITCH_TIMELOCK_DURATION = 1 days;
     uint8 constant internal CLAIM_FUNC_FLAG = 1;
+    uint8 constant internal MAX_GAS_MULTIPLIER = 10;
     bytes32 constant internal CRYPTO_LEGACY_STORAGE_POSITION = keccak256("crypto_legacy.storage");
     bytes4 constant internal transferValueSelector = bytes4(uint32(1));
     bytes4 constant internal lockNftSelector = ILockChainGate(address(0)).lockLifetimeNft.selector;
@@ -106,6 +107,9 @@ library LibCryptoLegacy {
     }
 
     function _setPause(ICryptoLegacy.CryptoLegacyStorage storage cls, bool _isPaused) internal {
+        if (cls.distributionStartAt != 0) {
+            revert ICryptoLegacy.ChallengePeriodStarted();
+        }
         cls.isPaused = _isPaused;
         emit ICryptoLegacy.PauseSet(_isPaused);
     }
@@ -326,7 +330,7 @@ library LibCryptoLegacy {
         uint bal = IERC20(_token).balanceOf(address(this));
         uint totalClaimed = _getTotalClaimed(cls, _token);
         if (td.amountToDistribute == 0) {
-            td.amountToDistribute = uint128(bal);
+            td.amountToDistribute = bal;
             return td;
         }
         uint balanceDiff;
@@ -350,7 +354,7 @@ library LibCryptoLegacy {
                 totalClaimed += newClaimed;
             }
         }
-        td.amountToDistribute = uint128(bal + totalClaimed);
+        td.amountToDistribute = bal + totalClaimed;
     }
 
     function _getBeneficiaryClaimed(ICryptoLegacy.CryptoLegacyStorage storage cls, bytes32 _hash, address _token) internal view returns(uint claimed) {
@@ -396,19 +400,29 @@ library LibCryptoLegacy {
      * @param _startDate The timestamp marking the start of vesting.
      * @param _endDate The timestamp marking the end of vesting.
      * @return totalAmount The total amount of tokens allocated for the beneficiary.
-     * @return claimedAmount The amount of tokens that have already been claimed.
      * @return vestedAmount The amount of tokens that have vested so far.
+     * @return claimableAmount The amount of tokens that can be claimed.
+     * @return prevClaimableAmount The previous claimableAmount, before the change due to lack of token balance (if it was made)
      */
-    function _getVestedAndClaimedAmount(ICryptoLegacy.TokenDistribution storage td, ICryptoLegacy.BeneficiaryConfig storage bc, ICryptoLegacy.BeneficiaryVesting storage bv, address _token, uint64 _startDate, uint64 _endDate) internal view returns (uint256 totalAmount, uint256 claimedAmount, uint256 vestedAmount) {
-        uint256 vestingBps;
+    function _getVestedAndClaimedAmount(ICryptoLegacy.TokenDistribution storage td, ICryptoLegacy.BeneficiaryConfig storage bc, ICryptoLegacy.BeneficiaryVesting storage bv, address _token, uint64 _startDate, uint64 _endDate) internal view returns (uint256 totalAmount, uint256 vestedAmount, uint256 claimableAmount, uint256 prevClaimableAmount) {
+        uint vestingBps;
         if (_startDate > uint64(block.timestamp)) {
             vestingBps = 0;
+        } else if (uint64(block.timestamp) >= _endDate) {
+            vestingBps = LibCryptoLegacy.SHARE_BASE;
         } else {
-            vestingBps = uint64(block.timestamp) > _endDate ? LibCryptoLegacy.SHARE_BASE : (uint64(block.timestamp) - _startDate) * LibCryptoLegacy.SHARE_BASE / bc.vestingPeriod;
+            uint64 vestingPeriod = _endDate - _startDate;
+            vestingBps = (uint64(block.timestamp) - _startDate) * LibCryptoLegacy.SHARE_BASE / vestingPeriod;
         }
-        totalAmount = td.amountToDistribute * bc.shareBps / LibCryptoLegacy.SHARE_BASE;
-        vestedAmount = totalAmount * vestingBps / LibCryptoLegacy.SHARE_BASE;
-        claimedAmount = vestedAmount - bv.tokenAmountClaimed[_token];
+        totalAmount = td.amountToDistribute * uint(bc.shareBps) / LibCryptoLegacy.SHARE_BASE;
+        vestedAmount = totalAmount * uint(vestingBps) / LibCryptoLegacy.SHARE_BASE;
+        claimableAmount = vestedAmount - bv.tokenAmountClaimed[_token];
+        uint curBalance = IERC20(_token).balanceOf(address(this));
+
+        if (curBalance < claimableAmount) {
+            prevClaimableAmount = claimableAmount;
+            claimableAmount = curBalance;
+        }
     }
 
     /**
@@ -580,7 +594,7 @@ library LibCryptoLegacy {
                 t.safeTransferFrom(_holders[j], address(this), availableBalance);
             }
             ICryptoLegacy.TokenDistribution storage td = LibCryptoLegacy._tokenPrepareToDistribute(cls, _tokens[i]);
-            td.lastBalance = uint128(IERC20(_tokens[i]).balanceOf(address(this)));
+            td.lastBalance = IERC20(_tokens[i]).balanceOf(address(this));
         }
         emit ICryptoLegacy.TransferTreasuryTokensToLegacy(_holders, _tokens);
         cls.transfersGotByBlockNumber.push(uint64(block.number));
