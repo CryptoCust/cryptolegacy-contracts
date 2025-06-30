@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-06-30 10:26:26</td>
+            <td class="headerValue">2025-06-30 10:33:45</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -406,33 +406,33 @@
 <span id="L335"><span class="lineNum">     335</span>                 :             :         }</span>
 <span id="L336"><span class="lineNum">     336</span>                 :<span class="tlaGNC">        1060 :         uint balanceDiff;</span></span>
 <span id="L337"><span class="lineNum">     337</span>                 :<span class="tlaGNC">        1060 :         bool negativeRebase = bal &lt; td.amountToDistribute - totalClaimed;</span></span>
-<span id="L338"><span class="lineNum">     338</span>         [<span class="tlaGBC" title="Branch 0 was taken 132 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 928 times"> + </span>]:<span class="tlaGNC">         132 :         if (negativeRebase) {</span></span>
-<span id="L339"><span class="lineNum">     339</span>                 :<span class="tlaGNC">         132 :             balanceDiff = (td.amountToDistribute - totalClaimed) - bal;</span></span>
+<span id="L338"><span class="lineNum">     338</span>         [<span class="tlaGBC" title="Branch 0 was taken 130 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 930 times"> + </span>]:<span class="tlaGNC">         130 :         if (negativeRebase) {</span></span>
+<span id="L339"><span class="lineNum">     339</span>                 :<span class="tlaGNC">         130 :             balanceDiff = (td.amountToDistribute - totalClaimed) - bal;</span></span>
 <span id="L340"><span class="lineNum">     340</span>                 :             :         } else {</span>
-<span id="L341"><span class="lineNum">     341</span>                 :<span class="tlaGNC">         928 :             balanceDiff = bal - (td.amountToDistribute - totalClaimed);</span></span>
+<span id="L341"><span class="lineNum">     341</span>                 :<span class="tlaGNC">         930 :             balanceDiff = bal - (td.amountToDistribute - totalClaimed);</span></span>
 <span id="L342"><span class="lineNum">     342</span>                 :             :         }</span>
-<span id="L343"><span class="lineNum">     343</span>            [<span class="tlaGBC" title="Branch 0 was taken 820 times"> + </span>]:<span class="tlaGNC">        1060 :         if (bal == 0 || (balanceDiff * 1 gwei / bal) &lt; 1e3) {</span></span>
-<span id="L344"><span class="lineNum">     344</span>                 :<span class="tlaGNC">         820 :             return td;</span></span>
+<span id="L343"><span class="lineNum">     343</span>            [<span class="tlaGBC" title="Branch 0 was taken 822 times"> + </span>]:<span class="tlaGNC">        1060 :         if (bal == 0 || (balanceDiff * 1 gwei / bal) &lt; 1e3) {</span></span>
+<span id="L344"><span class="lineNum">     344</span>                 :<span class="tlaGNC">         822 :             return td;</span></span>
 <span id="L345"><span class="lineNum">     345</span>                 :             :         }</span>
 <span id="L346"><span class="lineNum">     346</span>                 :             :         </span>
-<span id="L347"><span class="lineNum">     347</span>            [<span class="tlaGBC" title="Branch 0 was taken 57 times"> + </span>]:<span class="tlaGNC">          57 :         if (negativeRebase) {</span></span>
-<span id="L348"><span class="lineNum">     348</span>                 :<span class="tlaGNC">          57 :             uint balanceRatio = bal * 1 ether / td.lastBalance;</span></span>
-<span id="L349"><span class="lineNum">     349</span>                 :<span class="tlaGNC">          57 :             bytes32[] memory beneficiaries = cls.beneficiaries.values();</span></span>
-<span id="L350"><span class="lineNum">     350</span>                 :<span class="tlaGNC">          57 :             totalClaimed = 0;</span></span>
-<span id="L351"><span class="lineNum">     351</span>                 :<span class="tlaGNC">          57 :             for (uint i = 0; i &lt; beneficiaries.length; i++) {</span></span>
-<span id="L352"><span class="lineNum">     352</span>                 :<span class="tlaGNC">         114 :                 uint newClaimed = balanceRatio * _getBeneficiaryClaimed(cls, beneficiaries[i], _token) / 1 ether;</span></span>
-<span id="L353"><span class="lineNum">     353</span>                 :<span class="tlaGNC">         114 :                 _setBeneficiaryClaimed(cls, beneficiaries[i], _token, newClaimed);</span></span>
-<span id="L354"><span class="lineNum">     354</span>                 :<span class="tlaGNC">         114 :                 totalClaimed += newClaimed;</span></span>
+<span id="L347"><span class="lineNum">     347</span>            [<span class="tlaGBC" title="Branch 0 was taken 55 times"> + </span>]:<span class="tlaGNC">          55 :         if (negativeRebase) {</span></span>
+<span id="L348"><span class="lineNum">     348</span>                 :<span class="tlaGNC">          55 :             uint balanceRatio = bal * 1 ether / td.lastBalance;</span></span>
+<span id="L349"><span class="lineNum">     349</span>                 :<span class="tlaGNC">          55 :             bytes32[] memory beneficiaries = cls.beneficiaries.values();</span></span>
+<span id="L350"><span class="lineNum">     350</span>                 :<span class="tlaGNC">          55 :             totalClaimed = 0;</span></span>
+<span id="L351"><span class="lineNum">     351</span>                 :<span class="tlaGNC">          55 :             for (uint i = 0; i &lt; beneficiaries.length; i++) {</span></span>
+<span id="L352"><span class="lineNum">     352</span>                 :<span class="tlaGNC">         110 :                 uint newClaimed = balanceRatio * _getBeneficiaryClaimed(cls, beneficiaries[i], _token) / 1 ether;</span></span>
+<span id="L353"><span class="lineNum">     353</span>                 :<span class="tlaGNC">         110 :                 _setBeneficiaryClaimed(cls, beneficiaries[i], _token, newClaimed);</span></span>
+<span id="L354"><span class="lineNum">     354</span>                 :<span class="tlaGNC">         110 :                 totalClaimed += newClaimed;</span></span>
 <span id="L355"><span class="lineNum">     355</span>                 :             :             }</span>
 <span id="L356"><span class="lineNum">     356</span>                 :             :         }</span>
-<span id="L357"><span class="lineNum">     357</span>                 :<span class="tlaGNC">         240 :         td.amountToDistribute = bal + totalClaimed;</span></span>
+<span id="L357"><span class="lineNum">     357</span>                 :<span class="tlaGNC">         238 :         td.amountToDistribute = bal + totalClaimed;</span></span>
 <span id="L358"><span class="lineNum">     358</span>                 :             :     }</span>
 <span id="L359"><span class="lineNum">     359</span>                 :             : </span>
-<span id="L360"><span class="lineNum">     360</span>                 :<span class="tlaGNC">        3406 :     function _getBeneficiaryClaimed(ICryptoLegacy.CryptoLegacyStorage storage cls, bytes32 _hash, address _token) internal view returns(uint claimed) {</span></span>
-<span id="L361"><span class="lineNum">     361</span>                 :<span class="tlaGNC">        3406 :         return cls.beneficiaryVesting[cls.originalBeneficiaryHash[_hash]].tokenAmountClaimed[_token];</span></span>
+<span id="L360"><span class="lineNum">     360</span>                 :<span class="tlaGNC">        3402 :     function _getBeneficiaryClaimed(ICryptoLegacy.CryptoLegacyStorage storage cls, bytes32 _hash, address _token) internal view returns(uint claimed) {</span></span>
+<span id="L361"><span class="lineNum">     361</span>                 :<span class="tlaGNC">        3402 :         return cls.beneficiaryVesting[cls.originalBeneficiaryHash[_hash]].tokenAmountClaimed[_token];</span></span>
 <span id="L362"><span class="lineNum">     362</span>                 :             :     }</span>
-<span id="L363"><span class="lineNum">     363</span>                 :<span class="tlaGNC">         114 :     function _setBeneficiaryClaimed(ICryptoLegacy.CryptoLegacyStorage storage cls, bytes32 _hash, address _token, uint _amount) internal {</span></span>
-<span id="L364"><span class="lineNum">     364</span>                 :<span class="tlaGNC">         114 :         cls.beneficiaryVesting[cls.originalBeneficiaryHash[_hash]].tokenAmountClaimed[_token] = _amount;</span></span>
+<span id="L363"><span class="lineNum">     363</span>                 :<span class="tlaGNC">         110 :     function _setBeneficiaryClaimed(ICryptoLegacy.CryptoLegacyStorage storage cls, bytes32 _hash, address _token, uint _amount) internal {</span></span>
+<span id="L364"><span class="lineNum">     364</span>                 :<span class="tlaGNC">         110 :         cls.beneficiaryVesting[cls.originalBeneficiaryHash[_hash]].tokenAmountClaimed[_token] = _amount;</span></span>
 <span id="L365"><span class="lineNum">     365</span>                 :             :     }</span>
 <span id="L366"><span class="lineNum">     366</span>                 :             : </span>
 <span id="L367"><span class="lineNum">     367</span>                 :<span class="tlaGNC">        1646 :     function _getTotalClaimed(ICryptoLegacy.CryptoLegacyStorage storage cls, address _token) internal view returns(uint totalClaimed) {</span></span>

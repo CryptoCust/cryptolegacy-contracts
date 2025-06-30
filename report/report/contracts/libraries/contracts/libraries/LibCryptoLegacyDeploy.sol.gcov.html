@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-06-30 10:26:26</td>
+            <td class="headerValue">2025-06-30 10:33:45</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -77,7 +77,7 @@
 <span id="L6"><span class="lineNum">       6</span>                 :             : import &quot;./LibCreate3.sol&quot;;</span>
 <span id="L7"><span class="lineNum">       7</span>                 :             : </span>
 <span id="L8"><span class="lineNum">       8</span>                 :             : library LibCryptoLegacyDeploy {</span>
-<span id="L9"><span class="lineNum">       9</span>                 :             :     event CryptoLegacyCreation(address addr, bytes32 salt);</span>
+<span id="L9"><span class="lineNum">       9</span>                 :             :     event CryptoLegacyCreation(address addr, bytes32 salt, bytes32 userSalt);</span>
 <span id="L10"><span class="lineNum">      10</span>                 :             :    /**</span>
 <span id="L11"><span class="lineNum">      11</span>                 :             :      * @dev Deploys a contract using CREATE3 if it does not already exist.</span>
 <span id="L12"><span class="lineNum">      12</span>                 :             :      * @param _contractOwner The expected deployed contract owner.</span>
@@ -108,7 +108,7 @@
 <span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">         576 :         bytes32 salt = _getContractOwnerSalt(_factorySalt, _contractOwner);</span></span>
 <span id="L38"><span class="lineNum">      38</span>                 :             :         </span>
 <span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">         576 :         addr = LibCreate3.create3(salt, _contractBytecode);</span></span>
-<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">         573 :         emit CryptoLegacyCreation(addr, salt);</span></span>
+<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">         573 :         emit CryptoLegacyCreation(addr, salt, _factorySalt);</span></span>
 <span id="L41"><span class="lineNum">      41</span>                 :             :     }</span>
 <span id="L42"><span class="lineNum">      42</span>                 :             : </span>
 <span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">        1157 :     function _getContractOwnerSalt(bytes32 _salt, address _contractOwner) internal pure returns(bytes32) {</span></span>

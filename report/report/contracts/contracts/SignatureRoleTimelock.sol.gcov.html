@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-06-30 10:26:26</td>
+            <td class="headerValue">2025-06-30 10:33:45</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">96.4&nbsp;%</td>
@@ -136,7 +136,7 @@
 <span id="L65"><span class="lineNum">      65</span>                 :             :         }</span>
 <span id="L66"><span class="lineNum">      66</span>                 :             :         // Add initial signature roles for target contracts.</span>
 <span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">           4 :         for (uint256 i = 0; i &lt; _sigs.length; i++) {</span></span>
-<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">          61 :             _addSignatureRole(_sigs[i].target, _sigs[i].signature, _sigs[i].role, _sigs[i].timelock);</span></span>
+<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">          63 :             _addSignatureRole(_sigs[i].target, _sigs[i].signature, _sigs[i].role, _sigs[i].timelock);</span></span>
 <span id="L69"><span class="lineNum">      69</span>                 :             :         }</span>
 <span id="L70"><span class="lineNum">      70</span>                 :             :     }</span>
 <span id="L71"><span class="lineNum">      71</span>                 :             : </span>
@@ -207,10 +207,10 @@
 <span id="L136"><span class="lineNum">     136</span>                 :             :      * @param _addr The address to search for.</span>
 <span id="L137"><span class="lineNum">     137</span>                 :             :      * @return index The index of _addr in _list.</span>
 <span id="L138"><span class="lineNum">     138</span>                 :             :      */</span>
-<span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">          86 :     function _getAddressIndex(address[] memory _list, address _addr) internal pure returns(uint){</span></span>
-<span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">          86 :         for (uint256 i = 0; i &lt; _list.length; i++) {</span></span>
-<span id="L141"><span class="lineNum">     141</span>            [<span class="tlaGBC" title="Branch 0 was taken 64 times"> + </span>]:<span class="tlaGNC">         371 :             if (_list[i] == _addr) {</span></span>
-<span id="L142"><span class="lineNum">     142</span>                 :<span class="tlaGNC">          64 :                 return i;</span></span>
+<span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC">          88 :     function _getAddressIndex(address[] memory _list, address _addr) internal pure returns(uint){</span></span>
+<span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">          88 :         for (uint256 i = 0; i &lt; _list.length; i++) {</span></span>
+<span id="L141"><span class="lineNum">     141</span>            [<span class="tlaGBC" title="Branch 0 was taken 66 times"> + </span>]:<span class="tlaGNC">         379 :             if (_list[i] == _addr) {</span></span>
+<span id="L142"><span class="lineNum">     142</span>                 :<span class="tlaGNC">          66 :                 return i;</span></span>
 <span id="L143"><span class="lineNum">     143</span>                 :             :             }</span>
 <span id="L144"><span class="lineNum">     144</span>                 :             :         }</span>
 <span id="L145"><span class="lineNum">     145</span>                 :<span class="tlaGNC">          22 :         return type(uint256).max;</span></span>
@@ -279,27 +279,27 @@
 <span id="L208"><span class="lineNum">     208</span>                 :             :      * @param _role The required role for this signature.</span>
 <span id="L209"><span class="lineNum">     209</span>                 :             :      * @param _timelock The timelock duration in seconds.</span>
 <span id="L210"><span class="lineNum">     210</span>                 :             :      */</span>
-<span id="L211"><span class="lineNum">     211</span>                 :<span class="tlaGNC">          84 :     function _addSignatureRole(address _target, bytes4 _signature, bytes32 _role, uint128 _timelock) internal {</span></span>
-<span id="L212"><span class="lineNum">     212</span>                 :<span class="tlaGNC">          84 :         if (roleAccounts[_role].length == 0)</span></span>
+<span id="L211"><span class="lineNum">     211</span>                 :<span class="tlaGNC">          86 :     function _addSignatureRole(address _target, bytes4 _signature, bytes32 _role, uint128 _timelock) internal {</span></span>
+<span id="L212"><span class="lineNum">     212</span>                 :<span class="tlaGNC">          86 :         if (roleAccounts[_role].length == 0)</span></span>
 <span id="L213"><span class="lineNum">     213</span>            [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span>]:<span class="tlaGNC">           2 :             revert RoleDontExist();</span></span>
 <span id="L214"><span class="lineNum">     214</span>                 :             : </span>
-<span id="L215"><span class="lineNum">     215</span>                 :<span class="tlaGNC">          82 :         if (signatureRoles[_target][_signature].role != bytes32(0))</span></span>
+<span id="L215"><span class="lineNum">     215</span>                 :<span class="tlaGNC">          84 :         if (signatureRoles[_target][_signature].role != bytes32(0))</span></span>
 <span id="L216"><span class="lineNum">     216</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :             revert SignatureAlreadyExists();</span></span>
 <span id="L217"><span class="lineNum">     217</span>                 :             : </span>
-<span id="L218"><span class="lineNum">     218</span>                 :<span class="tlaGNC">          81 :         if (_timelock &gt; MAX_TIMELOCK_DURATION)</span></span>
+<span id="L218"><span class="lineNum">     218</span>                 :<span class="tlaGNC">          83 :         if (_timelock &gt; MAX_TIMELOCK_DURATION)</span></span>
 <span id="L219"><span class="lineNum">     219</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :             revert OutOfTimelockBounds(MAX_TIMELOCK_DURATION);</span></span>
 <span id="L220"><span class="lineNum">     220</span>                 :             : </span>
-<span id="L221"><span class="lineNum">     221</span>                 :<span class="tlaGNC">          80 :         if(_timelock == 0)</span></span>
+<span id="L221"><span class="lineNum">     221</span>                 :<span class="tlaGNC">          82 :         if(_timelock == 0)</span></span>
 <span id="L222"><span class="lineNum">     222</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :             _timelock = 1;</span></span>
 <span id="L223"><span class="lineNum">     223</span>                 :             : </span>
-<span id="L224"><span class="lineNum">     224</span>                 :<span class="tlaGNC">          80 :         signatureRoles[_target][_signature] = SignatureAttr(_role, _timelock);</span></span>
-<span id="L225"><span class="lineNum">     225</span>                 :<span class="tlaGNC">          80 :         targetSigs[_target].push(_signature);</span></span>
-<span id="L226"><span class="lineNum">     226</span>                 :<span class="tlaGNC">          80 :         uint256 targetIndex = _getAddressIndex(targets, _target);</span></span>
-<span id="L227"><span class="lineNum">     227</span>            [<span class="tlaGBC" title="Branch 0 was taken 22 times"> + </span>]:<span class="tlaGNC">          80 :         if (targetIndex == type(uint256).max) {</span></span>
+<span id="L224"><span class="lineNum">     224</span>                 :<span class="tlaGNC">          82 :         signatureRoles[_target][_signature] = SignatureAttr(_role, _timelock);</span></span>
+<span id="L225"><span class="lineNum">     225</span>                 :<span class="tlaGNC">          82 :         targetSigs[_target].push(_signature);</span></span>
+<span id="L226"><span class="lineNum">     226</span>                 :<span class="tlaGNC">          82 :         uint256 targetIndex = _getAddressIndex(targets, _target);</span></span>
+<span id="L227"><span class="lineNum">     227</span>            [<span class="tlaGBC" title="Branch 0 was taken 22 times"> + </span>]:<span class="tlaGNC">          82 :         if (targetIndex == type(uint256).max) {</span></span>
 <span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaGNC">          22 :             targets.push(_target);</span></span>
 <span id="L229"><span class="lineNum">     229</span>                 :<span class="tlaGNC">          22 :             emit AddTarget(_target);</span></span>
 <span id="L230"><span class="lineNum">     230</span>                 :             :         }</span>
-<span id="L231"><span class="lineNum">     231</span>                 :<span class="tlaGNC">          80 :         emit AddSignatureRole(_target, _signature, _role, _timelock);</span></span>
+<span id="L231"><span class="lineNum">     231</span>                 :<span class="tlaGNC">          82 :         emit AddSignatureRole(_target, _signature, _role, _timelock);</span></span>
 <span id="L232"><span class="lineNum">     232</span>                 :             :     }</span>
 <span id="L233"><span class="lineNum">     233</span>                 :             : </span>
 <span id="L234"><span class="lineNum">     234</span>                 :             :     /**</span>
