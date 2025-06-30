@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-05-28 15:19:12</td>
+            <td class="headerValue">2025-06-30 10:26:26</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -86,33 +86,33 @@
 <span id="L15"><span class="lineNum">      15</span>                 :             :      * @param _contractBytecode The bytecode of the contract to be deployed.</span>
 <span id="L16"><span class="lineNum">      16</span>                 :             :      * @return addr The address of the deployed contract.</span>
 <span id="L17"><span class="lineNum">      17</span>                 :             :      */</span>
-<span id="L18"><span class="lineNum">      18</span>                 :<span class="tlaGNC tlaBgGNC">          61 :     function _deployByCreate3(</span></span>
+<span id="L18"><span class="lineNum">      18</span>                 :<span class="tlaGNC tlaBgGNC">         579 :     function _deployByCreate3(</span></span>
 <span id="L19"><span class="lineNum">      19</span>                 :             :         address _contractOwner,</span>
 <span id="L20"><span class="lineNum">      20</span>                 :             :         bytes32 _factorySalt,</span>
 <span id="L21"><span class="lineNum">      21</span>                 :             :         address _contractAddress,</span>
 <span id="L22"><span class="lineNum">      22</span>                 :             :         bytes memory _contractBytecode</span>
 <span id="L23"><span class="lineNum">      23</span>                 :             :     ) internal returns (address addr) {</span>
-<span id="L24"><span class="lineNum">      24</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">          61 :         if (_contractBytecode.length == 0) {</span></span>
+<span id="L24"><span class="lineNum">      24</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">         579 :         if (_contractBytecode.length == 0) {</span></span>
 <span id="L25"><span class="lineNum">      25</span>                 :<span class="tlaGNC">           1 :             revert BytecodeEmpty();</span></span>
 <span id="L26"><span class="lineNum">      26</span>                 :             :         }</span>
 <span id="L27"><span class="lineNum">      27</span>                 :             : </span>
-<span id="L28"><span class="lineNum">      28</span>            [<span class="tlaGBC" title="Branch 0 was taken 56 times"> + </span>]:<span class="tlaGNC">          60 :         if (_factorySalt == 0) {</span></span>
-<span id="L29"><span class="lineNum">      29</span>                 :<span class="tlaGNC">          56 :             _factorySalt = blockhash(block.number - 1);</span></span>
+<span id="L28"><span class="lineNum">      28</span>            [<span class="tlaGBC" title="Branch 0 was taken 574 times"> + </span>]:<span class="tlaGNC">         578 :         if (_factorySalt == 0) {</span></span>
+<span id="L29"><span class="lineNum">      29</span>                 :<span class="tlaGNC">         574 :             _factorySalt = blockhash(block.number - 1);</span></span>
 <span id="L30"><span class="lineNum">      30</span>                 :             :         }</span>
 <span id="L31"><span class="lineNum">      31</span>                 :             :         // Compute the expected contract address</span>
-<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">          60 :         address predictedAddress = _computeAddress(_factorySalt, _contractOwner);</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">         578 :         address predictedAddress = _computeAddress(_factorySalt, _contractOwner);</span></span>
 <span id="L33"><span class="lineNum">      33</span>                 :             :         // Ensure the computed address matches the expected deployed contract address</span>
-<span id="L34"><span class="lineNum">      34</span>            [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span>]:<span class="tlaGNC">          60 :         if (_contractAddress != address(0) &amp;&amp; predictedAddress != _contractAddress) {</span></span>
+<span id="L34"><span class="lineNum">      34</span>            [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span>]:<span class="tlaGNC">         578 :         if (_contractAddress != address(0) &amp;&amp; predictedAddress != _contractAddress) {</span></span>
 <span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">           2 :             revert AddressMismatch();</span></span>
 <span id="L36"><span class="lineNum">      36</span>                 :             :         }</span>
-<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">          58 :         bytes32 salt = _getContractOwnerSalt(_factorySalt, _contractOwner);</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">         576 :         bytes32 salt = _getContractOwnerSalt(_factorySalt, _contractOwner);</span></span>
 <span id="L38"><span class="lineNum">      38</span>                 :             :         </span>
-<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">          58 :         addr = LibCreate3.create3(salt, _contractBytecode);</span></span>
-<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">          55 :         emit CryptoLegacyCreation(addr, salt);</span></span>
+<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">         576 :         addr = LibCreate3.create3(salt, _contractBytecode);</span></span>
+<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">         573 :         emit CryptoLegacyCreation(addr, salt);</span></span>
 <span id="L41"><span class="lineNum">      41</span>                 :             :     }</span>
 <span id="L42"><span class="lineNum">      42</span>                 :             : </span>
-<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">         121 :     function _getContractOwnerSalt(bytes32 _salt, address _contractOwner) internal pure returns(bytes32) {</span></span>
-<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">         121 :         return keccak256(abi.encodePacked(_salt, _contractOwner));</span></span>
+<span id="L43"><span class="lineNum">      43</span>                 :<span class="tlaGNC">        1157 :     function _getContractOwnerSalt(bytes32 _salt, address _contractOwner) internal pure returns(bytes32) {</span></span>
+<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">        1157 :         return keccak256(abi.encodePacked(_salt, _contractOwner));</span></span>
 <span id="L45"><span class="lineNum">      45</span>                 :             :     }</span>
 <span id="L46"><span class="lineNum">      46</span>                 :             : </span>
 <span id="L47"><span class="lineNum">      47</span>                 :             :    /**</span>
@@ -121,8 +121,8 @@
 <span id="L50"><span class="lineNum">      50</span>                 :             :      * @param _contractOwner The expected contract owner.</span>
 <span id="L51"><span class="lineNum">      51</span>                 :             :      * @return The computed contract address.</span>
 <span id="L52"><span class="lineNum">      52</span>                 :             :      */</span>
-<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">          63 :     function _computeAddress(bytes32 _salt, address _contractOwner) internal view returns (address) {</span></span>
-<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">          63 :         return LibCreate3.addressOf(_getContractOwnerSalt(_salt, _contractOwner));</span></span>
+<span id="L53"><span class="lineNum">      53</span>                 :<span class="tlaGNC">         581 :     function _computeAddress(bytes32 _salt, address _contractOwner) internal view returns (address) {</span></span>
+<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">         581 :         return LibCreate3.addressOf(_getContractOwnerSalt(_salt, _contractOwner));</span></span>
 <span id="L55"><span class="lineNum">      55</span>                 :             :     }</span>
 <span id="L56"><span class="lineNum">      56</span>                 :             : </span>
 <span id="L57"><span class="lineNum">      57</span>                 :             :     error BytecodeEmpty();</span>

@@ -31,13 +31,13 @@
             <td class="headerValue">lcov.info</td>
             <td></td>
             <td class="headerItem">Lines:</td>
-            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
-            <td class="headerCovTableEntry">135</td>
-            <td class="headerCovTableEntry">135</td>
+            <td class="headerCovTableEntryHi">99.3&nbsp;%</td>
+            <td class="headerCovTableEntry">138</td>
+            <td class="headerCovTableEntry">137</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-05-28 15:19:12</td>
+            <td class="headerValue">2025-06-30 10:26:26</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -49,8 +49,8 @@
             <td></td>
             <td></td>
             <td class="headerItem">Branches:</td>
-            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
-            <td class="headerCovTableEntry">18</td>
+            <td class="headerCovTableEntryHi">94.7&nbsp;%</td>
+            <td class="headerCovTableEntry">19</td>
             <td class="headerCovTableEntry">18</td>
           </tr>
                   <tr><td><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
@@ -96,17 +96,17 @@
 <span id="L25"><span class="lineNum">      25</span>                 :             :      * @dev These selectors identify the externally callable functions of the TrustedGuardiansPlugin.</span>
 <span id="L26"><span class="lineNum">      26</span>                 :             :      * @return sigs An array of function selectors.</span>
 <span id="L27"><span class="lineNum">      27</span>                 :             :      */</span>
-<span id="L28"><span class="lineNum">      28</span>                 :<span class="tlaGNC tlaBgGNC">          71 :     function getSigs() external pure returns (bytes4[] memory sigs) {</span></span>
-<span id="L29"><span class="lineNum">      29</span>                 :<span class="tlaGNC">          71 :         sigs = new bytes4[](9);</span></span>
-<span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaGNC">          71 :         sigs[0] = this.initializeGuardians.selector;</span></span>
-<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">          71 :         sigs[1] = this.setGuardians.selector;</span></span>
-<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">          71 :         sigs[2] = this.setGuardiansConfig.selector;</span></span>
-<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">          71 :         sigs[3] = this.guardiansVoteForDistribution.selector;</span></span>
-<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">          71 :         sigs[4] = this.guardiansTransferTreasuryTokensToLegacy.selector;</span></span>
-<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">          71 :         sigs[5] = this.resetGuardianVoting.selector;</span></span>
-<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">          71 :         sigs[6] = this.getGuardiansData.selector;</span></span>
-<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">          71 :         sigs[7] = this.checkGuardiansVotedAndGetGuardiansData.selector;</span></span>
-<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">          71 :         sigs[8] = this.isGuardiansInitialized.selector;</span></span>
+<span id="L28"><span class="lineNum">      28</span>                 :<span class="tlaGNC tlaBgGNC">          73 :     function getSigs() external pure returns (bytes4[] memory sigs) {</span></span>
+<span id="L29"><span class="lineNum">      29</span>                 :<span class="tlaGNC">          73 :         sigs = new bytes4[](9);</span></span>
+<span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaGNC">          73 :         sigs[0] = this.initializeGuardians.selector;</span></span>
+<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">          73 :         sigs[1] = this.setGuardians.selector;</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">          73 :         sigs[2] = this.setGuardiansConfig.selector;</span></span>
+<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">          73 :         sigs[3] = this.guardiansVoteForDistribution.selector;</span></span>
+<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">          73 :         sigs[4] = this.guardiansTransferTreasuryTokensToLegacy.selector;</span></span>
+<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">          73 :         sigs[5] = this.resetGuardianVoting.selector;</span></span>
+<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">          73 :         sigs[6] = this.getGuardiansData.selector;</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">          73 :         sigs[7] = this.checkGuardiansVotedAndGetGuardiansData.selector;</span></span>
+<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">          73 :         sigs[8] = this.isGuardiansInitialized.selector;</span></span>
 <span id="L39"><span class="lineNum">      39</span>                 :             :     }</span>
 <span id="L40"><span class="lineNum">      40</span>                 :             : </span>
 <span id="L41"><span class="lineNum">      41</span>                 :             :     /**</span>
@@ -239,239 +239,243 @@
 <span id="L168"><span class="lineNum">     168</span>                 :             :      */</span>
 <span id="L169"><span class="lineNum">     169</span>                 :<span class="tlaGNC">          41 :     function _getGuardiansThreshold(ICryptoLegacy.CryptoLegacyStorage storage _cls, ITrustedGuardiansPlugin.PluginStorage storage _pluginStorage) internal view returns(uint128) {</span></span>
 <span id="L170"><span class="lineNum">     170</span>                 :<span class="tlaGNC">          41 :         EnumerableSet.Bytes32Set storage guardians = _getGuardians(_cls, _pluginStorage);</span></span>
-<span id="L171"><span class="lineNum">     171</span>            [<span class="tlaGBC" title="Branch 0 was taken 6 times"> + </span>]:<span class="tlaGNC">          41 :         if (_pluginStorage.guardiansThreshold == 0) {</span></span>
-<span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">           6 :             return uint128(LibSafeMinimalMultisig._calcDefaultConfirmations(uint128(guardians.length())));</span></span>
-<span id="L173"><span class="lineNum">     173</span>                 :             :         }</span>
-<span id="L174"><span class="lineNum">     174</span>                 :<span class="tlaGNC">          35 :         return _pluginStorage.guardiansThreshold;</span></span>
-<span id="L175"><span class="lineNum">     175</span>                 :             :     }</span>
-<span id="L176"><span class="lineNum">     176</span>                 :             : </span>
-<span id="L177"><span class="lineNum">     177</span>                 :             :     /**</span>
-<span id="L178"><span class="lineNum">     178</span>                 :             :      * @notice Returns the challenge timeout for guardians.</span>
-<span id="L179"><span class="lineNum">     179</span>                 :             :      * @dev If no explicit threshold is set, returns a default of DEFAULT_GUARDIANS_CHALLENGE_TIMEOUT.</span>
-<span id="L180"><span class="lineNum">     180</span>                 :             :      * @param _pluginStorage The plugin-specific storage reference.</span>
-<span id="L181"><span class="lineNum">     181</span>                 :             :      * @return The challenge timeout in seconds.</span>
-<span id="L182"><span class="lineNum">     182</span>                 :             :      */</span>
-<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">          41 :     function _getGuardiansChallengeTimeout(ITrustedGuardiansPlugin.PluginStorage storage _pluginStorage) internal view returns(uint64) {</span></span>
-<span id="L184"><span class="lineNum">     184</span>            [<span class="tlaGBC" title="Branch 0 was taken 6 times"> + </span>]:<span class="tlaGNC">          41 :         if (_pluginStorage.guardiansThreshold == 0) {</span></span>
-<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">           6 :             return DEFAULT_GUARDIANS_CHALLENGE_TIMEOUT;</span></span>
-<span id="L186"><span class="lineNum">     186</span>                 :             :         }</span>
-<span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">          35 :         return _pluginStorage.guardiansChallengeTimeout;</span></span>
-<span id="L188"><span class="lineNum">     188</span>                 :             :     }</span>
-<span id="L189"><span class="lineNum">     189</span>                 :             : </span>
-<span id="L190"><span class="lineNum">     190</span>                 :             :     /**</span>
-<span id="L191"><span class="lineNum">     191</span>                 :             :      * @notice Initializes or reconfigures the list of guardians, their threshold, and challenge timeout.</span>
-<span id="L192"><span class="lineNum">     192</span>                 :             :      * @dev Only callable by the owner. Clears any prior votes. If no guardians are set, it defaults to beneficiaries as guardians.</span>
-<span id="L193"><span class="lineNum">     193</span>                 :             :      * @param _guardians Array of GuardianToChange specifying which addresses to add or remove.</span>
-<span id="L194"><span class="lineNum">     194</span>                 :             :      * @param _guardiansThreshold Required number of guardian votes.</span>
-<span id="L195"><span class="lineNum">     195</span>                 :             :      * @param _guardiansChallengeTimeout Timeout in seconds that is set for distribution if guardiansThreshold is met.</span>
-<span id="L196"><span class="lineNum">     196</span>                 :             :      */</span>
-<span id="L197"><span class="lineNum">     197</span>                 :<span class="tlaGNC">           3 :     function initializeGuardians(GuardianToChange[] memory _guardians, uint128 _guardiansThreshold, uint64 _guardiansChallengeTimeout) external onlyOwner nonReentrant {</span></span>
-<span id="L198"><span class="lineNum">     198</span>                 :<span class="tlaGNC">           2 :         ITrustedGuardiansPlugin.PluginStorage storage pluginStorage = LibTrustedGuardiansPlugin.getPluginStorage();</span></span>
-<span id="L199"><span class="lineNum">     199</span>                 :<span class="tlaGNC">           2 :         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();</span></span>
-<span id="L200"><span class="lineNum">     200</span>                 :<span class="tlaGNC">           2 :         _setGuardians(cls, pluginStorage, _guardians);</span></span>
-<span id="L201"><span class="lineNum">     201</span>                 :<span class="tlaGNC">           2 :         _setGuardiansConfig(pluginStorage, _guardiansThreshold, _guardiansChallengeTimeout);</span></span>
-<span id="L202"><span class="lineNum">     202</span>                 :<span class="tlaGNC">           2 :         _afterGuardiansSet(cls, pluginStorage);</span></span>
-<span id="L203"><span class="lineNum">     203</span>                 :             :     }</span>
-<span id="L204"><span class="lineNum">     204</span>                 :             : </span>
-<span id="L205"><span class="lineNum">     205</span>                 :             :     /**</span>
-<span id="L206"><span class="lineNum">     206</span>                 :             :      * @notice Updates the guardian set.</span>
-<span id="L207"><span class="lineNum">     207</span>                 :             :      * @dev Can only be called by the owner. Processes an array of GuardianToChange structs to add or remove guardians.</span>
-<span id="L208"><span class="lineNum">     208</span>                 :             :      * @param _guardians Array of GuardianToChange structs.</span>
-<span id="L209"><span class="lineNum">     209</span>                 :             :      */</span>
-<span id="L210"><span class="lineNum">     210</span>                 :<span class="tlaGNC">           4 :     function setGuardians(GuardianToChange[] memory _guardians) external onlyOwner nonReentrant {</span></span>
-<span id="L211"><span class="lineNum">     211</span>                 :<span class="tlaGNC">           3 :         ITrustedGuardiansPlugin.PluginStorage storage pluginStorage = LibTrustedGuardiansPlugin.getPluginStorage();</span></span>
-<span id="L212"><span class="lineNum">     212</span>                 :<span class="tlaGNC">           3 :         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();</span></span>
-<span id="L213"><span class="lineNum">     213</span>                 :<span class="tlaGNC">           3 :         _setGuardians(cls, pluginStorage, _guardians);</span></span>
-<span id="L214"><span class="lineNum">     214</span>                 :<span class="tlaGNC">           2 :         _afterGuardiansSet(cls, pluginStorage);</span></span>
-<span id="L215"><span class="lineNum">     215</span>                 :             :     }</span>
-<span id="L216"><span class="lineNum">     216</span>                 :             : </span>
-<span id="L217"><span class="lineNum">     217</span>                 :             :     /**</span>
-<span id="L218"><span class="lineNum">     218</span>                 :             :      * @notice Internal function to update the guardians set.</span>
-<span id="L219"><span class="lineNum">     219</span>                 :             :      * @dev Iterates through the provided GuardianToChange array and adds or removes each guardian.</span>
-<span id="L220"><span class="lineNum">     220</span>                 :             :      *      Also updates the beneficiary registry accordingly.</span>
-<span id="L221"><span class="lineNum">     221</span>                 :             :      * @param _pluginStorage The plugin-specific storage reference.</span>
-<span id="L222"><span class="lineNum">     222</span>                 :             :      * @param _guardians Array of GuardianToChange structs.</span>
-<span id="L223"><span class="lineNum">     223</span>                 :             :      */</span>
-<span id="L224"><span class="lineNum">     224</span>                 :<span class="tlaGNC">           5 :     function _setGuardians(ICryptoLegacy.CryptoLegacyStorage storage cls, ITrustedGuardiansPlugin.PluginStorage storage _pluginStorage, GuardianToChange[] memory _guardians) internal {</span></span>
-<span id="L225"><span class="lineNum">     225</span>                 :<span class="tlaGNC">           5 :         for (uint i = 0; i &lt; _guardians.length; i++) {</span></span>
-<span id="L226"><span class="lineNum">     226</span>                 :<span class="tlaGNC">          10 :             GuardianToChange memory g = _guardians[i];</span></span>
-<span id="L227"><span class="lineNum">     227</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">          10 :             if (g.hash == bytes32(0)) {</span></span>
-<span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaGNC">           1 :                 revert ZeroGuardian();</span></span>
-<span id="L229"><span class="lineNum">     229</span>                 :             :             }</span>
-<span id="L230"><span class="lineNum">     230</span>         [<span class="tlaGBC" title="Branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           7 :             if (g.isAdd) {</span></span>
-<span id="L231"><span class="lineNum">     231</span>                 :<span class="tlaGNC">           7 :                 _pluginStorage.guardians.add(g.hash);</span></span>
-<span id="L232"><span class="lineNum">     232</span>                 :<span class="tlaGNC">           7 :                 LibCryptoLegacy._setCryptoLegacyToBeneficiaryRegistry(cls, g.hash, IBeneficiaryRegistry.EntityType.GUARDIAN, true);</span></span>
-<span id="L233"><span class="lineNum">     233</span>                 :             :             } else {</span>
-<span id="L234"><span class="lineNum">     234</span>                 :<span class="tlaGNC">           2 :                 _pluginStorage.guardians.remove(g.hash);</span></span>
-<span id="L235"><span class="lineNum">     235</span>                 :<span class="tlaGNC">           2 :                 LibCryptoLegacy._setCryptoLegacyToBeneficiaryRegistry(cls, g.hash, IBeneficiaryRegistry.EntityType.GUARDIAN, false);</span></span>
-<span id="L236"><span class="lineNum">     236</span>                 :             :             }</span>
-<span id="L237"><span class="lineNum">     237</span>                 :<span class="tlaGNC">           9 :             emit SetGuardian(g.hash, g.isAdd);</span></span>
-<span id="L238"><span class="lineNum">     238</span>                 :             :         }</span>
-<span id="L239"><span class="lineNum">     239</span>                 :             :     }</span>
-<span id="L240"><span class="lineNum">     240</span>                 :             : </span>
-<span id="L241"><span class="lineNum">     241</span>                 :             :     /**</span>
-<span id="L242"><span class="lineNum">     242</span>                 :             :      * @notice Updates the guardians configuration.</span>
-<span id="L243"><span class="lineNum">     243</span>                 :             :      * @dev Can only be called by the owner. Resets any previous guardian votes.</span>
-<span id="L244"><span class="lineNum">     244</span>                 :             :      * Reverts if the provided challenge timeout exceeds 30 days.</span>
-<span id="L245"><span class="lineNum">     245</span>                 :             :      * Emits a SetGuardiansConfig event with the new parameters.</span>
-<span id="L246"><span class="lineNum">     246</span>                 :             :      * @param _guardiansThreshold The number of votes required.</span>
-<span id="L247"><span class="lineNum">     247</span>                 :             :      * @param _guardiansChallengeTimeout The timeout (in seconds) after which distribution can be triggered.</span>
-<span id="L248"><span class="lineNum">     248</span>                 :             :      */</span>
-<span id="L249"><span class="lineNum">     249</span>                 :<span class="tlaGNC">           7 :     function setGuardiansConfig(uint128 _guardiansThreshold, uint64 _guardiansChallengeTimeout) external onlyOwner nonReentrant {</span></span>
-<span id="L250"><span class="lineNum">     250</span>                 :<span class="tlaGNC">           6 :         ITrustedGuardiansPlugin.PluginStorage storage pluginStorage = LibTrustedGuardiansPlugin.getPluginStorage();</span></span>
-<span id="L251"><span class="lineNum">     251</span>                 :<span class="tlaGNC">           6 :         _setGuardiansConfig(pluginStorage, _guardiansThreshold, _guardiansChallengeTimeout);</span></span>
-<span id="L252"><span class="lineNum">     252</span>                 :<span class="tlaGNC">           4 :         _afterGuardiansSet(LibCryptoLegacy.getCryptoLegacyStorage(), pluginStorage);</span></span>
-<span id="L253"><span class="lineNum">     253</span>                 :             :     }</span>
-<span id="L254"><span class="lineNum">     254</span>                 :             : </span>
-<span id="L255"><span class="lineNum">     255</span>                 :             :     /**</span>
-<span id="L256"><span class="lineNum">     256</span>                 :             :      * @notice Internal function to update the guardians configuration.</span>
-<span id="L257"><span class="lineNum">     257</span>                 :             :      * @dev Validates that the challenge timeout does not equal 0 and not exceed MAX_GUARDIANS_CHALLENGE_TIMEOUT before updating.</span>
-<span id="L258"><span class="lineNum">     258</span>                 :             :      * Clears all recorded guardian votes.</span>
-<span id="L259"><span class="lineNum">     259</span>                 :             :      * Emits a SetGuardiansConfig event.</span>
-<span id="L260"><span class="lineNum">     260</span>                 :             :      * @param _pluginStorage The plugin-specific storage reference.</span>
-<span id="L261"><span class="lineNum">     261</span>                 :             :      * @param _guardiansThreshold The required number of votes.</span>
-<span id="L262"><span class="lineNum">     262</span>                 :             :      * @param _guardiansChallengeTimeout The challenge timeout in seconds.</span>
-<span id="L263"><span class="lineNum">     263</span>                 :             :      */</span>
-<span id="L264"><span class="lineNum">     264</span>                 :<span class="tlaGNC">           8 :     function _setGuardiansConfig(ITrustedGuardiansPlugin.PluginStorage storage _pluginStorage, uint128 _guardiansThreshold, uint64 _guardiansChallengeTimeout) internal {</span></span>
-<span id="L265"><span class="lineNum">     265</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           8 :         if (_guardiansChallengeTimeout &gt; MAX_GUARDIANS_CHALLENGE_TIMEOUT) {</span></span>
-<span id="L266"><span class="lineNum">     266</span>                 :<span class="tlaGNC">           1 :             revert MaxGuardiansTimeout(MAX_GUARDIANS_CHALLENGE_TIMEOUT);</span></span>
-<span id="L267"><span class="lineNum">     267</span>                 :             :         }</span>
-<span id="L268"><span class="lineNum">     268</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           7 :         if (_guardiansChallengeTimeout == 0) {</span></span>
-<span id="L269"><span class="lineNum">     269</span>                 :<span class="tlaGNC">           1 :             revert GuardiansTimeoutCantBeZero();</span></span>
-<span id="L270"><span class="lineNum">     270</span>                 :             :         }</span>
-<span id="L271"><span class="lineNum">     271</span>                 :<span class="tlaGNC">           6 :         _pluginStorage.guardiansThreshold = _guardiansThreshold;</span></span>
-<span id="L272"><span class="lineNum">     272</span>                 :<span class="tlaGNC">           6 :         _pluginStorage.guardiansChallengeTimeout = _guardiansChallengeTimeout;</span></span>
-<span id="L273"><span class="lineNum">     273</span>                 :<span class="tlaGNC">           6 :         emit SetGuardiansConfig(_guardiansThreshold, _guardiansChallengeTimeout);</span></span>
-<span id="L274"><span class="lineNum">     274</span>                 :             :     }</span>
-<span id="L275"><span class="lineNum">     275</span>                 :             : </span>
-<span id="L276"><span class="lineNum">     276</span>                 :             :     /**</span>
-<span id="L277"><span class="lineNum">     277</span>                 :             :      * @notice Internal function to check threshold and clear the guardians voted array.</span>
-<span id="L278"><span class="lineNum">     278</span>                 :             :      */</span>
-<span id="L279"><span class="lineNum">     279</span>                 :<span class="tlaGNC">           8 :     function _afterGuardiansSet(ICryptoLegacy.CryptoLegacyStorage storage cls, ITrustedGuardiansPlugin.PluginStorage storage _pluginStorage) internal {</span></span>
-<span id="L280"><span class="lineNum">     280</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           8 :         if (_pluginStorage.guardiansThreshold &gt; _getGuardians(cls, _pluginStorage).length()) {</span></span>
-<span id="L281"><span class="lineNum">     281</span>                 :<span class="tlaGNC">           1 :             revert ThresholdTooBig();</span></span>
-<span id="L282"><span class="lineNum">     282</span>                 :             :         }</span>
-<span id="L283"><span class="lineNum">     283</span>                 :<span class="tlaGNC">           7 :         _pluginStorage.guardiansVoted = new bytes32[](0);</span></span>
-<span id="L284"><span class="lineNum">     284</span>                 :<span class="tlaGNC">           7 :         emit ClearGuardiansVoted();</span></span>
-<span id="L285"><span class="lineNum">     285</span>                 :             :     }</span>
-<span id="L286"><span class="lineNum">     286</span>                 :             : </span>
-<span id="L287"><span class="lineNum">     287</span>                 :             :     /**</span>
-<span id="L288"><span class="lineNum">     288</span>                 :             :      * @notice Allows a guardian to vote for distribution.</span>
-<span id="L289"><span class="lineNum">     289</span>                 :             :      * @dev Checks that the guardian has not already voted before recording the vote.</span>
-<span id="L290"><span class="lineNum">     290</span>                 :             :      *      If the number of votes reaches the required threshold, sets the distribution start time to the current block timestamp plus the guardians challenge timeout.</span>
-<span id="L291"><span class="lineNum">     291</span>                 :             :      * @dev Emits GuardiansDistributionStartSet if the distribution start time is updated, and emits GuardiansVoteForDistribution regardless.</span>
-<span id="L292"><span class="lineNum">     292</span>                 :             :      */</span>
-<span id="L293"><span class="lineNum">     293</span>                 :<span class="tlaGNC">          23 :     function guardiansVoteForDistribution() external nonReentrant {</span></span>
-<span id="L294"><span class="lineNum">     294</span>                 :<span class="tlaGNC">          23 :         (ICryptoLegacy.CryptoLegacyStorage storage cls, ITrustedGuardiansPlugin.PluginStorage storage pluginStorage, bytes32 hash) = _checkGuardianNotVoted();</span></span>
-<span id="L295"><span class="lineNum">     295</span>                 :             : </span>
-<span id="L296"><span class="lineNum">     296</span>                 :<span class="tlaGNC">          18 :         pluginStorage.guardiansVoted.push(hash);</span></span>
-<span id="L297"><span class="lineNum">     297</span>                 :<span class="tlaGNC">          18 :         uint128 guardiansThreshold = _getGuardiansThreshold(cls, pluginStorage);</span></span>
-<span id="L298"><span class="lineNum">     298</span>                 :<span class="tlaGNC">          18 :         uint64 guardiansChallengeTimeout = _getGuardiansChallengeTimeout(pluginStorage);</span></span>
-<span id="L299"><span class="lineNum">     299</span>            [<span class="tlaGBC" title="Branch 0 was taken 3 times"> + </span>]:<span class="tlaGNC">          18 :         if (pluginStorage.guardiansVoted.length &gt;= guardiansThreshold) {</span></span>
-<span id="L300"><span class="lineNum">     300</span>                 :<span class="tlaGNC">           3 :             uint64 maxDistributionStartAt = uint64(block.timestamp) + guardiansChallengeTimeout;</span></span>
-<span id="L301"><span class="lineNum">     301</span>            [<span class="tlaGBC" title="Branch 0 was taken 3 times"> + </span>]:<span class="tlaGNC">           3 :             if (cls.distributionStartAt == 0 || cls.distributionStartAt &gt; maxDistributionStartAt) {</span></span>
-<span id="L302"><span class="lineNum">     302</span>                 :<span class="tlaGNC">           3 :                 cls.distributionStartAt = maxDistributionStartAt;</span></span>
-<span id="L303"><span class="lineNum">     303</span>                 :<span class="tlaGNC">           3 :                 emit GuardiansDistributionStartSet(hash, maxDistributionStartAt);</span></span>
-<span id="L304"><span class="lineNum">     304</span>                 :             :             }</span>
-<span id="L305"><span class="lineNum">     305</span>                 :<span class="tlaGNC">           3 :             pluginStorage.guardiansVoted = new bytes32[](0);</span></span>
-<span id="L306"><span class="lineNum">     306</span>                 :             :         }</span>
-<span id="L307"><span class="lineNum">     307</span>                 :<span class="tlaGNC">          18 :         emit GuardiansVoteForDistribution(hash, pluginStorage.guardiansVoted.length);</span></span>
-<span id="L308"><span class="lineNum">     308</span>                 :             :     }</span>
-<span id="L309"><span class="lineNum">     309</span>                 :             : </span>
-<span id="L310"><span class="lineNum">     310</span>                 :             :     /**</span>
-<span id="L311"><span class="lineNum">     311</span>                 :             :      * @notice Allows a guardian to transfer treasury tokens from specified holders to the legacy contract.</span>
-<span id="L312"><span class="lineNum">     312</span>                 :             :      * @dev Checks that the caller is a guardian and that the distribution phase is ready before transferring tokens.</span>
-<span id="L313"><span class="lineNum">     313</span>                 :             :      * @param _holders Array of addresses from which tokens will be transferred.</span>
-<span id="L314"><span class="lineNum">     314</span>                 :             :      * @param _tokens Array of token addresses to be transferred.</span>
-<span id="L315"><span class="lineNum">     315</span>                 :             :      */</span>
-<span id="L316"><span class="lineNum">     316</span>                 :<span class="tlaGNC">           4 :     function guardiansTransferTreasuryTokensToLegacy(address[] memory _holders, address[] memory _tokens) external nonReentrant {</span></span>
-<span id="L317"><span class="lineNum">     317</span>                 :<span class="tlaGNC">           4 :         (ICryptoLegacy.CryptoLegacyStorage storage cls, , ) = _checkGuardian();</span></span>
-<span id="L318"><span class="lineNum">     318</span>                 :<span class="tlaGNC">           2 :         LibCryptoLegacy._checkDistributionReady(cls);</span></span>
-<span id="L319"><span class="lineNum">     319</span>                 :<span class="tlaGNC">           1 :         LibCryptoLegacy._transferTreasuryTokensToLegacy(cls, _holders, _tokens);</span></span>
-<span id="L320"><span class="lineNum">     320</span>                 :             :     }</span>
-<span id="L321"><span class="lineNum">     321</span>                 :             : </span>
-<span id="L322"><span class="lineNum">     322</span>                 :             :     /**</span>
-<span id="L323"><span class="lineNum">     323</span>                 :             :      * @notice Resets the guardian voting state, clearing the guardiansVoted array and resetting distributionStartAt.</span>
-<span id="L324"><span class="lineNum">     324</span>                 :             :      * @dev Can only be called by the owner.</span>
-<span id="L325"><span class="lineNum">     325</span>                 :             :      */</span>
-<span id="L326"><span class="lineNum">     326</span>                 :<span class="tlaGNC">           5 :     function resetGuardianVoting() external payable onlyOwner nonReentrant {</span></span>
-<span id="L327"><span class="lineNum">     327</span>                 :<span class="tlaGNC">           3 :         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();</span></span>
-<span id="L328"><span class="lineNum">     328</span>                 :<span class="tlaGNC">           3 :         LibTrustedGuardiansPlugin._resetGuardianVoting(cls);</span></span>
-<span id="L329"><span class="lineNum">     329</span>                 :             :     }</span>
-<span id="L330"><span class="lineNum">     330</span>                 :             : </span>
-<span id="L331"><span class="lineNum">     331</span>                 :             :     /**</span>
-<span id="L332"><span class="lineNum">     332</span>                 :             :      * @notice Internal view function to check guardian initialization.</span>
-<span id="L333"><span class="lineNum">     333</span>                 :             :      * @param _pluginStorage The plugin-specific storage.</span>
-<span id="L334"><span class="lineNum">     334</span>                 :             :      * @return True if the guardians set is non-empty, false otherwise.</span>
-<span id="L335"><span class="lineNum">     335</span>                 :             :      */</span>
-<span id="L336"><span class="lineNum">     336</span>                 :<span class="tlaGNC">           2 :     function _isGuardiansInitialized(ITrustedGuardiansPlugin.PluginStorage storage _pluginStorage) internal view returns(bool) {</span></span>
-<span id="L337"><span class="lineNum">     337</span>                 :<span class="tlaGNC">           2 :         return _pluginStorage.guardians.length() != 0;</span></span>
-<span id="L338"><span class="lineNum">     338</span>                 :             :     }</span>
-<span id="L339"><span class="lineNum">     339</span>                 :             : </span>
-<span id="L340"><span class="lineNum">     340</span>                 :             :     /**</span>
-<span id="L341"><span class="lineNum">     341</span>                 :             :      * @notice Checks whether guardians have been explicitly initialized.</span>
-<span id="L342"><span class="lineNum">     342</span>                 :             :      * @dev Returns true if the guardians set in plugin storage is non-empty.</span>
-<span id="L343"><span class="lineNum">     343</span>                 :             :      * @return True if guardians are initialized, false otherwise.</span>
-<span id="L344"><span class="lineNum">     344</span>                 :             :      */</span>
-<span id="L345"><span class="lineNum">     345</span>                 :<span class="tlaGNC">           2 :     function isGuardiansInitialized() external view returns(bool) {</span></span>
-<span id="L346"><span class="lineNum">     346</span>                 :<span class="tlaGNC">           2 :         return _isGuardiansInitialized(LibTrustedGuardiansPlugin.getPluginStorage());</span></span>
-<span id="L347"><span class="lineNum">     347</span>                 :             :     }</span>
-<span id="L348"><span class="lineNum">     348</span>                 :             : </span>
-<span id="L349"><span class="lineNum">     349</span>                 :             :     /**</span>
-<span id="L350"><span class="lineNum">     350</span>                 :             :      * @notice Retrieves current guardian data.</span>
-<span id="L351"><span class="lineNum">     351</span>                 :             :      * @dev Returns the list of guardian identifiers, the list of votes already cast, the required vote threshold, and the challenge timeout.</span>
-<span id="L352"><span class="lineNum">     352</span>                 :             :      * @return guardians An array of guardian identifiers.</span>
-<span id="L353"><span class="lineNum">     353</span>                 :             :      * @return guardiansVoted An array of guardian identifiers that have already voted.</span>
-<span id="L354"><span class="lineNum">     354</span>                 :             :      * @return guardiansThreshold The number of votes required to trigger distribution.</span>
-<span id="L355"><span class="lineNum">     355</span>                 :             :      * @return guardiansChallengeTimeout The timeout (in seconds) applied when the vote threshold is met.</span>
-<span id="L356"><span class="lineNum">     356</span>                 :             :      */</span>
-<span id="L357"><span class="lineNum">     357</span>                 :<span class="tlaGNC">          22 :     function getGuardiansData() external view returns(</span></span>
-<span id="L358"><span class="lineNum">     358</span>                 :             :         bytes32[] memory guardians,</span>
-<span id="L359"><span class="lineNum">     359</span>                 :             :         bytes32[] memory guardiansVoted,</span>
-<span id="L360"><span class="lineNum">     360</span>                 :             :         uint128 guardiansThreshold,</span>
-<span id="L361"><span class="lineNum">     361</span>                 :             :         uint64 guardiansChallengeTimeout</span>
-<span id="L362"><span class="lineNum">     362</span>                 :             :     ) {</span>
-<span id="L363"><span class="lineNum">     363</span>                 :<span class="tlaGNC">          22 :         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();</span></span>
-<span id="L364"><span class="lineNum">     364</span>                 :<span class="tlaGNC">          22 :         ITrustedGuardiansPlugin.PluginStorage storage pluginStorage = LibTrustedGuardiansPlugin.getPluginStorage();</span></span>
-<span id="L365"><span class="lineNum">     365</span>                 :<span class="tlaGNC">          22 :         return (</span></span>
-<span id="L366"><span class="lineNum">     366</span>                 :             :             _getGuardians(cls, pluginStorage).values(),</span>
-<span id="L367"><span class="lineNum">     367</span>                 :             :             pluginStorage.guardiansVoted,</span>
-<span id="L368"><span class="lineNum">     368</span>                 :             :             _getGuardiansThreshold(cls, pluginStorage),</span>
-<span id="L369"><span class="lineNum">     369</span>                 :             :             _getGuardiansChallengeTimeout(pluginStorage)</span>
-<span id="L370"><span class="lineNum">     370</span>                 :             :         );</span>
-<span id="L371"><span class="lineNum">     371</span>                 :             :     }</span>
-<span id="L372"><span class="lineNum">     372</span>                 :             : </span>
-<span id="L373"><span class="lineNum">     373</span>                 :             :     /**</span>
-<span id="L374"><span class="lineNum">     374</span>                 :             :      * @notice Ensures the caller is a valid guardian, cleans up any invalid votes from current guardian data and returns it.</span>
-<span id="L375"><span class="lineNum">     375</span>                 :             :      * @dev </span>
-<span id="L376"><span class="lineNum">     376</span>                 :             :      *  1. Calls `_checkGuardian()` to verify the caller is a guardian in the system.</span>
-<span id="L377"><span class="lineNum">     377</span>                 :             :      *  2. Invokes `_isGuardianVoted` to see if the caller has already voted. </span>
-<span id="L378"><span class="lineNum">     378</span>                 :             :      *     - During this check, any votes from guardians no longer recognized are removed from `guardiansVoted`.</span>
-<span id="L379"><span class="lineNum">     379</span>                 :             :      *  3. Aggregates up-to-date guardian information and returns it.</span>
-<span id="L380"><span class="lineNum">     380</span>                 :             :      * @return guardians The array of valid guardian identifiers (hashes) recognized by the system.</span>
-<span id="L381"><span class="lineNum">     381</span>                 :             :      * @return guardiansVoted The array of guardians who have voted, after removing invalid entries.</span>
-<span id="L382"><span class="lineNum">     382</span>                 :             :      * @return guardiansThreshold The number of votes required to trigger distribution.</span>
-<span id="L383"><span class="lineNum">     383</span>                 :             :      * @return guardiansChallengeTimeout The current challenge timeout (in seconds).</span>
-<span id="L384"><span class="lineNum">     384</span>                 :             :      * @return isGuardianVoted Whether the caller (msg.sender) has already voted (true) or not (false).</span>
-<span id="L385"><span class="lineNum">     385</span>                 :             :      */</span>
-<span id="L386"><span class="lineNum">     386</span>                 :<span class="tlaGNC">           2 :     function checkGuardiansVotedAndGetGuardiansData() external returns(</span></span>
-<span id="L387"><span class="lineNum">     387</span>                 :             :         bytes32[] memory guardians,</span>
-<span id="L388"><span class="lineNum">     388</span>                 :             :         bytes32[] memory guardiansVoted,</span>
-<span id="L389"><span class="lineNum">     389</span>                 :             :         uint128 guardiansThreshold,</span>
-<span id="L390"><span class="lineNum">     390</span>                 :             :         uint64 guardiansChallengeTimeout,</span>
-<span id="L391"><span class="lineNum">     391</span>                 :             :         bool isGuardianVoted</span>
-<span id="L392"><span class="lineNum">     392</span>                 :             :     ) {</span>
-<span id="L393"><span class="lineNum">     393</span>                 :<span class="tlaGNC">           2 :         (ICryptoLegacy.CryptoLegacyStorage storage cls, ITrustedGuardiansPlugin.PluginStorage storage pluginStorage, bytes32 hash) = _checkGuardian();</span></span>
-<span id="L394"><span class="lineNum">     394</span>                 :<span class="tlaGNC">           1 :         isGuardianVoted = _isGuardianVoted(cls, pluginStorage, hash);</span></span>
-<span id="L395"><span class="lineNum">     395</span>                 :<span class="tlaGNC">           1 :         return (</span></span>
-<span id="L396"><span class="lineNum">     396</span>                 :             :             _getGuardians(cls, pluginStorage).values(),</span>
-<span id="L397"><span class="lineNum">     397</span>                 :             :             pluginStorage.guardiansVoted,</span>
-<span id="L398"><span class="lineNum">     398</span>                 :             :             _getGuardiansThreshold(cls, pluginStorage),</span>
-<span id="L399"><span class="lineNum">     399</span>                 :             :             _getGuardiansChallengeTimeout(pluginStorage),</span>
-<span id="L400"><span class="lineNum">     400</span>                 :             :             isGuardianVoted</span>
-<span id="L401"><span class="lineNum">     401</span>                 :             :         );</span>
-<span id="L402"><span class="lineNum">     402</span>                 :             :     }</span>
-<span id="L403"><span class="lineNum">     403</span>                 :             : }</span>
+<span id="L171"><span class="lineNum">     171</span>                 :<span class="tlaGNC">          41 :         uint128 guardiansLength = uint128(guardians.length());</span></span>
+<span id="L172"><span class="lineNum">     172</span>            [<span class="tlaGBC" title="Branch 0 was taken 6 times"> + </span>]:<span class="tlaGNC">          41 :         if (_pluginStorage.guardiansThreshold == 0) {</span></span>
+<span id="L173"><span class="lineNum">     173</span>                 :<span class="tlaGNC">           6 :             return uint128(LibSafeMinimalMultisig._calcDefaultConfirmations(guardiansLength));</span></span>
+<span id="L174"><span class="lineNum">     174</span>                 :             :         }</span>
+<span id="L175"><span class="lineNum">     175</span>            [<span class="tlaUNC" title="Branch 0 was not executed"> # </span>]:<span class="tlaGNC">          35 :         if (_pluginStorage.guardiansThreshold &gt; guardiansLength) {</span></span>
+<span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaUNC tlaBgUNC">           0 :             return guardiansLength;</span></span>
+<span id="L177"><span class="lineNum">     177</span>                 :             :         }</span>
+<span id="L178"><span class="lineNum">     178</span>                 :<span class="tlaGNC tlaBgGNC">          35 :         return _pluginStorage.guardiansThreshold;</span></span>
+<span id="L179"><span class="lineNum">     179</span>                 :             :     }</span>
+<span id="L180"><span class="lineNum">     180</span>                 :             : </span>
+<span id="L181"><span class="lineNum">     181</span>                 :             :     /**</span>
+<span id="L182"><span class="lineNum">     182</span>                 :             :      * @notice Returns the challenge timeout for guardians.</span>
+<span id="L183"><span class="lineNum">     183</span>                 :             :      * @dev If no explicit threshold is set, returns a default of DEFAULT_GUARDIANS_CHALLENGE_TIMEOUT.</span>
+<span id="L184"><span class="lineNum">     184</span>                 :             :      * @param _pluginStorage The plugin-specific storage reference.</span>
+<span id="L185"><span class="lineNum">     185</span>                 :             :      * @return The challenge timeout in seconds.</span>
+<span id="L186"><span class="lineNum">     186</span>                 :             :      */</span>
+<span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">          41 :     function _getGuardiansChallengeTimeout(ITrustedGuardiansPlugin.PluginStorage storage _pluginStorage) internal view returns(uint64) {</span></span>
+<span id="L188"><span class="lineNum">     188</span>            [<span class="tlaGBC" title="Branch 0 was taken 6 times"> + </span>]:<span class="tlaGNC">          41 :         if (_pluginStorage.guardiansThreshold == 0) {</span></span>
+<span id="L189"><span class="lineNum">     189</span>                 :<span class="tlaGNC">           6 :             return DEFAULT_GUARDIANS_CHALLENGE_TIMEOUT;</span></span>
+<span id="L190"><span class="lineNum">     190</span>                 :             :         }</span>
+<span id="L191"><span class="lineNum">     191</span>                 :<span class="tlaGNC">          35 :         return _pluginStorage.guardiansChallengeTimeout;</span></span>
+<span id="L192"><span class="lineNum">     192</span>                 :             :     }</span>
+<span id="L193"><span class="lineNum">     193</span>                 :             : </span>
+<span id="L194"><span class="lineNum">     194</span>                 :             :     /**</span>
+<span id="L195"><span class="lineNum">     195</span>                 :             :      * @notice Initializes or reconfigures the list of guardians, their threshold, and challenge timeout.</span>
+<span id="L196"><span class="lineNum">     196</span>                 :             :      * @dev Only callable by the owner. Clears any prior votes. If no guardians are set, it defaults to beneficiaries as guardians.</span>
+<span id="L197"><span class="lineNum">     197</span>                 :             :      * @param _guardians Array of GuardianToChange specifying which addresses to add or remove.</span>
+<span id="L198"><span class="lineNum">     198</span>                 :             :      * @param _guardiansThreshold Required number of guardian votes.</span>
+<span id="L199"><span class="lineNum">     199</span>                 :             :      * @param _guardiansChallengeTimeout Timeout in seconds that is set for distribution if guardiansThreshold is met.</span>
+<span id="L200"><span class="lineNum">     200</span>                 :             :      */</span>
+<span id="L201"><span class="lineNum">     201</span>                 :<span class="tlaGNC">           3 :     function initializeGuardians(GuardianToChange[] memory _guardians, uint128 _guardiansThreshold, uint64 _guardiansChallengeTimeout) external onlyOwner nonReentrant {</span></span>
+<span id="L202"><span class="lineNum">     202</span>                 :<span class="tlaGNC">           2 :         ITrustedGuardiansPlugin.PluginStorage storage pluginStorage = LibTrustedGuardiansPlugin.getPluginStorage();</span></span>
+<span id="L203"><span class="lineNum">     203</span>                 :<span class="tlaGNC">           2 :         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();</span></span>
+<span id="L204"><span class="lineNum">     204</span>                 :<span class="tlaGNC">           2 :         _setGuardians(cls, pluginStorage, _guardians);</span></span>
+<span id="L205"><span class="lineNum">     205</span>                 :<span class="tlaGNC">           2 :         _setGuardiansConfig(pluginStorage, _guardiansThreshold, _guardiansChallengeTimeout);</span></span>
+<span id="L206"><span class="lineNum">     206</span>                 :<span class="tlaGNC">           2 :         _afterGuardiansSet(cls, pluginStorage);</span></span>
+<span id="L207"><span class="lineNum">     207</span>                 :             :     }</span>
+<span id="L208"><span class="lineNum">     208</span>                 :             : </span>
+<span id="L209"><span class="lineNum">     209</span>                 :             :     /**</span>
+<span id="L210"><span class="lineNum">     210</span>                 :             :      * @notice Updates the guardian set.</span>
+<span id="L211"><span class="lineNum">     211</span>                 :             :      * @dev Can only be called by the owner. Processes an array of GuardianToChange structs to add or remove guardians.</span>
+<span id="L212"><span class="lineNum">     212</span>                 :             :      * @param _guardians Array of GuardianToChange structs.</span>
+<span id="L213"><span class="lineNum">     213</span>                 :             :      */</span>
+<span id="L214"><span class="lineNum">     214</span>                 :<span class="tlaGNC">           4 :     function setGuardians(GuardianToChange[] memory _guardians) external onlyOwner nonReentrant {</span></span>
+<span id="L215"><span class="lineNum">     215</span>                 :<span class="tlaGNC">           3 :         ITrustedGuardiansPlugin.PluginStorage storage pluginStorage = LibTrustedGuardiansPlugin.getPluginStorage();</span></span>
+<span id="L216"><span class="lineNum">     216</span>                 :<span class="tlaGNC">           3 :         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();</span></span>
+<span id="L217"><span class="lineNum">     217</span>                 :<span class="tlaGNC">           3 :         _setGuardians(cls, pluginStorage, _guardians);</span></span>
+<span id="L218"><span class="lineNum">     218</span>                 :<span class="tlaGNC">           2 :         _afterGuardiansSet(cls, pluginStorage);</span></span>
+<span id="L219"><span class="lineNum">     219</span>                 :             :     }</span>
+<span id="L220"><span class="lineNum">     220</span>                 :             : </span>
+<span id="L221"><span class="lineNum">     221</span>                 :             :     /**</span>
+<span id="L222"><span class="lineNum">     222</span>                 :             :      * @notice Internal function to update the guardians set.</span>
+<span id="L223"><span class="lineNum">     223</span>                 :             :      * @dev Iterates through the provided GuardianToChange array and adds or removes each guardian.</span>
+<span id="L224"><span class="lineNum">     224</span>                 :             :      *      Also updates the beneficiary registry accordingly.</span>
+<span id="L225"><span class="lineNum">     225</span>                 :             :      * @param _pluginStorage The plugin-specific storage reference.</span>
+<span id="L226"><span class="lineNum">     226</span>                 :             :      * @param _guardians Array of GuardianToChange structs.</span>
+<span id="L227"><span class="lineNum">     227</span>                 :             :      */</span>
+<span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaGNC">           5 :     function _setGuardians(ICryptoLegacy.CryptoLegacyStorage storage cls, ITrustedGuardiansPlugin.PluginStorage storage _pluginStorage, GuardianToChange[] memory _guardians) internal {</span></span>
+<span id="L229"><span class="lineNum">     229</span>                 :<span class="tlaGNC">           5 :         for (uint i = 0; i &lt; _guardians.length; i++) {</span></span>
+<span id="L230"><span class="lineNum">     230</span>                 :<span class="tlaGNC">          10 :             GuardianToChange memory g = _guardians[i];</span></span>
+<span id="L231"><span class="lineNum">     231</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">          10 :             if (g.hash == bytes32(0)) {</span></span>
+<span id="L232"><span class="lineNum">     232</span>                 :<span class="tlaGNC">           1 :                 revert ZeroGuardian();</span></span>
+<span id="L233"><span class="lineNum">     233</span>                 :             :             }</span>
+<span id="L234"><span class="lineNum">     234</span>         [<span class="tlaGBC" title="Branch 0 was taken 7 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           7 :             if (g.isAdd) {</span></span>
+<span id="L235"><span class="lineNum">     235</span>                 :<span class="tlaGNC">           7 :                 _pluginStorage.guardians.add(g.hash);</span></span>
+<span id="L236"><span class="lineNum">     236</span>                 :<span class="tlaGNC">           7 :                 LibCryptoLegacy._setCryptoLegacyToBeneficiaryRegistry(cls, g.hash, IBeneficiaryRegistry.EntityType.GUARDIAN, true);</span></span>
+<span id="L237"><span class="lineNum">     237</span>                 :             :             } else {</span>
+<span id="L238"><span class="lineNum">     238</span>                 :<span class="tlaGNC">           2 :                 _pluginStorage.guardians.remove(g.hash);</span></span>
+<span id="L239"><span class="lineNum">     239</span>                 :<span class="tlaGNC">           2 :                 LibCryptoLegacy._setCryptoLegacyToBeneficiaryRegistry(cls, g.hash, IBeneficiaryRegistry.EntityType.GUARDIAN, false);</span></span>
+<span id="L240"><span class="lineNum">     240</span>                 :             :             }</span>
+<span id="L241"><span class="lineNum">     241</span>                 :<span class="tlaGNC">           9 :             emit SetGuardian(g.hash, g.isAdd);</span></span>
+<span id="L242"><span class="lineNum">     242</span>                 :             :         }</span>
+<span id="L243"><span class="lineNum">     243</span>                 :             :     }</span>
+<span id="L244"><span class="lineNum">     244</span>                 :             : </span>
+<span id="L245"><span class="lineNum">     245</span>                 :             :     /**</span>
+<span id="L246"><span class="lineNum">     246</span>                 :             :      * @notice Updates the guardians configuration.</span>
+<span id="L247"><span class="lineNum">     247</span>                 :             :      * @dev Can only be called by the owner. Resets any previous guardian votes.</span>
+<span id="L248"><span class="lineNum">     248</span>                 :             :      * Reverts if the provided challenge timeout exceeds 30 days.</span>
+<span id="L249"><span class="lineNum">     249</span>                 :             :      * Emits a SetGuardiansConfig event with the new parameters.</span>
+<span id="L250"><span class="lineNum">     250</span>                 :             :      * @param _guardiansThreshold The number of votes required.</span>
+<span id="L251"><span class="lineNum">     251</span>                 :             :      * @param _guardiansChallengeTimeout The timeout (in seconds) after which distribution can be triggered.</span>
+<span id="L252"><span class="lineNum">     252</span>                 :             :      */</span>
+<span id="L253"><span class="lineNum">     253</span>                 :<span class="tlaGNC">           7 :     function setGuardiansConfig(uint128 _guardiansThreshold, uint64 _guardiansChallengeTimeout) external onlyOwner nonReentrant {</span></span>
+<span id="L254"><span class="lineNum">     254</span>                 :<span class="tlaGNC">           6 :         ITrustedGuardiansPlugin.PluginStorage storage pluginStorage = LibTrustedGuardiansPlugin.getPluginStorage();</span></span>
+<span id="L255"><span class="lineNum">     255</span>                 :<span class="tlaGNC">           6 :         _setGuardiansConfig(pluginStorage, _guardiansThreshold, _guardiansChallengeTimeout);</span></span>
+<span id="L256"><span class="lineNum">     256</span>                 :<span class="tlaGNC">           4 :         _afterGuardiansSet(LibCryptoLegacy.getCryptoLegacyStorage(), pluginStorage);</span></span>
+<span id="L257"><span class="lineNum">     257</span>                 :             :     }</span>
+<span id="L258"><span class="lineNum">     258</span>                 :             : </span>
+<span id="L259"><span class="lineNum">     259</span>                 :             :     /**</span>
+<span id="L260"><span class="lineNum">     260</span>                 :             :      * @notice Internal function to update the guardians configuration.</span>
+<span id="L261"><span class="lineNum">     261</span>                 :             :      * @dev Validates that the challenge timeout does not equal 0 and not exceed MAX_GUARDIANS_CHALLENGE_TIMEOUT before updating.</span>
+<span id="L262"><span class="lineNum">     262</span>                 :             :      * Clears all recorded guardian votes.</span>
+<span id="L263"><span class="lineNum">     263</span>                 :             :      * Emits a SetGuardiansConfig event.</span>
+<span id="L264"><span class="lineNum">     264</span>                 :             :      * @param _pluginStorage The plugin-specific storage reference.</span>
+<span id="L265"><span class="lineNum">     265</span>                 :             :      * @param _guardiansThreshold The required number of votes.</span>
+<span id="L266"><span class="lineNum">     266</span>                 :             :      * @param _guardiansChallengeTimeout The challenge timeout in seconds.</span>
+<span id="L267"><span class="lineNum">     267</span>                 :             :      */</span>
+<span id="L268"><span class="lineNum">     268</span>                 :<span class="tlaGNC">           8 :     function _setGuardiansConfig(ITrustedGuardiansPlugin.PluginStorage storage _pluginStorage, uint128 _guardiansThreshold, uint64 _guardiansChallengeTimeout) internal {</span></span>
+<span id="L269"><span class="lineNum">     269</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           8 :         if (_guardiansChallengeTimeout &gt; MAX_GUARDIANS_CHALLENGE_TIMEOUT) {</span></span>
+<span id="L270"><span class="lineNum">     270</span>                 :<span class="tlaGNC">           1 :             revert MaxGuardiansTimeout(MAX_GUARDIANS_CHALLENGE_TIMEOUT);</span></span>
+<span id="L271"><span class="lineNum">     271</span>                 :             :         }</span>
+<span id="L272"><span class="lineNum">     272</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           7 :         if (_guardiansChallengeTimeout == 0) {</span></span>
+<span id="L273"><span class="lineNum">     273</span>                 :<span class="tlaGNC">           1 :             revert GuardiansTimeoutCantBeZero();</span></span>
+<span id="L274"><span class="lineNum">     274</span>                 :             :         }</span>
+<span id="L275"><span class="lineNum">     275</span>                 :<span class="tlaGNC">           6 :         _pluginStorage.guardiansThreshold = _guardiansThreshold;</span></span>
+<span id="L276"><span class="lineNum">     276</span>                 :<span class="tlaGNC">           6 :         _pluginStorage.guardiansChallengeTimeout = _guardiansChallengeTimeout;</span></span>
+<span id="L277"><span class="lineNum">     277</span>                 :<span class="tlaGNC">           6 :         emit SetGuardiansConfig(_guardiansThreshold, _guardiansChallengeTimeout);</span></span>
+<span id="L278"><span class="lineNum">     278</span>                 :             :     }</span>
+<span id="L279"><span class="lineNum">     279</span>                 :             : </span>
+<span id="L280"><span class="lineNum">     280</span>                 :             :     /**</span>
+<span id="L281"><span class="lineNum">     281</span>                 :             :      * @notice Internal function to check threshold and clear the guardians voted array.</span>
+<span id="L282"><span class="lineNum">     282</span>                 :             :      */</span>
+<span id="L283"><span class="lineNum">     283</span>                 :<span class="tlaGNC">           8 :     function _afterGuardiansSet(ICryptoLegacy.CryptoLegacyStorage storage cls, ITrustedGuardiansPlugin.PluginStorage storage _pluginStorage) internal {</span></span>
+<span id="L284"><span class="lineNum">     284</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">           8 :         if (_pluginStorage.guardiansThreshold &gt; _getGuardians(cls, _pluginStorage).length()) {</span></span>
+<span id="L285"><span class="lineNum">     285</span>                 :<span class="tlaGNC">           1 :             revert ThresholdTooBig();</span></span>
+<span id="L286"><span class="lineNum">     286</span>                 :             :         }</span>
+<span id="L287"><span class="lineNum">     287</span>                 :<span class="tlaGNC">           7 :         _pluginStorage.guardiansVoted = new bytes32[](0);</span></span>
+<span id="L288"><span class="lineNum">     288</span>                 :<span class="tlaGNC">           7 :         emit ClearGuardiansVoted();</span></span>
+<span id="L289"><span class="lineNum">     289</span>                 :             :     }</span>
+<span id="L290"><span class="lineNum">     290</span>                 :             : </span>
+<span id="L291"><span class="lineNum">     291</span>                 :             :     /**</span>
+<span id="L292"><span class="lineNum">     292</span>                 :             :      * @notice Allows a guardian to vote for distribution.</span>
+<span id="L293"><span class="lineNum">     293</span>                 :             :      * @dev Checks that the guardian has not already voted before recording the vote.</span>
+<span id="L294"><span class="lineNum">     294</span>                 :             :      *      If the number of votes reaches the required threshold, sets the distribution start time to the current block timestamp plus the guardians challenge timeout.</span>
+<span id="L295"><span class="lineNum">     295</span>                 :             :      * @dev Emits GuardiansDistributionStartSet if the distribution start time is updated, and emits GuardiansVoteForDistribution regardless.</span>
+<span id="L296"><span class="lineNum">     296</span>                 :             :      */</span>
+<span id="L297"><span class="lineNum">     297</span>                 :<span class="tlaGNC">          23 :     function guardiansVoteForDistribution() external nonReentrant {</span></span>
+<span id="L298"><span class="lineNum">     298</span>                 :<span class="tlaGNC">          23 :         (ICryptoLegacy.CryptoLegacyStorage storage cls, ITrustedGuardiansPlugin.PluginStorage storage pluginStorage, bytes32 hash) = _checkGuardianNotVoted();</span></span>
+<span id="L299"><span class="lineNum">     299</span>                 :             : </span>
+<span id="L300"><span class="lineNum">     300</span>                 :<span class="tlaGNC">          18 :         pluginStorage.guardiansVoted.push(hash);</span></span>
+<span id="L301"><span class="lineNum">     301</span>                 :<span class="tlaGNC">          18 :         uint128 guardiansThreshold = _getGuardiansThreshold(cls, pluginStorage);</span></span>
+<span id="L302"><span class="lineNum">     302</span>                 :<span class="tlaGNC">          18 :         uint64 guardiansChallengeTimeout = _getGuardiansChallengeTimeout(pluginStorage);</span></span>
+<span id="L303"><span class="lineNum">     303</span>            [<span class="tlaGBC" title="Branch 0 was taken 3 times"> + </span>]:<span class="tlaGNC">          18 :         if (pluginStorage.guardiansVoted.length &gt;= guardiansThreshold) {</span></span>
+<span id="L304"><span class="lineNum">     304</span>                 :<span class="tlaGNC">           3 :             uint64 maxDistributionStartAt = uint64(block.timestamp) + guardiansChallengeTimeout;</span></span>
+<span id="L305"><span class="lineNum">     305</span>            [<span class="tlaGBC" title="Branch 0 was taken 3 times"> + </span>]:<span class="tlaGNC">           3 :             if (cls.distributionStartAt == 0 || cls.distributionStartAt &gt; maxDistributionStartAt) {</span></span>
+<span id="L306"><span class="lineNum">     306</span>                 :<span class="tlaGNC">           3 :                 cls.distributionStartAt = maxDistributionStartAt;</span></span>
+<span id="L307"><span class="lineNum">     307</span>                 :<span class="tlaGNC">           3 :                 emit GuardiansDistributionStartSet(hash, maxDistributionStartAt);</span></span>
+<span id="L308"><span class="lineNum">     308</span>                 :             :             }</span>
+<span id="L309"><span class="lineNum">     309</span>                 :<span class="tlaGNC">           3 :             pluginStorage.guardiansVoted = new bytes32[](0);</span></span>
+<span id="L310"><span class="lineNum">     310</span>                 :             :         }</span>
+<span id="L311"><span class="lineNum">     311</span>                 :<span class="tlaGNC">          18 :         emit GuardiansVoteForDistribution(hash, pluginStorage.guardiansVoted.length);</span></span>
+<span id="L312"><span class="lineNum">     312</span>                 :             :     }</span>
+<span id="L313"><span class="lineNum">     313</span>                 :             : </span>
+<span id="L314"><span class="lineNum">     314</span>                 :             :     /**</span>
+<span id="L315"><span class="lineNum">     315</span>                 :             :      * @notice Allows a guardian to transfer treasury tokens from specified holders to the legacy contract.</span>
+<span id="L316"><span class="lineNum">     316</span>                 :             :      * @dev Checks that the caller is a guardian and that the distribution phase is ready before transferring tokens.</span>
+<span id="L317"><span class="lineNum">     317</span>                 :             :      * @param _holders Array of addresses from which tokens will be transferred.</span>
+<span id="L318"><span class="lineNum">     318</span>                 :             :      * @param _tokens Array of token addresses to be transferred.</span>
+<span id="L319"><span class="lineNum">     319</span>                 :             :      */</span>
+<span id="L320"><span class="lineNum">     320</span>                 :<span class="tlaGNC">           4 :     function guardiansTransferTreasuryTokensToLegacy(address[] memory _holders, address[] memory _tokens) external nonReentrant {</span></span>
+<span id="L321"><span class="lineNum">     321</span>                 :<span class="tlaGNC">           4 :         (ICryptoLegacy.CryptoLegacyStorage storage cls, , ) = _checkGuardian();</span></span>
+<span id="L322"><span class="lineNum">     322</span>                 :<span class="tlaGNC">           2 :         LibCryptoLegacy._checkDistributionReady(cls);</span></span>
+<span id="L323"><span class="lineNum">     323</span>                 :<span class="tlaGNC">           1 :         LibCryptoLegacy._transferTreasuryTokensToLegacy(cls, _holders, _tokens);</span></span>
+<span id="L324"><span class="lineNum">     324</span>                 :             :     }</span>
+<span id="L325"><span class="lineNum">     325</span>                 :             : </span>
+<span id="L326"><span class="lineNum">     326</span>                 :             :     /**</span>
+<span id="L327"><span class="lineNum">     327</span>                 :             :      * @notice Resets the guardian voting state, clearing the guardiansVoted array and resetting distributionStartAt.</span>
+<span id="L328"><span class="lineNum">     328</span>                 :             :      * @dev Can only be called by the owner.</span>
+<span id="L329"><span class="lineNum">     329</span>                 :             :      */</span>
+<span id="L330"><span class="lineNum">     330</span>                 :<span class="tlaGNC">           5 :     function resetGuardianVoting() external payable onlyOwner nonReentrant {</span></span>
+<span id="L331"><span class="lineNum">     331</span>                 :<span class="tlaGNC">           3 :         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();</span></span>
+<span id="L332"><span class="lineNum">     332</span>                 :<span class="tlaGNC">           3 :         LibTrustedGuardiansPlugin._resetGuardianVoting(cls);</span></span>
+<span id="L333"><span class="lineNum">     333</span>                 :             :     }</span>
+<span id="L334"><span class="lineNum">     334</span>                 :             : </span>
+<span id="L335"><span class="lineNum">     335</span>                 :             :     /**</span>
+<span id="L336"><span class="lineNum">     336</span>                 :             :      * @notice Internal view function to check guardian initialization.</span>
+<span id="L337"><span class="lineNum">     337</span>                 :             :      * @param _pluginStorage The plugin-specific storage.</span>
+<span id="L338"><span class="lineNum">     338</span>                 :             :      * @return True if the guardians set is non-empty, false otherwise.</span>
+<span id="L339"><span class="lineNum">     339</span>                 :             :      */</span>
+<span id="L340"><span class="lineNum">     340</span>                 :<span class="tlaGNC">           2 :     function _isGuardiansInitialized(ITrustedGuardiansPlugin.PluginStorage storage _pluginStorage) internal view returns(bool) {</span></span>
+<span id="L341"><span class="lineNum">     341</span>                 :<span class="tlaGNC">           2 :         return _pluginStorage.guardians.length() != 0;</span></span>
+<span id="L342"><span class="lineNum">     342</span>                 :             :     }</span>
+<span id="L343"><span class="lineNum">     343</span>                 :             : </span>
+<span id="L344"><span class="lineNum">     344</span>                 :             :     /**</span>
+<span id="L345"><span class="lineNum">     345</span>                 :             :      * @notice Checks whether guardians have been explicitly initialized.</span>
+<span id="L346"><span class="lineNum">     346</span>                 :             :      * @dev Returns true if the guardians set in plugin storage is non-empty.</span>
+<span id="L347"><span class="lineNum">     347</span>                 :             :      * @return True if guardians are initialized, false otherwise.</span>
+<span id="L348"><span class="lineNum">     348</span>                 :             :      */</span>
+<span id="L349"><span class="lineNum">     349</span>                 :<span class="tlaGNC">           2 :     function isGuardiansInitialized() external view returns(bool) {</span></span>
+<span id="L350"><span class="lineNum">     350</span>                 :<span class="tlaGNC">           2 :         return _isGuardiansInitialized(LibTrustedGuardiansPlugin.getPluginStorage());</span></span>
+<span id="L351"><span class="lineNum">     351</span>                 :             :     }</span>
+<span id="L352"><span class="lineNum">     352</span>                 :             : </span>
+<span id="L353"><span class="lineNum">     353</span>                 :             :     /**</span>
+<span id="L354"><span class="lineNum">     354</span>                 :             :      * @notice Retrieves current guardian data.</span>
+<span id="L355"><span class="lineNum">     355</span>                 :             :      * @dev Returns the list of guardian identifiers, the list of votes already cast, the required vote threshold, and the challenge timeout.</span>
+<span id="L356"><span class="lineNum">     356</span>                 :             :      * @return guardians An array of guardian identifiers.</span>
+<span id="L357"><span class="lineNum">     357</span>                 :             :      * @return guardiansVoted An array of guardian identifiers that have already voted.</span>
+<span id="L358"><span class="lineNum">     358</span>                 :             :      * @return guardiansThreshold The number of votes required to trigger distribution.</span>
+<span id="L359"><span class="lineNum">     359</span>                 :             :      * @return guardiansChallengeTimeout The timeout (in seconds) applied when the vote threshold is met.</span>
+<span id="L360"><span class="lineNum">     360</span>                 :             :      */</span>
+<span id="L361"><span class="lineNum">     361</span>                 :<span class="tlaGNC">          22 :     function getGuardiansData() external view returns(</span></span>
+<span id="L362"><span class="lineNum">     362</span>                 :             :         bytes32[] memory guardians,</span>
+<span id="L363"><span class="lineNum">     363</span>                 :             :         bytes32[] memory guardiansVoted,</span>
+<span id="L364"><span class="lineNum">     364</span>                 :             :         uint128 guardiansThreshold,</span>
+<span id="L365"><span class="lineNum">     365</span>                 :             :         uint64 guardiansChallengeTimeout</span>
+<span id="L366"><span class="lineNum">     366</span>                 :             :     ) {</span>
+<span id="L367"><span class="lineNum">     367</span>                 :<span class="tlaGNC">          22 :         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();</span></span>
+<span id="L368"><span class="lineNum">     368</span>                 :<span class="tlaGNC">          22 :         ITrustedGuardiansPlugin.PluginStorage storage pluginStorage = LibTrustedGuardiansPlugin.getPluginStorage();</span></span>
+<span id="L369"><span class="lineNum">     369</span>                 :<span class="tlaGNC">          22 :         return (</span></span>
+<span id="L370"><span class="lineNum">     370</span>                 :             :             _getGuardians(cls, pluginStorage).values(),</span>
+<span id="L371"><span class="lineNum">     371</span>                 :             :             pluginStorage.guardiansVoted,</span>
+<span id="L372"><span class="lineNum">     372</span>                 :             :             _getGuardiansThreshold(cls, pluginStorage),</span>
+<span id="L373"><span class="lineNum">     373</span>                 :             :             _getGuardiansChallengeTimeout(pluginStorage)</span>
+<span id="L374"><span class="lineNum">     374</span>                 :             :         );</span>
+<span id="L375"><span class="lineNum">     375</span>                 :             :     }</span>
+<span id="L376"><span class="lineNum">     376</span>                 :             : </span>
+<span id="L377"><span class="lineNum">     377</span>                 :             :     /**</span>
+<span id="L378"><span class="lineNum">     378</span>                 :             :      * @notice Ensures the caller is a valid guardian, cleans up any invalid votes from current guardian data and returns it.</span>
+<span id="L379"><span class="lineNum">     379</span>                 :             :      * @dev </span>
+<span id="L380"><span class="lineNum">     380</span>                 :             :      *  1. Calls `_checkGuardian()` to verify the caller is a guardian in the system.</span>
+<span id="L381"><span class="lineNum">     381</span>                 :             :      *  2. Invokes `_isGuardianVoted` to see if the caller has already voted. </span>
+<span id="L382"><span class="lineNum">     382</span>                 :             :      *     - During this check, any votes from guardians no longer recognized are removed from `guardiansVoted`.</span>
+<span id="L383"><span class="lineNum">     383</span>                 :             :      *  3. Aggregates up-to-date guardian information and returns it.</span>
+<span id="L384"><span class="lineNum">     384</span>                 :             :      * @return guardians The array of valid guardian identifiers (hashes) recognized by the system.</span>
+<span id="L385"><span class="lineNum">     385</span>                 :             :      * @return guardiansVoted The array of guardians who have voted, after removing invalid entries.</span>
+<span id="L386"><span class="lineNum">     386</span>                 :             :      * @return guardiansThreshold The number of votes required to trigger distribution.</span>
+<span id="L387"><span class="lineNum">     387</span>                 :             :      * @return guardiansChallengeTimeout The current challenge timeout (in seconds).</span>
+<span id="L388"><span class="lineNum">     388</span>                 :             :      * @return isGuardianVoted Whether the caller (msg.sender) has already voted (true) or not (false).</span>
+<span id="L389"><span class="lineNum">     389</span>                 :             :      */</span>
+<span id="L390"><span class="lineNum">     390</span>                 :<span class="tlaGNC">           2 :     function checkGuardiansVotedAndGetGuardiansData() external returns(</span></span>
+<span id="L391"><span class="lineNum">     391</span>                 :             :         bytes32[] memory guardians,</span>
+<span id="L392"><span class="lineNum">     392</span>                 :             :         bytes32[] memory guardiansVoted,</span>
+<span id="L393"><span class="lineNum">     393</span>                 :             :         uint128 guardiansThreshold,</span>
+<span id="L394"><span class="lineNum">     394</span>                 :             :         uint64 guardiansChallengeTimeout,</span>
+<span id="L395"><span class="lineNum">     395</span>                 :             :         bool isGuardianVoted</span>
+<span id="L396"><span class="lineNum">     396</span>                 :             :     ) {</span>
+<span id="L397"><span class="lineNum">     397</span>                 :<span class="tlaGNC">           2 :         (ICryptoLegacy.CryptoLegacyStorage storage cls, ITrustedGuardiansPlugin.PluginStorage storage pluginStorage, bytes32 hash) = _checkGuardian();</span></span>
+<span id="L398"><span class="lineNum">     398</span>                 :<span class="tlaGNC">           1 :         isGuardianVoted = _isGuardianVoted(cls, pluginStorage, hash);</span></span>
+<span id="L399"><span class="lineNum">     399</span>                 :<span class="tlaGNC">           1 :         return (</span></span>
+<span id="L400"><span class="lineNum">     400</span>                 :             :             _getGuardians(cls, pluginStorage).values(),</span>
+<span id="L401"><span class="lineNum">     401</span>                 :             :             pluginStorage.guardiansVoted,</span>
+<span id="L402"><span class="lineNum">     402</span>                 :             :             _getGuardiansThreshold(cls, pluginStorage),</span>
+<span id="L403"><span class="lineNum">     403</span>                 :             :             _getGuardiansChallengeTimeout(pluginStorage),</span>
+<span id="L404"><span class="lineNum">     404</span>                 :             :             isGuardianVoted</span>
+<span id="L405"><span class="lineNum">     405</span>                 :             :         );</span>
+<span id="L406"><span class="lineNum">     406</span>                 :             :     }</span>
+<span id="L407"><span class="lineNum">     407</span>                 :             : }</span>
         </pre>
               </td>
             </tr>

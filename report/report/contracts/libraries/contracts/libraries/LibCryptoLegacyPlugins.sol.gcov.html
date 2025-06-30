@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-05-28 15:19:12</td>
+            <td class="headerValue">2025-06-30 10:26:26</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -86,8 +86,8 @@
 <span id="L15"><span class="lineNum">      15</span>                 :             :      * @param _cls The CryptoLegacy storage structure which contains the build manager reference.</span>
 <span id="L16"><span class="lineNum">      16</span>                 :             :      * @param _plugin The address of the plugin to validate.</span>
 <span id="L17"><span class="lineNum">      17</span>                 :             :      */</span>
-<span id="L18"><span class="lineNum">      18</span>                 :<span class="tlaGNC tlaBgGNC">         145 :     function _validatePlugin(ICryptoLegacy.CryptoLegacyStorage storage _cls, address _plugin) internal view {</span></span>
-<span id="L19"><span class="lineNum">      19</span>            [<span class="tlaGBC" title="Branch 0 was taken 3 times"> + </span>]:<span class="tlaGNC">         145 :         if (!_cls.buildManager.isPluginRegistered(_plugin)) {</span></span>
+<span id="L18"><span class="lineNum">      18</span>                 :<span class="tlaGNC tlaBgGNC">        1182 :     function _validatePlugin(ICryptoLegacy.CryptoLegacyStorage storage _cls, address _plugin) internal view {</span></span>
+<span id="L19"><span class="lineNum">      19</span>            [<span class="tlaGBC" title="Branch 0 was taken 3 times"> + </span>]:<span class="tlaGNC">        1182 :         if (!_cls.buildManager.isPluginRegistered(_plugin)) {</span></span>
 <span id="L20"><span class="lineNum">      20</span>                 :<span class="tlaGNC">           3 :             revert ICryptoLegacy.PluginNotRegistered();</span></span>
 <span id="L21"><span class="lineNum">      21</span>                 :             :         }</span>
 <span id="L22"><span class="lineNum">      22</span>                 :             :     }</span>
@@ -100,11 +100,11 @@
 <span id="L29"><span class="lineNum">      29</span>                 :             :      * @param _cls The CryptoLegacy storage structure.</span>
 <span id="L30"><span class="lineNum">      30</span>                 :             :      * @param _plugins The array of plugin addresses to be added.</span>
 <span id="L31"><span class="lineNum">      31</span>                 :             :      */</span>
-<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">          68 :     function _addPluginList(ICryptoLegacy.CryptoLegacyStorage storage _cls, address[] memory _plugins) internal {</span></span>
-<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">          68 :         for (uint256 i = 0; i &lt; _plugins.length; i++) {</span></span>
-<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">         145 :             _validatePlugin(_cls, _plugins[i]);</span></span>
-<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">         142 :             bytes4[] memory functionSelectors = ICryptoLegacyPlugin(_plugins[i]).getSetupSigs();</span></span>
-<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">         142 :             addFunctions(_plugins[i], functionSelectors);</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">         586 :     function _addPluginList(ICryptoLegacy.CryptoLegacyStorage storage _cls, address[] memory _plugins) internal {</span></span>
+<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">         586 :         for (uint256 i = 0; i &lt; _plugins.length; i++) {</span></span>
+<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">        1182 :             _validatePlugin(_cls, _plugins[i]);</span></span>
+<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">        1179 :             bytes4[] memory functionSelectors = ICryptoLegacyPlugin(_plugins[i]).getSetupSigs();</span></span>
+<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">        1179 :             addFunctions(_plugins[i], functionSelectors);</span></span>
 <span id="L37"><span class="lineNum">      37</span>                 :             :         }</span>
 <span id="L38"><span class="lineNum">      38</span>                 :             :     }</span>
 <span id="L39"><span class="lineNum">      39</span>                 :             : </span>
@@ -142,15 +142,15 @@
 <span id="L71"><span class="lineNum">      71</span>                 :             :      * @param ds The Diamond storage structure.</span>
 <span id="L72"><span class="lineNum">      72</span>                 :             :      * @param _facetAddress The facet address to be added.</span>
 <span id="L73"><span class="lineNum">      73</span>                 :             :      */</span>
-<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">         142 :     function _addFacetAddressIfNotExists(LibDiamond.DiamondStorage storage ds, address _facetAddress) private {</span></span>
-<span id="L75"><span class="lineNum">      75</span>                 :<span class="tlaGNC">         142 :         uint256 length = ds.facetAddresses.length;</span></span>
-<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">         142 :         for (uint256 i = 0; i &lt; length; i++) {</span></span>
-<span id="L77"><span class="lineNum">      77</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">         113 :             if (ds.facetAddresses[i] == _facetAddress) {</span></span>
+<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC">        1179 :     function _addFacetAddressIfNotExists(LibDiamond.DiamondStorage storage ds, address _facetAddress) private {</span></span>
+<span id="L75"><span class="lineNum">      75</span>                 :<span class="tlaGNC">        1179 :         uint256 length = ds.facetAddresses.length;</span></span>
+<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">        1179 :         for (uint256 i = 0; i &lt; length; i++) {</span></span>
+<span id="L77"><span class="lineNum">      77</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">         633 :             if (ds.facetAddresses[i] == _facetAddress) {</span></span>
 <span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">           1 :                 return;</span></span>
 <span id="L79"><span class="lineNum">      79</span>                 :             :             }</span>
 <span id="L80"><span class="lineNum">      80</span>                 :             :         }</span>
-<span id="L81"><span class="lineNum">      81</span>                 :<span class="tlaGNC">         141 :         LibDiamond.enforceHasContractCode(_facetAddress, &quot;NO_CODE&quot;);</span></span>
-<span id="L82"><span class="lineNum">      82</span>                 :<span class="tlaGNC">         141 :         ds.facetAddresses.push(_facetAddress);</span></span>
+<span id="L81"><span class="lineNum">      81</span>                 :<span class="tlaGNC">        1178 :         LibDiamond.enforceHasContractCode(_facetAddress, &quot;NO_CODE&quot;);</span></span>
+<span id="L82"><span class="lineNum">      82</span>                 :<span class="tlaGNC">        1178 :         ds.facetAddresses.push(_facetAddress);</span></span>
 <span id="L83"><span class="lineNum">      83</span>                 :             :     }</span>
 <span id="L84"><span class="lineNum">      84</span>                 :             : </span>
 <span id="L85"><span class="lineNum">      85</span>                 :             :     /**</span>
@@ -179,23 +179,23 @@
 <span id="L108"><span class="lineNum">     108</span>                 :             :      * @param _facetAddress The address of the facet that provides the functions.</span>
 <span id="L109"><span class="lineNum">     109</span>                 :             :      * @param _functionSelectors An array of function selectors (bytes4) to be added.</span>
 <span id="L110"><span class="lineNum">     110</span>                 :             :      */</span>
-<span id="L111"><span class="lineNum">     111</span>                 :<span class="tlaGNC">         143 :     function addFunctions(address _facetAddress, bytes4[] memory _functionSelectors) internal {</span></span>
+<span id="L111"><span class="lineNum">     111</span>                 :<span class="tlaGNC">        1180 :     function addFunctions(address _facetAddress, bytes4[] memory _functionSelectors) internal {</span></span>
 <span id="L112"><span class="lineNum">     112</span>                 :             :         // uint16 selectorCount = uint16(diamondStorage().selectors.length);</span>
-<span id="L113"><span class="lineNum">     113</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">         143 :         if (_facetAddress == address(0)) {</span></span>
+<span id="L113"><span class="lineNum">     113</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">        1180 :         if (_facetAddress == address(0)) {</span></span>
 <span id="L114"><span class="lineNum">     114</span>                 :<span class="tlaGNC">           1 :             revert ICryptoLegacy.FacetCantBeZero();</span></span>
 <span id="L115"><span class="lineNum">     115</span>                 :             :         }</span>
-<span id="L116"><span class="lineNum">     116</span>                 :<span class="tlaGNC">         142 :         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();</span></span>
-<span id="L117"><span class="lineNum">     117</span>                 :<span class="tlaGNC">         142 :         _addFacetAddressIfNotExists(ds, _facetAddress);</span></span>
+<span id="L116"><span class="lineNum">     116</span>                 :<span class="tlaGNC">        1179 :         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();</span></span>
+<span id="L117"><span class="lineNum">     117</span>                 :<span class="tlaGNC">        1179 :         _addFacetAddressIfNotExists(ds, _facetAddress);</span></span>
 <span id="L118"><span class="lineNum">     118</span>                 :             : </span>
-<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">         142 :         for (uint256 selectorIndex; selectorIndex &lt; _functionSelectors.length; selectorIndex++) {</span></span>
-<span id="L120"><span class="lineNum">     120</span>                 :<span class="tlaGNC">         309 :             bytes4 selector = _functionSelectors[selectorIndex];</span></span>
-<span id="L121"><span class="lineNum">     121</span>            [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span>]:<span class="tlaGNC">         309 :             if (ds.selectorToFacetAndPosition[selector].facetAddress != address(0)) {</span></span>
+<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">        1179 :         for (uint256 selectorIndex; selectorIndex &lt; _functionSelectors.length; selectorIndex++) {</span></span>
+<span id="L120"><span class="lineNum">     120</span>                 :<span class="tlaGNC">        2899 :             bytes4 selector = _functionSelectors[selectorIndex];</span></span>
+<span id="L121"><span class="lineNum">     121</span>            [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span>]:<span class="tlaGNC">        2899 :             if (ds.selectorToFacetAndPosition[selector].facetAddress != address(0)) {</span></span>
 <span id="L122"><span class="lineNum">     122</span>                 :<span class="tlaGNC">           2 :                 revert ICryptoLegacy.CantAddFunctionThatAlreadyExists();</span></span>
 <span id="L123"><span class="lineNum">     123</span>                 :             :             }</span>
-<span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaGNC">         307 :             ds.selectorToFacetAndPosition[selector].facetAddress = _facetAddress;</span></span>
+<span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaGNC">        2897 :             ds.selectorToFacetAndPosition[selector].facetAddress = _facetAddress;</span></span>
 <span id="L125"><span class="lineNum">     125</span>                 :             :         }</span>
 <span id="L126"><span class="lineNum">     126</span>                 :             : </span>
-<span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">         140 :         emit ICryptoLegacy.AddFunctions(_facetAddress, _functionSelectors, uint16(0));</span></span>
+<span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">        1177 :         emit ICryptoLegacy.AddFunctions(_facetAddress, _functionSelectors, uint16(0));</span></span>
 <span id="L128"><span class="lineNum">     128</span>                 :             :     }</span>
 <span id="L129"><span class="lineNum">     129</span>                 :             : </span>
 <span id="L130"><span class="lineNum">     130</span>                 :             :     /**</span>
@@ -231,12 +231,12 @@
 <span id="L160"><span class="lineNum">     160</span>                 :             :      * @return facetAddress The facet address that provides the function matching _selector.</span>
 <span id="L161"><span class="lineNum">     161</span>                 :             :      * If no match is found, returns the zero address.</span>
 <span id="L162"><span class="lineNum">     162</span>                 :             :      */</span>
-<span id="L163"><span class="lineNum">     163</span>                 :<span class="tlaGNC">         505 :     function _findFacetBySelector(LibDiamond.DiamondStorage storage ds, bytes4 _selector) internal view returns(address) {</span></span>
-<span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">         505 :         for (uint256 i = 0; i &lt; ds.facetAddresses.length; i++) {</span></span>
-<span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">        1031 :             bytes4[] memory sigs = ICryptoLegacyPlugin(ds.facetAddresses[i]).getSigs();</span></span>
-<span id="L166"><span class="lineNum">     166</span>                 :<span class="tlaGNC">        1031 :             for (uint256 j = 0; j &lt; sigs.length; j++) {</span></span>
-<span id="L167"><span class="lineNum">     167</span>            [<span class="tlaGBC" title="Branch 0 was taken 491 times"> + </span>]:<span class="tlaGNC">       15676 :                 if (_selector == sigs[j]) {</span></span>
-<span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">         491 :                     return ds.facetAddresses[i];</span></span>
+<span id="L163"><span class="lineNum">     163</span>                 :<span class="tlaGNC">        3634 :     function _findFacetBySelector(LibDiamond.DiamondStorage storage ds, bytes4 _selector) internal view returns(address) {</span></span>
+<span id="L164"><span class="lineNum">     164</span>                 :<span class="tlaGNC">        3634 :         for (uint256 i = 0; i &lt; ds.facetAddresses.length; i++) {</span></span>
+<span id="L165"><span class="lineNum">     165</span>                 :<span class="tlaGNC">        4717 :             bytes4[] memory sigs = ICryptoLegacyPlugin(ds.facetAddresses[i]).getSigs();</span></span>
+<span id="L166"><span class="lineNum">     166</span>                 :<span class="tlaGNC">        4717 :             for (uint256 j = 0; j &lt; sigs.length; j++) {</span></span>
+<span id="L167"><span class="lineNum">     167</span>            [<span class="tlaGBC" title="Branch 0 was taken 3620 times"> + </span>]:<span class="tlaGNC">       70019 :                 if (_selector == sigs[j]) {</span></span>
+<span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">        3620 :                     return ds.facetAddresses[i];</span></span>
 <span id="L169"><span class="lineNum">     169</span>                 :             :                 }</span>
 <span id="L170"><span class="lineNum">     170</span>                 :             :             }</span>
 <span id="L171"><span class="lineNum">     171</span>                 :             :         }</span>

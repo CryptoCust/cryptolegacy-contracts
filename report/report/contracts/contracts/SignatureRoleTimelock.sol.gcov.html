@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-05-28 15:19:12</td>
+            <td class="headerValue">2025-06-30 10:26:26</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">96.4&nbsp;%</td>
@@ -75,7 +75,7 @@
 <span id="L4"><span class="lineNum">       4</span>                 :             : </span>
 <span id="L5"><span class="lineNum">       5</span>                 :             : import &quot;./interfaces/ISignatureRoleTimelock.sol&quot;;</span>
 <span id="L6"><span class="lineNum">       6</span>                 :             : import &quot;@openzeppelin/contracts/access/AccessControl.sol&quot;;</span>
-<span id="L7"><span class="lineNum">       7</span>                 :             : import &quot;@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol&quot;;</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : import &quot;@openzeppelin/contracts/security/ReentrancyGuard.sol&quot;;</span>
 <span id="L8"><span class="lineNum">       8</span>                 :             : </span>
 <span id="L9"><span class="lineNum">       9</span>                 :             : /**</span>
 <span id="L10"><span class="lineNum">      10</span>                 :             :  * @title SignatureRoleTimelock</span>
@@ -83,7 +83,7 @@
 <span id="L12"><span class="lineNum">      12</span>                 :             :  *         Role assignments and signature role associations are enforced with a timelock delay.</span>
 <span id="L13"><span class="lineNum">      13</span>                 :             :  * @dev Inherits from AccessControl for role management and ReentrancyGuard for security.</span>
 <span id="L14"><span class="lineNum">      14</span>                 :             :  */</span>
-<span id="L15"><span class="lineNum">      15</span>                 :             : contract SignatureRoleTimelock is ISignatureRoleTimelock, AccessControl, ReentrancyGuardUpgradeable {</span>
+<span id="L15"><span class="lineNum">      15</span>                 :             : contract SignatureRoleTimelock is ISignatureRoleTimelock, AccessControl, ReentrancyGuard {</span>
 <span id="L16"><span class="lineNum">      16</span>                 :             :     /// @notice The administrator role is the default admin role.</span>
 <span id="L17"><span class="lineNum">      17</span>                 :             :     bytes32 public constant ADMIN_ROLE = DEFAULT_ADMIN_ROLE;</span>
 <span id="L18"><span class="lineNum">      18</span>                 :             :     /// @notice The maximum timelock duration is 7 days.</span>
@@ -123,7 +123,7 @@
 <span id="L52"><span class="lineNum">      52</span>                 :             :         ISignatureRoleTimelock.AddressRoleInput[] memory _roles,</span>
 <span id="L53"><span class="lineNum">      53</span>                 :             :         SignatureToAdd[] memory _sigs,</span>
 <span id="L54"><span class="lineNum">      54</span>                 :             :         address _adminAccount</span>
-<span id="L55"><span class="lineNum">      55</span>                 :             :     ) {</span>
+<span id="L55"><span class="lineNum">      55</span>                 :             :     ) ReentrancyGuard() {</span>
 <span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaGNC">           4 :         _addRoleAccount(ADMIN_ROLE, _adminAccount);</span></span>
 <span id="L57"><span class="lineNum">      57</span>                 :             :         // Add signature roles for functions that manage signature roles.</span>
 <span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaGNC">           4 :         _addSignatureRole(address(this), SignatureRoleTimelock(this).setRoleAccounts.selector, ADMIN_ROLE, _adminTimelock);</span></span>

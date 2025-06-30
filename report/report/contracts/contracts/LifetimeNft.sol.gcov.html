@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-05-28 15:19:12</td>
+            <td class="headerValue">2025-06-30 10:26:26</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -98,9 +98,9 @@
 <span id="L27"><span class="lineNum">      27</span>                 :             :    * @param baseURI_ The base URI for token metadata.</span>
 <span id="L28"><span class="lineNum">      28</span>                 :             :    * @param _owner The address to be assigned as owner.</span>
 <span id="L29"><span class="lineNum">      29</span>                 :             :    */</span>
-<span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaGNC tlaBgGNC">          78 :   constructor(string memory name_, string memory symbol_, string memory baseURI_, address _owner) ERC721(name_, symbol_) {</span></span>
-<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">          78 :     _setBaseUri(baseURI_);</span></span>
-<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">          78 :     _transferOwnership(_owner);</span></span>
+<span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaGNC tlaBgGNC">          86 :   constructor(string memory name_, string memory symbol_, string memory baseURI_, address _owner) ERC721(name_, symbol_) {</span></span>
+<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">          86 :     _setBaseUri(baseURI_);</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">          86 :     _transferOwnership(_owner);</span></span>
 <span id="L33"><span class="lineNum">      33</span>                 :             :   }</span>
 <span id="L34"><span class="lineNum">      34</span>                 :             : </span>
 <span id="L35"><span class="lineNum">      35</span>                 :             :   /**</span>
@@ -116,9 +116,9 @@
 <span id="L45"><span class="lineNum">      45</span>                 :             :    * @dev Sets the internal baseURI storage variable and emits a SetBaseURI event.</span>
 <span id="L46"><span class="lineNum">      46</span>                 :             :    * @param baseURI_ The new base URI.</span>
 <span id="L47"><span class="lineNum">      47</span>                 :             :    */</span>
-<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">          79 :   function _setBaseUri(string memory baseURI_) internal {</span></span>
-<span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">          79 :     baseURI = baseURI_;</span></span>
-<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">          79 :     emit SetBaseURI(baseURI_);</span></span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">          87 :   function _setBaseUri(string memory baseURI_) internal {</span></span>
+<span id="L49"><span class="lineNum">      49</span>                 :<span class="tlaGNC">          87 :     baseURI = baseURI_;</span></span>
+<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">          87 :     emit SetBaseURI(baseURI_);</span></span>
 <span id="L51"><span class="lineNum">      51</span>                 :             :   }</span>
 <span id="L52"><span class="lineNum">      52</span>                 :             : </span>
 <span id="L53"><span class="lineNum">      53</span>                 :             :   /**</span>
@@ -127,9 +127,9 @@
 <span id="L56"><span class="lineNum">      56</span>                 :             :    * @param _minter The address to update.</span>
 <span id="L57"><span class="lineNum">      57</span>                 :             :    * @param _isActive Boolean indicating whether `_minter` can mint.</span>
 <span id="L58"><span class="lineNum">      58</span>                 :             :    */</span>
-<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">          81 :   function setMinterOperator(address _minter, bool _isActive) external onlyOwner {</span></span>
-<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">          81 :     minterOperator[_minter] = _isActive;</span></span>
-<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">          81 :     emit SetMinterOperator(_minter, _isActive);</span></span>
+<span id="L59"><span class="lineNum">      59</span>                 :<span class="tlaGNC">          89 :   function setMinterOperator(address _minter, bool _isActive) external onlyOwner {</span></span>
+<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">          89 :     minterOperator[_minter] = _isActive;</span></span>
+<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">          89 :     emit SetMinterOperator(_minter, _isActive);</span></span>
 <span id="L62"><span class="lineNum">      62</span>                 :             :   }</span>
 <span id="L63"><span class="lineNum">      63</span>                 :             : </span>
 <span id="L64"><span class="lineNum">      64</span>                 :             :   /**</span>

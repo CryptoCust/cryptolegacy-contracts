@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-05-28 15:19:12</td>
+            <td class="headerValue">2025-06-30 10:26:26</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">96.4&nbsp;%</td>
@@ -89,31 +89,31 @@
 <span id="L18"><span class="lineNum">      18</span>                 :             : contract LensPlugin is ICryptoLegacyPlugin, ICryptoLegacyLens {</span>
 <span id="L19"><span class="lineNum">      19</span>                 :             :     using EnumerableSet for EnumerableSet.Bytes32Set;</span>
 <span id="L20"><span class="lineNum">      20</span>                 :             : </span>
-<span id="L21"><span class="lineNum">      21</span>                 :<span class="tlaGNC tlaBgGNC">         319 :     function getSigs() public pure returns (bytes4[] memory sigs) {</span></span>
-<span id="L22"><span class="lineNum">      22</span>                 :<span class="tlaGNC">         319 :         sigs = new bytes4[](20);</span></span>
-<span id="L23"><span class="lineNum">      23</span>                 :<span class="tlaGNC">         319 :         sigs[0] = this.updateInterval.selector;</span></span>
-<span id="L24"><span class="lineNum">      24</span>                 :<span class="tlaGNC">         319 :         sigs[1] = this.challengeTimeout.selector;</span></span>
-<span id="L25"><span class="lineNum">      25</span>                 :<span class="tlaGNC">         319 :         sigs[2] = this.initialFeeToPay.selector;</span></span>
-<span id="L26"><span class="lineNum">      26</span>                 :<span class="tlaGNC">         319 :         sigs[3] = this.updateFee.selector;</span></span>
-<span id="L27"><span class="lineNum">      27</span>                 :<span class="tlaGNC">         319 :         sigs[4] = this.lastFeePaidAt.selector;</span></span>
-<span id="L28"><span class="lineNum">      28</span>                 :<span class="tlaGNC">         319 :         sigs[5] = this.lastUpdateAt.selector;</span></span>
-<span id="L29"><span class="lineNum">      29</span>                 :<span class="tlaGNC">         319 :         sigs[6] = this.distributionStartAt.selector;</span></span>
-<span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaGNC">         319 :         sigs[7] = this.invitedByRefCode.selector;</span></span>
-<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">         319 :         sigs[8] = this.getTransferBlockNumbers.selector;</span></span>
-<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">         319 :         sigs[9] = this.getBeneficiaries.selector;</span></span>
-<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">         319 :         sigs[10] = this.getBeneficiaryConfig.selector;</span></span>
-<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">         319 :         sigs[11] = this.getBeneficiaryClaimed.selector;</span></span>
-<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">         319 :         sigs[12] = this.getOriginalBeneficiaryHash.selector;</span></span>
-<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">         319 :         sigs[13] = this.getTokensDistribution.selector;</span></span>
-<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">         319 :         sigs[14] = this.getMessagesBlockNumbersByRecipient.selector;</span></span>
-<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">         319 :         sigs[15] = this.getVestedAndClaimedData.selector;</span></span>
-<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">         319 :         sigs[16] = this.getPluginMetadata.selector;</span></span>
-<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">         319 :         sigs[17] = this.getPluginInfoList.selector;</span></span>
-<span id="L41"><span class="lineNum">      41</span>                 :<span class="tlaGNC">         319 :         sigs[18] = this.getCryptoLegacyBaseData.selector;</span></span>
-<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">         319 :         sigs[19] = this.getCryptoLegacyListData.selector;</span></span>
+<span id="L21"><span class="lineNum">      21</span>                 :<span class="tlaGNC tlaBgGNC">         857 :     function getSigs() public pure returns (bytes4[] memory sigs) {</span></span>
+<span id="L22"><span class="lineNum">      22</span>                 :<span class="tlaGNC">         857 :         sigs = new bytes4[](20);</span></span>
+<span id="L23"><span class="lineNum">      23</span>                 :<span class="tlaGNC">         857 :         sigs[0] = this.updateInterval.selector;</span></span>
+<span id="L24"><span class="lineNum">      24</span>                 :<span class="tlaGNC">         857 :         sigs[1] = this.challengeTimeout.selector;</span></span>
+<span id="L25"><span class="lineNum">      25</span>                 :<span class="tlaGNC">         857 :         sigs[2] = this.initialFeeToPay.selector;</span></span>
+<span id="L26"><span class="lineNum">      26</span>                 :<span class="tlaGNC">         857 :         sigs[3] = this.updateFee.selector;</span></span>
+<span id="L27"><span class="lineNum">      27</span>                 :<span class="tlaGNC">         857 :         sigs[4] = this.lastFeePaidAt.selector;</span></span>
+<span id="L28"><span class="lineNum">      28</span>                 :<span class="tlaGNC">         857 :         sigs[5] = this.lastUpdateAt.selector;</span></span>
+<span id="L29"><span class="lineNum">      29</span>                 :<span class="tlaGNC">         857 :         sigs[6] = this.distributionStartAt.selector;</span></span>
+<span id="L30"><span class="lineNum">      30</span>                 :<span class="tlaGNC">         857 :         sigs[7] = this.invitedByRefCode.selector;</span></span>
+<span id="L31"><span class="lineNum">      31</span>                 :<span class="tlaGNC">         857 :         sigs[8] = this.getTransferBlockNumbers.selector;</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">         857 :         sigs[9] = this.getBeneficiaries.selector;</span></span>
+<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">         857 :         sigs[10] = this.getBeneficiaryConfig.selector;</span></span>
+<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">         857 :         sigs[11] = this.getBeneficiaryClaimed.selector;</span></span>
+<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">         857 :         sigs[12] = this.getOriginalBeneficiaryHash.selector;</span></span>
+<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">         857 :         sigs[13] = this.getTokensDistribution.selector;</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">         857 :         sigs[14] = this.getMessagesBlockNumbersByRecipient.selector;</span></span>
+<span id="L38"><span class="lineNum">      38</span>                 :<span class="tlaGNC">         857 :         sigs[15] = this.getVestedAndClaimedData.selector;</span></span>
+<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">         857 :         sigs[16] = this.getPluginMetadata.selector;</span></span>
+<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">         857 :         sigs[17] = this.getPluginInfoList.selector;</span></span>
+<span id="L41"><span class="lineNum">      41</span>                 :<span class="tlaGNC">         857 :         sigs[18] = this.getCryptoLegacyBaseData.selector;</span></span>
+<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">         857 :         sigs[19] = this.getCryptoLegacyListData.selector;</span></span>
 <span id="L43"><span class="lineNum">      43</span>                 :             :     }</span>
-<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">          56 :     function getSetupSigs() external pure returns (bytes4[] memory sigs) {</span></span>
-<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">          56 :         sigs = new bytes4[](0);</span></span>
+<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">         574 :     function getSetupSigs() external pure returns (bytes4[] memory sigs) {</span></span>
+<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">         574 :         sigs = new bytes4[](0);</span></span>
 <span id="L46"><span class="lineNum">      46</span>                 :             :     }</span>
 <span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaGNC">          18 :     function getPluginName() external pure returns (string memory) {</span></span>
 <span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">          18 :         return &quot;lens&quot;;</span></span>
@@ -243,7 +243,7 @@
 <span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">          24 :         list = new LensTokenDistribution[](_tokens.length);</span></span>
 <span id="L173"><span class="lineNum">     173</span>                 :<span class="tlaGNC">          24 :         for(uint256 i = 0; i &lt; _tokens.length; i++) {</span></span>
 <span id="L174"><span class="lineNum">     174</span>                 :<span class="tlaGNC">          17 :             ICryptoLegacy.TokenDistribution storage td = cls.tokenDistribution[_tokens[i]];</span></span>
-<span id="L175"><span class="lineNum">     175</span>                 :<span class="tlaGNC">          17 :             list[i] = LensTokenDistribution(td.amountToDistribute, td.lastBalance, uint128(LibCryptoLegacy._getTotalClaimed(cls, _tokens[i])));</span></span>
+<span id="L175"><span class="lineNum">     175</span>                 :<span class="tlaGNC">          17 :             list[i] = LensTokenDistribution(td.amountToDistribute, td.lastBalance, LibCryptoLegacy._getTotalClaimed(cls, _tokens[i]));</span></span>
 <span id="L176"><span class="lineNum">     176</span>                 :             :         }</span>
 <span id="L177"><span class="lineNum">     177</span>                 :             :     }</span>
 <span id="L178"><span class="lineNum">     178</span>                 :             : </span>
@@ -251,9 +251,9 @@
 <span id="L180"><span class="lineNum">     180</span>                 :             :      * @notice Retrieves comprehensive data about the CryptoLegacy contract.</span>
 <span id="L181"><span class="lineNum">     181</span>                 :             :      * @return data A CryptoLegacyData struct containing fee details, update intervals, beneficiary list, and other settings.</span>
 <span id="L182"><span class="lineNum">     182</span>                 :             :      */</span>
-<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">          77 :     function getCryptoLegacyBaseData() external view returns(CryptoLegacyBaseData memory data) {</span></span>
-<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">          77 :         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();</span></span>
-<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">          77 :         return CryptoLegacyBaseData(</span></span>
+<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">         598 :     function getCryptoLegacyBaseData() external view returns(CryptoLegacyBaseData memory data) {</span></span>
+<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">         598 :         ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();</span></span>
+<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">         598 :         return CryptoLegacyBaseData(</span></span>
 <span id="L186"><span class="lineNum">     186</span>                 :             :             cls.initialFeeToPay,</span>
 <span id="L187"><span class="lineNum">     187</span>                 :             :             cls.updateFee,</span>
 <span id="L188"><span class="lineNum">     188</span>                 :             :             cls.updateInterval,</span>
@@ -311,7 +311,7 @@
 <span id="L240"><span class="lineNum">     240</span>                 :<span class="tlaGNC">           7 :             (ICryptoLegacy.BeneficiaryConfig storage bc, ICryptoLegacy.BeneficiaryVesting storage bv) = LibCryptoLegacy._getBeneficiaryConfigAndVesting(cls, _beneficiary);</span></span>
 <span id="L241"><span class="lineNum">     241</span>                 :<span class="tlaGNC">           6 :             (startDate, endDate) = LibCryptoLegacy._getStartAndEndDate(cls, bc);</span></span>
 <span id="L242"><span class="lineNum">     242</span>                 :<span class="tlaGNC">           6 :             ICryptoLegacy.TokenDistribution storage td = cls.tokenDistribution[_tokens[i]];</span></span>
-<span id="L243"><span class="lineNum">     243</span>                 :<span class="tlaGNC">           6 :             (uint256 totalAmount, uint256 claimableAmount, ) = LibCryptoLegacy._getVestedAndClaimedAmount(td, bc, bv, _tokens[i], startDate, endDate);</span></span>
+<span id="L243"><span class="lineNum">     243</span>                 :<span class="tlaGNC">           6 :             (uint256 totalAmount, , uint256 claimableAmount, ) = LibCryptoLegacy._getVestedAndClaimedAmount(td, bc, bv, _tokens[i], startDate, endDate);</span></span>
 <span id="L244"><span class="lineNum">     244</span>                 :<span class="tlaGNC">           6 :             result[i] = BeneficiaryTokenData(claimableAmount, bv.tokenAmountClaimed[_tokens[i]], totalAmount);</span></span>
 <span id="L245"><span class="lineNum">     245</span>                 :             :         }</span>
 <span id="L246"><span class="lineNum">     246</span>                 :             :     }</span>

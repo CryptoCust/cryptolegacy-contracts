@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-05-28 15:19:12</td>
+            <td class="headerValue">2025-06-30 10:26:26</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">97.9&nbsp;%</td>
@@ -102,10 +102,10 @@
 <span id="L31"><span class="lineNum">      31</span>                 :             :    * @dev Uses inline assembly to load the storage pointer from the predefined FR_STORAGE_POSITION slot.</span>
 <span id="L32"><span class="lineNum">      32</span>                 :             :    * @return fs A storage reference to the FRStorage struct.</span>
 <span id="L33"><span class="lineNum">      33</span>                 :             :    */</span>
-<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC tlaBgGNC">        1086 :   function lockFeeRegistryStorage() internal pure returns (FRStorage storage fs) {</span></span>
-<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">        1086 :     bytes32 position = FR_STORAGE_POSITION;</span></span>
+<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC tlaBgGNC">        5791 :   function lockFeeRegistryStorage() internal pure returns (FRStorage storage fs) {</span></span>
+<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">        5791 :     bytes32 position = FR_STORAGE_POSITION;</span></span>
 <span id="L36"><span class="lineNum">      36</span>                 :             :     assembly {</span>
-<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">        1086 :       fs.slot := position</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">        5791 :       fs.slot := position</span></span>
 <span id="L38"><span class="lineNum">      38</span>                 :             :     }</span>
 <span id="L39"><span class="lineNum">      39</span>                 :             :   }</span>
 <span id="L40"><span class="lineNum">      40</span>                 :             : </span>
@@ -118,9 +118,9 @@
 <span id="L47"><span class="lineNum">      47</span>                 :             :    * @param _lockPeriod The lock period for lifetime NFTs.</span>
 <span id="L48"><span class="lineNum">      48</span>                 :             :    * @param _transferTimeout The time between lock and transfer for NFTs.</span>
 <span id="L49"><span class="lineNum">      49</span>                 :             :    */</span>
-<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">         130 :   function initialize(address _owner, uint32 _defaultDiscountPct, uint32 _defaultSharePct, ILifetimeNft _lifetimeNft, uint64 _lockPeriod, uint64 _transferTimeout) external initializer {</span></span>
-<span id="L51"><span class="lineNum">      51</span>                 :<span class="tlaGNC">         130 :     _setDefaultPct(lockFeeRegistryStorage(), _defaultDiscountPct, _defaultSharePct);</span></span>
-<span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">         130 :     _initializeLockChainGate(_lifetimeNft, _lockPeriod, _transferTimeout, _owner);</span></span>
+<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">         138 :   function initialize(address _owner, uint32 _defaultDiscountPct, uint32 _defaultSharePct, ILifetimeNft _lifetimeNft, uint64 _lockPeriod, uint64 _transferTimeout) external initializer {</span></span>
+<span id="L51"><span class="lineNum">      51</span>                 :<span class="tlaGNC">         138 :     _setDefaultPct(lockFeeRegistryStorage(), _defaultDiscountPct, _defaultSharePct);</span></span>
+<span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">         138 :     _initializeLockChainGate(_lifetimeNft, _lockPeriod, _transferTimeout, _owner);</span></span>
 <span id="L53"><span class="lineNum">      53</span>                 :             :   }</span>
 <span id="L54"><span class="lineNum">      54</span>                 :             : </span>
 <span id="L55"><span class="lineNum">      55</span>                 :             :   /**</span>
@@ -129,11 +129,11 @@
 <span id="L58"><span class="lineNum">      58</span>                 :             :    * @param _operator The address of the operator.</span>
 <span id="L59"><span class="lineNum">      59</span>                 :             :    * @param _isAdd True to add, false to remove.</span>
 <span id="L60"><span class="lineNum">      60</span>                 :             :    */</span>
-<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">          83 :   function setCodeOperator(address _operator, bool _isAdd) external onlyOwner {</span></span>
-<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">          82 :     FRStorage storage fs = lockFeeRegistryStorage();</span></span>
-<span id="L63"><span class="lineNum">      63</span>         [<span class="tlaGBC" title="Branch 0 was taken 81 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">          81 :     if (_isAdd) {</span></span>
-<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">          81 :       fs.codeOperators.add(_operator);</span></span>
-<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">          81 :       emit AddCodeOperator(_operator);</span></span>
+<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">          91 :   function setCodeOperator(address _operator, bool _isAdd) external onlyOwner {</span></span>
+<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">          90 :     FRStorage storage fs = lockFeeRegistryStorage();</span></span>
+<span id="L63"><span class="lineNum">      63</span>         [<span class="tlaGBC" title="Branch 0 was taken 89 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">          89 :     if (_isAdd) {</span></span>
+<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">          89 :       fs.codeOperators.add(_operator);</span></span>
+<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">          89 :       emit AddCodeOperator(_operator);</span></span>
 <span id="L66"><span class="lineNum">      66</span>                 :             :     } else {</span>
 <span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">           1 :       fs.codeOperators.remove(_operator);</span></span>
 <span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">           1 :       emit RemoveCodeOperator(_operator);</span></span>
@@ -196,10 +196,10 @@
 <span id="L125"><span class="lineNum">     125</span>                 :             :    * @param _defaultDiscountPct The new default discount percentage.</span>
 <span id="L126"><span class="lineNum">     126</span>                 :             :    * @param _defaultSharePct The new default share percentage.</span>
 <span id="L127"><span class="lineNum">     127</span>                 :             :    */</span>
-<span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">         184 :   function _setDefaultPct(FRStorage storage fs, uint32 _defaultDiscountPct, uint32 _defaultSharePct) internal {</span></span>
-<span id="L129"><span class="lineNum">     129</span>                 :<span class="tlaGNC">         184 :     fs.defaultDiscountPct = _defaultDiscountPct;</span></span>
-<span id="L130"><span class="lineNum">     130</span>                 :<span class="tlaGNC">         184 :     fs.defaultSharePct = _defaultSharePct;</span></span>
-<span id="L131"><span class="lineNum">     131</span>                 :<span class="tlaGNC">         184 :     emit SetDefaultPct(_defaultDiscountPct, _defaultSharePct);</span></span>
+<span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">         192 :   function _setDefaultPct(FRStorage storage fs, uint32 _defaultDiscountPct, uint32 _defaultSharePct) internal {</span></span>
+<span id="L129"><span class="lineNum">     129</span>                 :<span class="tlaGNC">         192 :     fs.defaultDiscountPct = _defaultDiscountPct;</span></span>
+<span id="L130"><span class="lineNum">     130</span>                 :<span class="tlaGNC">         192 :     fs.defaultSharePct = _defaultSharePct;</span></span>
+<span id="L131"><span class="lineNum">     131</span>                 :<span class="tlaGNC">         192 :     emit SetDefaultPct(_defaultDiscountPct, _defaultSharePct);</span></span>
 <span id="L132"><span class="lineNum">     132</span>                 :             :   }</span>
 <span id="L133"><span class="lineNum">     133</span>                 :             : </span>
 <span id="L134"><span class="lineNum">     134</span>                 :             :   /**</span>
@@ -226,10 +226,10 @@
 <span id="L155"><span class="lineNum">     155</span>                 :             :    * @param _case The case identifier.</span>
 <span id="L156"><span class="lineNum">     156</span>                 :             :    * @param _fee The fee amount.</span>
 <span id="L157"><span class="lineNum">     157</span>                 :             :    */</span>
-<span id="L158"><span class="lineNum">     158</span>                 :<span class="tlaGNC">         241 :   function setContractCaseFee(address _contract, uint8 _case, uint128 _fee) external onlyOwner {</span></span>
-<span id="L159"><span class="lineNum">     159</span>                 :<span class="tlaGNC">         240 :     FRStorage storage fs = lockFeeRegistryStorage();</span></span>
-<span id="L160"><span class="lineNum">     160</span>                 :<span class="tlaGNC">         240 :     fs.feeByContractCase[_contract][_case] = _fee;</span></span>
-<span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">         240 :     emit SetContractCaseFee(_contract, _case, _fee);</span></span>
+<span id="L158"><span class="lineNum">     158</span>                 :<span class="tlaGNC">         265 :   function setContractCaseFee(address _contract, uint8 _case, uint128 _fee) external onlyOwner {</span></span>
+<span id="L159"><span class="lineNum">     159</span>                 :<span class="tlaGNC">         264 :     FRStorage storage fs = lockFeeRegistryStorage();</span></span>
+<span id="L160"><span class="lineNum">     160</span>                 :<span class="tlaGNC">         264 :     fs.feeByContractCase[_contract][_case] = _fee;</span></span>
+<span id="L161"><span class="lineNum">     161</span>                 :<span class="tlaGNC">         264 :     emit SetContractCaseFee(_contract, _case, _fee);</span></span>
 <span id="L162"><span class="lineNum">     162</span>                 :             :   }</span>
 <span id="L163"><span class="lineNum">     163</span>                 :             : </span>
 <span id="L164"><span class="lineNum">     164</span>                 :             :   /**</span>
@@ -241,21 +241,21 @@
 <span id="L170"><span class="lineNum">     170</span>                 :             :    * @param _code The referral code.</span>
 <span id="L171"><span class="lineNum">     171</span>                 :             :    * @param _mul Multiplier for fee calculation.</span>
 <span id="L172"><span class="lineNum">     172</span>                 :             :    */</span>
-<span id="L173"><span class="lineNum">     173</span>                 :<span class="tlaGNC">          96 :   function takeFee(address _contract, uint8 _case, bytes8 _code, uint256 _mul) external payable nonReentrant {</span></span>
-<span id="L174"><span class="lineNum">     174</span>                 :<span class="tlaGNC">          96 :     FRStorage storage fs = lockFeeRegistryStorage();</span></span>
-<span id="L175"><span class="lineNum">     175</span>                 :<span class="tlaGNC">          96 :     uint256 contractCaseFee = uint256(fs.feeByContractCase[_contract][_case]) * _mul;</span></span>
-<span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaGNC">          96 :     (uint256 discount, uint256 share, uint256 fee) = _calculateFee(fs, _code, contractCaseFee);</span></span>
-<span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaGNC">          96 :     _checkFee(fee);</span></span>
-<span id="L178"><span class="lineNum">     178</span>                 :<span class="tlaGNC">          95 :     fs.accumulatedFee += uint128(fee - share);</span></span>
-<span id="L179"><span class="lineNum">     179</span>                 :<span class="tlaGNC">          95 :     address shareRecipient = fs.refererByCode[_code].recipient;</span></span>
-<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">          95 :     (bool isTransferSuccess, bytes memory response) = payable(shareRecipient).call{value: share, gas: 1e4}(new bytes(0));</span></span>
-<span id="L181"><span class="lineNum">     181</span>         [<span class="tlaGBC" title="Branch 0 was taken 94 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">          94 :     if (isTransferSuccess) {</span></span>
-<span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">          94 :       emit SentFee(fs.refererByCode[_code].owner, _code, shareRecipient, share);</span></span>
+<span id="L173"><span class="lineNum">     173</span>                 :<span class="tlaGNC">        1132 :   function takeFee(address _contract, uint8 _case, bytes8 _code, uint256 _mul) external payable nonReentrant {</span></span>
+<span id="L174"><span class="lineNum">     174</span>                 :<span class="tlaGNC">        1132 :     FRStorage storage fs = lockFeeRegistryStorage();</span></span>
+<span id="L175"><span class="lineNum">     175</span>                 :<span class="tlaGNC">        1132 :     uint256 contractCaseFee = uint256(fs.feeByContractCase[_contract][_case]) * _mul;</span></span>
+<span id="L176"><span class="lineNum">     176</span>                 :<span class="tlaGNC">        1132 :     (uint256 discount, uint256 share, uint256 fee) = _calculateFee(fs, _code, contractCaseFee);</span></span>
+<span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaGNC">        1132 :     _checkFee(fee);</span></span>
+<span id="L178"><span class="lineNum">     178</span>                 :<span class="tlaGNC">        1131 :     fs.accumulatedFee += uint128(fee - share);</span></span>
+<span id="L179"><span class="lineNum">     179</span>                 :<span class="tlaGNC">        1131 :     address shareRecipient = fs.refererByCode[_code].recipient;</span></span>
+<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">        1131 :     (bool isTransferSuccess, bytes memory response) = payable(shareRecipient).call{value: share, gas: 1e4}(new bytes(0));</span></span>
+<span id="L181"><span class="lineNum">     181</span>         [<span class="tlaGBC" title="Branch 0 was taken 1130 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">        1130 :     if (isTransferSuccess) {</span></span>
+<span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">        1130 :       emit SentFee(fs.refererByCode[_code].owner, _code, shareRecipient, share);</span></span>
 <span id="L183"><span class="lineNum">     183</span>                 :             :     } else {</span>
 <span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">           1 :       fs.refererByCode[_code].accumulatedFee += uint128(share);</span></span>
 <span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">           1 :       emit AccumulateFee(fs.refererByCode[_code].owner, _code, shareRecipient, share, response);</span></span>
 <span id="L186"><span class="lineNum">     186</span>                 :             :     }</span>
-<span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">          95 :     emit TakeFee(_contract, _case, _code, discount, share, fee, msg.value);</span></span>
+<span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">        1131 :     emit TakeFee(_contract, _case, _code, discount, share, fee, msg.value);</span></span>
 <span id="L188"><span class="lineNum">     188</span>                 :             :   }</span>
 <span id="L189"><span class="lineNum">     189</span>                 :             : </span>
 <span id="L190"><span class="lineNum">     190</span>                 :             :   /**</span>
@@ -301,24 +301,24 @@
 <span id="L230"><span class="lineNum">     230</span>                 :             :    * @param _shortCode The short referral code.</span>
 <span id="L231"><span class="lineNum">     231</span>                 :             :    * @return The custom referral code.</span>
 <span id="L232"><span class="lineNum">     232</span>                 :             :    */</span>
-<span id="L233"><span class="lineNum">     233</span>                 :<span class="tlaGNC">          84 :   function _setCustomCode(FRStorage storage fs, address _referrer, address _recipient, bytes8 _shortCode, uint32 _discountPct, uint32 _sharePct) internal returns(bytes8) {</span></span>
-<span id="L234"><span class="lineNum">     234</span>                 :<span class="tlaGNC">          84 :     _checkCodeNotZero(_shortCode);</span></span>
+<span id="L233"><span class="lineNum">     233</span>                 :<span class="tlaGNC">         602 :   function _setCustomCode(FRStorage storage fs, address _referrer, address _recipient, bytes8 _shortCode, uint32 _discountPct, uint32 _sharePct) internal returns(bytes8) {</span></span>
+<span id="L234"><span class="lineNum">     234</span>                 :<span class="tlaGNC">         602 :     _checkCodeNotZero(_shortCode);</span></span>
 <span id="L235"><span class="lineNum">     235</span>                 :             : </span>
-<span id="L236"><span class="lineNum">     236</span>                 :<span class="tlaGNC">          83 :     address prevOwner = fs.refererByCode[_shortCode].owner;</span></span>
-<span id="L237"><span class="lineNum">     237</span>            [<span class="tlaGBC" title="Branch 0 was taken 82 times"> + </span>]:<span class="tlaGNC">          83 :     if (prevOwner != _referrer) {</span></span>
-<span id="L238"><span class="lineNum">     238</span>                 :<span class="tlaGNC">          82 :       _checkNewOwnerIsNotReferrer(fs, _referrer);</span></span>
-<span id="L239"><span class="lineNum">     239</span>            [<span class="tlaGBC" title="Branch 0 was taken 5 times"> + </span>]:<span class="tlaGNC">          80 :       if (fs.codeByReferrer[prevOwner] != bytes8(0)) {</span></span>
+<span id="L236"><span class="lineNum">     236</span>                 :<span class="tlaGNC">         601 :     address prevOwner = fs.refererByCode[_shortCode].owner;</span></span>
+<span id="L237"><span class="lineNum">     237</span>            [<span class="tlaGBC" title="Branch 0 was taken 600 times"> + </span>]:<span class="tlaGNC">         601 :     if (prevOwner != _referrer) {</span></span>
+<span id="L238"><span class="lineNum">     238</span>                 :<span class="tlaGNC">         600 :       _checkNewOwnerIsNotReferrer(fs, _referrer);</span></span>
+<span id="L239"><span class="lineNum">     239</span>            [<span class="tlaGBC" title="Branch 0 was taken 5 times"> + </span>]:<span class="tlaGNC">         598 :       if (fs.codeByReferrer[prevOwner] != bytes8(0)) {</span></span>
 <span id="L240"><span class="lineNum">     240</span>                 :<span class="tlaGNC">           5 :         delete fs.codeByReferrer[prevOwner];</span></span>
 <span id="L241"><span class="lineNum">     241</span>                 :             :       }</span>
-<span id="L242"><span class="lineNum">     242</span>            [<span class="tlaGBC" title="Branch 0 was taken 80 times"> + </span>]:<span class="tlaGNC">          80 :       if (fs.codeByReferrer[_referrer] != _shortCode) {</span></span>
-<span id="L243"><span class="lineNum">     243</span>                 :<span class="tlaGNC">          80 :         fs.codeByReferrer[_referrer] = _shortCode;</span></span>
+<span id="L242"><span class="lineNum">     242</span>            [<span class="tlaGBC" title="Branch 0 was taken 598 times"> + </span>]:<span class="tlaGNC">         598 :       if (fs.codeByReferrer[_referrer] != _shortCode) {</span></span>
+<span id="L243"><span class="lineNum">     243</span>                 :<span class="tlaGNC">         598 :         fs.codeByReferrer[_referrer] = _shortCode;</span></span>
 <span id="L244"><span class="lineNum">     244</span>                 :             :       }</span>
 <span id="L245"><span class="lineNum">     245</span>                 :             :     }</span>
-<span id="L246"><span class="lineNum">     246</span>                 :<span class="tlaGNC">          81 :     fs.refererByCode[_shortCode].owner = _referrer;</span></span>
-<span id="L247"><span class="lineNum">     247</span>                 :<span class="tlaGNC">          81 :     fs.refererByCode[_shortCode].recipient = _recipient;</span></span>
-<span id="L248"><span class="lineNum">     248</span>                 :<span class="tlaGNC">          81 :     fs.refererByCode[_shortCode].discountPct = _discountPct;</span></span>
-<span id="L249"><span class="lineNum">     249</span>                 :<span class="tlaGNC">          81 :     fs.refererByCode[_shortCode].sharePct = _sharePct;</span></span>
-<span id="L250"><span class="lineNum">     250</span>                 :<span class="tlaGNC">          81 :     return _shortCode;</span></span>
+<span id="L246"><span class="lineNum">     246</span>                 :<span class="tlaGNC">         599 :     fs.refererByCode[_shortCode].owner = _referrer;</span></span>
+<span id="L247"><span class="lineNum">     247</span>                 :<span class="tlaGNC">         599 :     fs.refererByCode[_shortCode].recipient = _recipient;</span></span>
+<span id="L248"><span class="lineNum">     248</span>                 :<span class="tlaGNC">         599 :     fs.refererByCode[_shortCode].discountPct = _discountPct;</span></span>
+<span id="L249"><span class="lineNum">     249</span>                 :<span class="tlaGNC">         599 :     fs.refererByCode[_shortCode].sharePct = _sharePct;</span></span>
+<span id="L250"><span class="lineNum">     250</span>                 :<span class="tlaGNC">         599 :     return _shortCode;</span></span>
 <span id="L251"><span class="lineNum">     251</span>                 :             :   }</span>
 <span id="L252"><span class="lineNum">     252</span>                 :             : </span>
 <span id="L253"><span class="lineNum">     253</span>                 :             :   /**</span>
@@ -329,12 +329,12 @@
 <span id="L258"><span class="lineNum">     258</span>                 :             :    * @param _fromChain The originating chain ID (if applicable).</span>
 <span id="L259"><span class="lineNum">     259</span>                 :             :    * @return The custom referral code.</span>
 <span id="L260"><span class="lineNum">     260</span>                 :             :    */</span>
-<span id="L261"><span class="lineNum">     261</span>                 :<span class="tlaGNC">          77 :   function _createCustomCode(FRStorage storage fs, address _referrer, address _recipient, bytes8 _shortCode, uint256 _fromChain, uint32 _discountPct, uint32 _sharePct) internal returns(bytes8) {</span></span>
-<span id="L262"><span class="lineNum">     262</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">          77 :     if (fs.refererByCode[_shortCode].owner != address(0)) {</span></span>
+<span id="L261"><span class="lineNum">     261</span>                 :<span class="tlaGNC">         595 :   function _createCustomCode(FRStorage storage fs, address _referrer, address _recipient, bytes8 _shortCode, uint256 _fromChain, uint32 _discountPct, uint32 _sharePct) internal returns(bytes8) {</span></span>
+<span id="L262"><span class="lineNum">     262</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">         595 :     if (fs.refererByCode[_shortCode].owner != address(0)) {</span></span>
 <span id="L263"><span class="lineNum">     263</span>                 :<span class="tlaGNC">           1 :       revert RefAlreadyCreated();</span></span>
 <span id="L264"><span class="lineNum">     264</span>                 :             :     }</span>
-<span id="L265"><span class="lineNum">     265</span>                 :<span class="tlaGNC">          76 :     emit CreateCode(msg.sender, _referrer, _shortCode, _recipient, _fromChain, _discountPct, _sharePct);</span></span>
-<span id="L266"><span class="lineNum">     266</span>                 :<span class="tlaGNC">          76 :     return _setCustomCode(fs, _referrer, _recipient, _shortCode, _discountPct, _sharePct);</span></span>
+<span id="L265"><span class="lineNum">     265</span>                 :<span class="tlaGNC">         594 :     emit CreateCode(msg.sender, _referrer, _shortCode, _recipient, _fromChain, _discountPct, _sharePct);</span></span>
+<span id="L266"><span class="lineNum">     266</span>                 :<span class="tlaGNC">         594 :     return _setCustomCode(fs, _referrer, _recipient, _shortCode, _discountPct, _sharePct);</span></span>
 <span id="L267"><span class="lineNum">     267</span>                 :             :   }</span>
 <span id="L268"><span class="lineNum">     268</span>                 :             : </span>
 <span id="L269"><span class="lineNum">     269</span>                 :             :   /**</span>
@@ -342,8 +342,8 @@
 <span id="L271"><span class="lineNum">     271</span>                 :             :    * @dev Reverts if _shortCode equals bytes8(0), ensuring a valid referral code is provided.</span>
 <span id="L272"><span class="lineNum">     272</span>                 :             :    * @param _shortCode The referral code to validate.</span>
 <span id="L273"><span class="lineNum">     273</span>                 :             :    */</span>
-<span id="L274"><span class="lineNum">     274</span>                 :<span class="tlaGNC">          84 :   function _checkCodeNotZero(bytes8 _shortCode) internal pure {</span></span>
-<span id="L275"><span class="lineNum">     275</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">          84 :     if (_shortCode == bytes8(0)) {</span></span>
+<span id="L274"><span class="lineNum">     274</span>                 :<span class="tlaGNC">         602 :   function _checkCodeNotZero(bytes8 _shortCode) internal pure {</span></span>
+<span id="L275"><span class="lineNum">     275</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">         602 :     if (_shortCode == bytes8(0)) {</span></span>
 <span id="L276"><span class="lineNum">     276</span>                 :<span class="tlaGNC">           1 :       revert ZeroCode();</span></span>
 <span id="L277"><span class="lineNum">     277</span>                 :             :     }</span>
 <span id="L278"><span class="lineNum">     278</span>                 :             :   }</span>
@@ -352,8 +352,8 @@
 <span id="L281"><span class="lineNum">     281</span>                 :             :    * @notice Ensures that the sender is an authorized code operator.</span>
 <span id="L282"><span class="lineNum">     282</span>                 :             :    * @dev Checks that msg.sender exists in the set of code operators stored in the registry.</span>
 <span id="L283"><span class="lineNum">     283</span>                 :             :    */</span>
-<span id="L284"><span class="lineNum">     284</span>                 :<span class="tlaGNC">          80 :   function _checkSenderIsOperator(FRStorage storage fs) internal view {</span></span>
-<span id="L285"><span class="lineNum">     285</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">          80 :     if (!fs.codeOperators.contains(msg.sender)) {</span></span>
+<span id="L284"><span class="lineNum">     284</span>                 :<span class="tlaGNC">         598 :   function _checkSenderIsOperator(FRStorage storage fs) internal view {</span></span>
+<span id="L285"><span class="lineNum">     285</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">         598 :     if (!fs.codeOperators.contains(msg.sender)) {</span></span>
 <span id="L286"><span class="lineNum">     286</span>                 :<span class="tlaGNC">           1 :       revert NotOperator();</span></span>
 <span id="L287"><span class="lineNum">     287</span>                 :             :     }</span>
 <span id="L288"><span class="lineNum">     288</span>                 :             :   }</span>
@@ -386,14 +386,14 @@
 <span id="L315"><span class="lineNum">     315</span>                 :             :    * @return shortCode The generated referral code.</span>
 <span id="L316"><span class="lineNum">     316</span>                 :             :    * @return totalFee Total spent fee for crosschain operations</span>
 <span id="L317"><span class="lineNum">     317</span>                 :             :    */</span>
-<span id="L318"><span class="lineNum">     318</span>                 :<span class="tlaGNC">          59 :   function createCode(address _referrer, address _recipient, uint256[] memory _chainIds, uint256[] memory _crossChainFees) external payable nonReentrant returns(bytes8 shortCode, uint256 totalFee, uint256 returnValue) {</span></span>
-<span id="L319"><span class="lineNum">     319</span>                 :<span class="tlaGNC">          59 :     FRStorage storage fs = lockFeeRegistryStorage();</span></span>
-<span id="L320"><span class="lineNum">     320</span>                 :<span class="tlaGNC">          59 :     _checkSenderIsOperator(fs);</span></span>
-<span id="L321"><span class="lineNum">     321</span>                 :<span class="tlaGNC">          58 :     bytes32 fullCode = keccak256(abi.encodePacked(_referrer, block.timestamp, _referrer.balance));</span></span>
-<span id="L322"><span class="lineNum">     322</span>                 :<span class="tlaGNC">          58 :     shortCode = bytes8(bytes20(fullCode));</span></span>
-<span id="L323"><span class="lineNum">     323</span>                 :<span class="tlaGNC">          58 :     _createCustomCode(fs, _referrer, _recipient, shortCode, 0, uint32(0), uint32(0));</span></span>
-<span id="L324"><span class="lineNum">     324</span>                 :<span class="tlaGNC">          58 :     totalFee = _setCrossChainsRef(fs, true, shortCode, _chainIds, _crossChainFees);</span></span>
-<span id="L325"><span class="lineNum">     325</span>                 :<span class="tlaGNC">          58 :     returnValue = _calcAndReturnFee(totalFee);</span></span>
+<span id="L318"><span class="lineNum">     318</span>                 :<span class="tlaGNC">         577 :   function createCode(address _referrer, address _recipient, uint256[] memory _chainIds, uint256[] memory _crossChainFees) external payable nonReentrant returns(bytes8 shortCode, uint256 totalFee, uint256 returnValue) {</span></span>
+<span id="L319"><span class="lineNum">     319</span>                 :<span class="tlaGNC">         577 :     FRStorage storage fs = lockFeeRegistryStorage();</span></span>
+<span id="L320"><span class="lineNum">     320</span>                 :<span class="tlaGNC">         577 :     _checkSenderIsOperator(fs);</span></span>
+<span id="L321"><span class="lineNum">     321</span>                 :<span class="tlaGNC">         576 :     bytes32 fullCode = keccak256(abi.encodePacked(_referrer, block.timestamp, _referrer.balance));</span></span>
+<span id="L322"><span class="lineNum">     322</span>                 :<span class="tlaGNC">         576 :     shortCode = bytes8(bytes20(fullCode));</span></span>
+<span id="L323"><span class="lineNum">     323</span>                 :<span class="tlaGNC">         576 :     _createCustomCode(fs, _referrer, _recipient, shortCode, 0, uint32(0), uint32(0));</span></span>
+<span id="L324"><span class="lineNum">     324</span>                 :<span class="tlaGNC">         576 :     totalFee = _setCrossChainsRef(fs, true, shortCode, _chainIds, _crossChainFees);</span></span>
+<span id="L325"><span class="lineNum">     325</span>                 :<span class="tlaGNC">         576 :     returnValue = _calcAndReturnFee(totalFee);</span></span>
 <span id="L326"><span class="lineNum">     326</span>                 :             :   }</span>
 <span id="L327"><span class="lineNum">     327</span>                 :             : </span>
 <span id="L328"><span class="lineNum">     328</span>                 :             :   /**</span>
@@ -407,12 +407,12 @@
 <span id="L336"><span class="lineNum">     336</span>                 :             :    * @param _crossChainFees Array of fees corresponding to each chain.</span>
 <span id="L337"><span class="lineNum">     337</span>                 :             :    * @return totalFee Total fee spent for cross-chain operations.</span>
 <span id="L338"><span class="lineNum">     338</span>                 :             :    */</span>
-<span id="L339"><span class="lineNum">     339</span>                 :<span class="tlaGNC">          85 :   function _setCrossChainsRef(FRStorage storage fs, bool _isCreate, bytes8 _shortCode, uint256[] memory _toChainIDs, uint256[] memory _crossChainFees) internal returns(uint256 totalFee) {</span></span>
-<span id="L340"><span class="lineNum">     340</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">          85 :     if (_toChainIDs.length != _crossChainFees.length) {</span></span>
+<span id="L339"><span class="lineNum">     339</span>                 :<span class="tlaGNC">         603 :   function _setCrossChainsRef(FRStorage storage fs, bool _isCreate, bytes8 _shortCode, uint256[] memory _toChainIDs, uint256[] memory _crossChainFees) internal returns(uint256 totalFee) {</span></span>
+<span id="L340"><span class="lineNum">     340</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">         603 :     if (_toChainIDs.length != _crossChainFees.length) {</span></span>
 <span id="L341"><span class="lineNum">     341</span>                 :<span class="tlaGNC">           1 :       revert ArrayLengthMismatch();</span></span>
 <span id="L342"><span class="lineNum">     342</span>                 :             :     }</span>
-<span id="L343"><span class="lineNum">     343</span>                 :<span class="tlaGNC">          84 :     LCGStorage storage ls = lockChainGateStorage();</span></span>
-<span id="L344"><span class="lineNum">     344</span>                 :<span class="tlaGNC">          84 :     for (uint256 i = 0; i &lt; _toChainIDs.length; i++) {</span></span>
+<span id="L343"><span class="lineNum">     343</span>                 :<span class="tlaGNC">         602 :     LCGStorage storage ls = lockChainGateStorage();</span></span>
+<span id="L344"><span class="lineNum">     344</span>                 :<span class="tlaGNC">         602 :     for (uint256 i = 0; i &lt; _toChainIDs.length; i++) {</span></span>
 <span id="L345"><span class="lineNum">     345</span>                 :<span class="tlaGNC">          22 :       _checkDestinationLockedChain(ls, _toChainIDs[i]);</span></span>
 <span id="L346"><span class="lineNum">     346</span>                 :<span class="tlaGNC">          22 :       uint256 sendFee = _getDeBridgeChainNativeFee(ls, _toChainIDs[i], _crossChainFees[i]);</span></span>
 <span id="L347"><span class="lineNum">     347</span>                 :<span class="tlaGNC">          22 :       bytes memory dstTxCall;</span></span>
@@ -425,8 +425,8 @@
 <span id="L354"><span class="lineNum">     354</span>                 :<span class="tlaGNC">          22 :       _send(ls, dstTxCall, _toChainIDs[i], sendFee);</span></span>
 <span id="L355"><span class="lineNum">     355</span>                 :<span class="tlaGNC">          22 :       totalFee += sendFee;</span></span>
 <span id="L356"><span class="lineNum">     356</span>                 :             :     }</span>
-<span id="L357"><span class="lineNum">     357</span>                 :<span class="tlaGNC">          84 :     _checkFee(totalFee);</span></span>
-<span id="L358"><span class="lineNum">     358</span>                 :<span class="tlaGNC">          84 :     emit SetCrossChainsRef(_shortCode, _isCreate, _toChainIDs, _crossChainFees);</span></span>
+<span id="L357"><span class="lineNum">     357</span>                 :<span class="tlaGNC">         602 :     _checkFee(totalFee);</span></span>
+<span id="L358"><span class="lineNum">     358</span>                 :<span class="tlaGNC">         602 :     emit SetCrossChainsRef(_shortCode, _isCreate, _toChainIDs, _crossChainFees);</span></span>
 <span id="L359"><span class="lineNum">     359</span>                 :             :   }</span>
 <span id="L360"><span class="lineNum">     360</span>                 :             : </span>
 <span id="L361"><span class="lineNum">     361</span>                 :             :   /**</span>
@@ -517,8 +517,8 @@
 <span id="L446"><span class="lineNum">     446</span>                 :             :    * @param fs The FeeRegistry storage pointer.</span>
 <span id="L447"><span class="lineNum">     447</span>                 :             :    * @param _newReferer The address proposed as the new referrer.</span>
 <span id="L448"><span class="lineNum">     448</span>                 :             :    */</span>
-<span id="L449"><span class="lineNum">     449</span>                 :<span class="tlaGNC">          90 :   function _checkNewOwnerIsNotReferrer(FRStorage storage fs, address _newReferer) internal view {</span></span>
-<span id="L450"><span class="lineNum">     450</span>            [<span class="tlaGBC" title="Branch 0 was taken 4 times"> + </span>]:<span class="tlaGNC">          90 :     if (fs.codeByReferrer[_newReferer] != bytes8(0)) {</span></span>
+<span id="L449"><span class="lineNum">     449</span>                 :<span class="tlaGNC">         608 :   function _checkNewOwnerIsNotReferrer(FRStorage storage fs, address _newReferer) internal view {</span></span>
+<span id="L450"><span class="lineNum">     450</span>            [<span class="tlaGBC" title="Branch 0 was taken 4 times"> + </span>]:<span class="tlaGNC">         608 :     if (fs.codeByReferrer[_newReferer] != bytes8(0)) {</span></span>
 <span id="L451"><span class="lineNum">     451</span>                 :<span class="tlaGNC">           4 :       revert AlreadyReferrer();</span></span>
 <span id="L452"><span class="lineNum">     452</span>                 :             :     }</span>
 <span id="L453"><span class="lineNum">     453</span>                 :             :   }</span>
@@ -614,9 +614,9 @@
 <span id="L543"><span class="lineNum">     543</span>                 :             :    * @return discountPct The effective discount percentage.</span>
 <span id="L544"><span class="lineNum">     544</span>                 :             :    * @return sharePct The effective share percentage.</span>
 <span id="L545"><span class="lineNum">     545</span>                 :             :    */</span>
-<span id="L546"><span class="lineNum">     546</span>                 :<span class="tlaGNC">         422 :   function _getCodePct(FRStorage storage fs, bytes8 _code) internal view returns(uint32 discountPct, uint32 sharePct) {</span></span>
-<span id="L547"><span class="lineNum">     547</span>            [<span class="tlaGBC" title="Branch 0 was taken 281 times"> + </span>]:<span class="tlaGNC">         422 :     if (fs.refererByCode[_code].owner == address(0)) {</span></span>
-<span id="L548"><span class="lineNum">     548</span>                 :<span class="tlaGNC">         281 :       return (0, 0);</span></span>
+<span id="L546"><span class="lineNum">     546</span>                 :<span class="tlaGNC">        4569 :   function _getCodePct(FRStorage storage fs, bytes8 _code) internal view returns(uint32 discountPct, uint32 sharePct) {</span></span>
+<span id="L547"><span class="lineNum">     547</span>            [<span class="tlaGBC" title="Branch 0 was taken 4428 times"> + </span>]:<span class="tlaGNC">        4569 :     if (fs.refererByCode[_code].owner == address(0)) {</span></span>
+<span id="L548"><span class="lineNum">     548</span>                 :<span class="tlaGNC">        4428 :       return (0, 0);</span></span>
 <span id="L549"><span class="lineNum">     549</span>                 :             :     }</span>
 <span id="L550"><span class="lineNum">     550</span>                 :<span class="tlaGNC">         141 :     discountPct = fs.refererByCode[_code].discountPct &gt; 0 ? fs.refererByCode[_code].discountPct : fs.defaultDiscountPct;</span></span>
 <span id="L551"><span class="lineNum">     551</span>                 :<span class="tlaGNC">         141 :     sharePct = fs.refererByCode[_code].sharePct &gt; 0 ? fs.refererByCode[_code].sharePct : fs.defaultSharePct;</span></span>
@@ -643,14 +643,14 @@
 <span id="L572"><span class="lineNum">     572</span>                 :             :    * @return share The referral share amount.</span>
 <span id="L573"><span class="lineNum">     573</span>                 :             :    * @return fee The final fee after discount.</span>
 <span id="L574"><span class="lineNum">     574</span>                 :             :    */</span>
-<span id="L575"><span class="lineNum">     575</span>                 :<span class="tlaGNC">         413 :   function _calculateFee(FRStorage storage fs, bytes8 _code, uint256 _fee) internal view returns(uint256 discount, uint256 share, uint256 fee) {</span></span>
-<span id="L576"><span class="lineNum">     576</span>                 :<span class="tlaGNC">         413 :     (uint32 discountPct, uint32 sharePct) = _getCodePct(fs, _code);</span></span>
-<span id="L577"><span class="lineNum">     577</span>            [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span>]:<span class="tlaGNC">         413 :     if (discountPct + sharePct &gt; PCT_BASE) {</span></span>
+<span id="L575"><span class="lineNum">     575</span>                 :<span class="tlaGNC">        4560 :   function _calculateFee(FRStorage storage fs, bytes8 _code, uint256 _fee) internal view returns(uint256 discount, uint256 share, uint256 fee) {</span></span>
+<span id="L576"><span class="lineNum">     576</span>                 :<span class="tlaGNC">        4560 :     (uint32 discountPct, uint32 sharePct) = _getCodePct(fs, _code);</span></span>
+<span id="L577"><span class="lineNum">     577</span>            [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span>]:<span class="tlaGNC">        4560 :     if (discountPct + sharePct &gt; PCT_BASE) {</span></span>
 <span id="L578"><span class="lineNum">     578</span>                 :<span class="tlaGNC">           2 :       revert TooBigPct();</span></span>
 <span id="L579"><span class="lineNum">     579</span>                 :             :     }</span>
-<span id="L580"><span class="lineNum">     580</span>                 :<span class="tlaGNC">         411 :     discount = (_fee * uint256(discountPct)) / uint256(PCT_BASE);</span></span>
-<span id="L581"><span class="lineNum">     581</span>                 :<span class="tlaGNC">         411 :     share = (_fee * uint256(sharePct)) / uint256(PCT_BASE);</span></span>
-<span id="L582"><span class="lineNum">     582</span>                 :<span class="tlaGNC">         411 :     fee = _fee - discount;</span></span>
+<span id="L580"><span class="lineNum">     580</span>                 :<span class="tlaGNC">        4558 :     discount = (_fee * uint256(discountPct)) / uint256(PCT_BASE);</span></span>
+<span id="L581"><span class="lineNum">     581</span>                 :<span class="tlaGNC">        4558 :     share = (_fee * uint256(sharePct)) / uint256(PCT_BASE);</span></span>
+<span id="L582"><span class="lineNum">     582</span>                 :<span class="tlaGNC">        4558 :     fee = _fee - discount;</span></span>
 <span id="L583"><span class="lineNum">     583</span>                 :             :   }</span>
 <span id="L584"><span class="lineNum">     584</span>                 :             : </span>
 <span id="L585"><span class="lineNum">     585</span>                 :             :   /**</span>
@@ -670,9 +670,9 @@
 <span id="L599"><span class="lineNum">     599</span>                 :             :    * @param _code The referral code.</span>
 <span id="L600"><span class="lineNum">     600</span>                 :             :    * @return fee The fee amount.</span>
 <span id="L601"><span class="lineNum">     601</span>                 :             :    */</span>
-<span id="L602"><span class="lineNum">     602</span>                 :<span class="tlaGNC">         313 :   function getContractCaseFeeForCode(address _contract, uint8 _case, bytes8 _code) external view returns(uint256 fee) {</span></span>
-<span id="L603"><span class="lineNum">     603</span>                 :<span class="tlaGNC">         313 :     FRStorage storage fs = lockFeeRegistryStorage();</span></span>
-<span id="L604"><span class="lineNum">     604</span>                 :<span class="tlaGNC">         313 :     (, , fee) = _calculateFee(fs, _code, fs.feeByContractCase[_contract][_case]);</span></span>
+<span id="L602"><span class="lineNum">     602</span>                 :<span class="tlaGNC">        3424 :   function getContractCaseFeeForCode(address _contract, uint8 _case, bytes8 _code) external view returns(uint256 fee) {</span></span>
+<span id="L603"><span class="lineNum">     603</span>                 :<span class="tlaGNC">        3424 :     FRStorage storage fs = lockFeeRegistryStorage();</span></span>
+<span id="L604"><span class="lineNum">     604</span>                 :<span class="tlaGNC">        3424 :     (, , fee) = _calculateFee(fs, _code, fs.feeByContractCase[_contract][_case]);</span></span>
 <span id="L605"><span class="lineNum">     605</span>                 :             :   }</span>
 <span id="L606"><span class="lineNum">     606</span>                 :             : </span>
 <span id="L607"><span class="lineNum">     607</span>                 :             :   /**</span>

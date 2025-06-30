@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-05-28 15:19:12</td>
+            <td class="headerValue">2025-06-30 10:26:26</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -92,11 +92,11 @@
 <span id="L21"><span class="lineNum">      21</span>                 :             :      * @notice A checker function to detect whether a call is static or not.</span>
 <span id="L22"><span class="lineNum">      22</span>                 :             :      * @dev Reverts if not called by the contract itself. This is used by fallback logic to determine call type.</span>
 <span id="L23"><span class="lineNum">      23</span>                 :             :      */</span>
-<span id="L24"><span class="lineNum">      24</span>                 :<span class="tlaGNC tlaBgGNC">         505 :     function staticCallChecker() external {</span></span>
-<span id="L25"><span class="lineNum">      25</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">         505 :         if (msg.sender != address(this)) {</span></span>
+<span id="L24"><span class="lineNum">      24</span>                 :<span class="tlaGNC tlaBgGNC">        3634 :     function staticCallChecker() external {</span></span>
+<span id="L25"><span class="lineNum">      25</span>            [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span>]:<span class="tlaGNC">        3634 :         if (msg.sender != address(this)) {</span></span>
 <span id="L26"><span class="lineNum">      26</span>                 :<span class="tlaGNC">           1 :             revert NotSelfCall();</span></span>
 <span id="L27"><span class="lineNum">      27</span>                 :             :         }</span>
-<span id="L28"><span class="lineNum">      28</span>                 :<span class="tlaGNC">         504 :         emit StaticCallCheck();</span></span>
+<span id="L28"><span class="lineNum">      28</span>                 :<span class="tlaGNC">        3633 :         emit StaticCallCheck();</span></span>
 <span id="L29"><span class="lineNum">      29</span>                 :             :     }</span>
 <span id="L30"><span class="lineNum">      30</span>                 :             :     /**</span>
 <span id="L31"><span class="lineNum">      31</span>                 :             :      * @notice Fallback function that delegates calls to the appropriate facet.</span>
@@ -107,36 +107,36 @@
 <span id="L36"><span class="lineNum">      36</span>                 :             :      *      Uses assembly to perform a delegatecall to the found facet with full calldata forwarding.</span>
 <span id="L37"><span class="lineNum">      37</span>                 :             :      *      Any revert from the delegated call is bubbled to the caller.</span>
 <span id="L38"><span class="lineNum">      38</span>                 :             :      */</span>
-<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">         956 :     fallback() external payable {</span></span>
-<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">         956 :         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();</span></span>
+<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">        7739 :     fallback() external payable {</span></span>
+<span id="L40"><span class="lineNum">      40</span>                 :<span class="tlaGNC">        7739 :         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();</span></span>
 <span id="L41"><span class="lineNum">      41</span>                 :             : </span>
-<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">         956 :         address facet = ds.selectorToFacetAndPosition[msg.sig].facetAddress;</span></span>
-<span id="L43"><span class="lineNum">      43</span>            [<span class="tlaGBC" title="Branch 0 was taken 504 times"> + </span>]:<span class="tlaGNC">         956 :         if (facet == address(0)) {</span></span>
-<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">         504 :             ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();</span></span>
+<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">        7739 :         address facet = ds.selectorToFacetAndPosition[msg.sig].facetAddress;</span></span>
+<span id="L43"><span class="lineNum">      43</span>            [<span class="tlaGBC" title="Branch 0 was taken 3633 times"> + </span>]:<span class="tlaGNC">        7739 :         if (facet == address(0)) {</span></span>
+<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">        3633 :             ICryptoLegacy.CryptoLegacyStorage storage cls = LibCryptoLegacy.getCryptoLegacyStorage();</span></span>
 <span id="L45"><span class="lineNum">      45</span>                 :             : </span>
-<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">         504 :             bool isStaticCall = false;</span></span>
-<span id="L47"><span class="lineNum">      47</span>         [<span class="tlaGBC" title="Branch 0 was taken 504 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 201 times"> + </span>]:<span class="tlaGNC">         504 :             try this.staticCallChecker{gas: 1e5 * uint(cls.gasLimitMultiplier == 0 ? 1 : cls.gasLimitMultiplier)}() {} catch {</span></span>
-<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">         201 :                 isStaticCall = true;</span></span>
+<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC">        3633 :             bool isStaticCall = false;</span></span>
+<span id="L47"><span class="lineNum">      47</span>         [<span class="tlaGBC" title="Branch 0 was taken 3633 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 732 times"> + </span>]:<span class="tlaGNC">        3633 :             try this.staticCallChecker{gas: 1e5 * uint(cls.gasLimitMultiplier == 0 ? 1 : cls.gasLimitMultiplier)}() {} catch {</span></span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">         732 :                 isStaticCall = true;</span></span>
 <span id="L49"><span class="lineNum">      49</span>                 :             :             }</span>
-<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">         504 :             facet = LibCryptoLegacyPlugins._findFacetBySelector(ds, msg.sig);</span></span>
-<span id="L51"><span class="lineNum">      51</span>            [<span class="tlaGBC" title="Branch 0 was taken 293 times"> + </span>]:<span class="tlaGNC">         504 :             if (facet != address(0) &amp;&amp; !isStaticCall) {</span></span>
-<span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">         293 :                 ds.selectorToFacetAndPosition[msg.sig].facetAddress = facet;</span></span>
+<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">        3633 :             facet = LibCryptoLegacyPlugins._findFacetBySelector(ds, msg.sig);</span></span>
+<span id="L51"><span class="lineNum">      51</span>            [<span class="tlaGBC" title="Branch 0 was taken 2891 times"> + </span>]:<span class="tlaGNC">        3633 :             if (facet != address(0) &amp;&amp; !isStaticCall) {</span></span>
+<span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">        2891 :                 ds.selectorToFacetAndPosition[msg.sig].facetAddress = facet;</span></span>
 <span id="L53"><span class="lineNum">      53</span>                 :             :             }</span>
 <span id="L54"><span class="lineNum">      54</span>                 :             :         }</span>
 <span id="L55"><span class="lineNum">      55</span>                 :             : </span>
-<span id="L56"><span class="lineNum">      56</span>            [<span class="tlaGBC" title="Branch 0 was taken 14 times"> + </span>]:<span class="tlaGNC">         956 :         if (facet == address(0)) {</span></span>
+<span id="L56"><span class="lineNum">      56</span>            [<span class="tlaGBC" title="Branch 0 was taken 14 times"> + </span>]:<span class="tlaGNC">        7739 :         if (facet == address(0)) {</span></span>
 <span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaGNC">          14 :             revert FunctionNotExists(msg.sig);</span></span>
 <span id="L58"><span class="lineNum">      58</span>                 :             :         }</span>
 <span id="L59"><span class="lineNum">      59</span>                 :             :         assembly {</span>
-<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">         942 :             calldatacopy(0, 0, calldatasize())</span></span>
-<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">         942 :             let result := delegatecall(gas(), facet, 0, calldatasize(), 0, 0)</span></span>
-<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">         942 :             returndatacopy(0, 0, returndatasize())</span></span>
+<span id="L60"><span class="lineNum">      60</span>                 :<span class="tlaGNC">        7725 :             calldatacopy(0, 0, calldatasize())</span></span>
+<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC">        7725 :             let result := delegatecall(gas(), facet, 0, calldatasize(), 0, 0)</span></span>
+<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">        7725 :             returndatacopy(0, 0, returndatasize())</span></span>
 <span id="L63"><span class="lineNum">      63</span>                 :             :             switch result</span>
-<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">         942 :             case 0 {</span></span>
-<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">         117 :                 revert(0, returndatasize())</span></span>
+<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaGNC">        7725 :             case 0 {</span></span>
+<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">         120 :                 revert(0, returndatasize())</span></span>
 <span id="L66"><span class="lineNum">      66</span>                 :             :             }</span>
-<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">         825 :             default {</span></span>
-<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">         825 :                 return(0, returndatasize())</span></span>
+<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">        7605 :             default {</span></span>
+<span id="L68"><span class="lineNum">      68</span>                 :<span class="tlaGNC">        7605 :                 return(0, returndatasize())</span></span>
 <span id="L69"><span class="lineNum">      69</span>                 :             :             }</span>
 <span id="L70"><span class="lineNum">      70</span>                 :             :         }</span>
 <span id="L71"><span class="lineNum">      71</span>                 :             :     }</span>

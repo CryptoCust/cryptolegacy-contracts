@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-05-28 15:19:12</td>
+            <td class="headerValue">2025-06-30 10:26:26</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -88,10 +88,10 @@
 <span id="L17"><span class="lineNum">      17</span>                 :             :      * is used for upgradeable contracts to avoid storage collisions.</span>
 <span id="L18"><span class="lineNum">      18</span>                 :             :      * @return storageStruct A reference to the PluginStorage struct for the Trusted Guardians plugin.</span>
 <span id="L19"><span class="lineNum">      19</span>                 :             :      */</span>
-<span id="L20"><span class="lineNum">      20</span>                 :<span class="tlaGNC tlaBgGNC">          68 :     function getPluginStorage() internal pure returns (ITrustedGuardiansPlugin.PluginStorage storage storageStruct) {</span></span>
-<span id="L21"><span class="lineNum">      21</span>                 :<span class="tlaGNC">          68 :         bytes32 position = PLUGIN_POSITION;</span></span>
+<span id="L20"><span class="lineNum">      20</span>                 :<span class="tlaGNC tlaBgGNC">          69 :     function getPluginStorage() internal pure returns (ITrustedGuardiansPlugin.PluginStorage storage storageStruct) {</span></span>
+<span id="L21"><span class="lineNum">      21</span>                 :<span class="tlaGNC">          69 :         bytes32 position = PLUGIN_POSITION;</span></span>
 <span id="L22"><span class="lineNum">      22</span>                 :             :         assembly {</span>
-<span id="L23"><span class="lineNum">      23</span>                 :<span class="tlaGNC">          68 :             storageStruct.slot := position</span></span>
+<span id="L23"><span class="lineNum">      23</span>                 :<span class="tlaGNC">          69 :             storageStruct.slot := position</span></span>
 <span id="L24"><span class="lineNum">      24</span>                 :             :         }</span>
 <span id="L25"><span class="lineNum">      25</span>                 :             :     }</span>
 <span id="L26"><span class="lineNum">      26</span>                 :             : </span>
@@ -103,14 +103,14 @@
 <span id="L32"><span class="lineNum">      32</span>                 :             :      * Emits a ResetGuardiansVoting event to signal that the guardian voting has been reset.</span>
 <span id="L33"><span class="lineNum">      33</span>                 :             :      * @param cls The CryptoLegacy storage structure used to manage the distribution start time.</span>
 <span id="L34"><span class="lineNum">      34</span>                 :             :      */</span>
-<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">           4 :     function _resetGuardianVoting(ICryptoLegacy.CryptoLegacyStorage storage cls) internal {</span></span>
-<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">           4 :         ITrustedGuardiansPlugin.PluginStorage storage pluginStorage = LibTrustedGuardiansPlugin.getPluginStorage();</span></span>
-<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">           4 :         pluginStorage.guardiansVoted = new bytes32[](0);</span></span>
+<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">           5 :     function _resetGuardianVoting(ICryptoLegacy.CryptoLegacyStorage storage cls) internal {</span></span>
+<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC">           5 :         ITrustedGuardiansPlugin.PluginStorage storage pluginStorage = LibTrustedGuardiansPlugin.getPluginStorage();</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">           5 :         pluginStorage.guardiansVoted = new bytes32[](0);</span></span>
 <span id="L38"><span class="lineNum">      38</span>                 :             : </span>
-<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">           4 :         cls.distributionStartAt = uint64(0);</span></span>
+<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaGNC">           5 :         cls.distributionStartAt = uint64(0);</span></span>
 <span id="L40"><span class="lineNum">      40</span>                 :             : </span>
-<span id="L41"><span class="lineNum">      41</span>                 :<span class="tlaGNC">           4 :         uint256[] memory emptyArray = new uint256[](0);</span></span>
-<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">           4 :         LibCryptoLegacy._takeFee(cls, LibDiamond.contractOwner(), address(0), 0, emptyArray, emptyArray);</span></span>
+<span id="L41"><span class="lineNum">      41</span>                 :<span class="tlaGNC">           5 :         uint256[] memory emptyArray = new uint256[](0);</span></span>
+<span id="L42"><span class="lineNum">      42</span>                 :<span class="tlaGNC">           5 :         LibCryptoLegacy._takeFee(cls, LibDiamond.contractOwner(), address(0), 0, emptyArray, emptyArray);</span></span>
 <span id="L43"><span class="lineNum">      43</span>                 :             : </span>
 <span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">           3 :         emit ITrustedGuardiansPlugin.ResetGuardiansVoting();</span></span>
 <span id="L45"><span class="lineNum">      45</span>                 :             :     }</span>

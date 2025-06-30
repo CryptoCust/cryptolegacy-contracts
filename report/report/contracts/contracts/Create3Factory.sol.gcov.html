@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-05-28 15:19:12</td>
+            <td class="headerValue">2025-06-30 10:26:26</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryLo">66.7&nbsp;%</td>
@@ -90,8 +90,8 @@
 <span id="L19"><span class="lineNum">      19</span>                 :             :      * @notice Constructor that sets the initial owner.</span>
 <span id="L20"><span class="lineNum">      20</span>                 :             :      * @param _owner The address to be assigned as the contract’s owner.</span>
 <span id="L21"><span class="lineNum">      21</span>                 :             :      */</span>
-<span id="L22"><span class="lineNum">      22</span>                 :<span class="tlaGNC tlaBgGNC">          78 :     constructor(address _owner) {</span></span>
-<span id="L23"><span class="lineNum">      23</span>                 :<span class="tlaGNC">          78 :         _transferOwnership(_owner);</span></span>
+<span id="L22"><span class="lineNum">      22</span>                 :<span class="tlaGNC tlaBgGNC">          86 :     constructor(address _owner) {</span></span>
+<span id="L23"><span class="lineNum">      23</span>                 :<span class="tlaGNC">          86 :         _transferOwnership(_owner);</span></span>
 <span id="L24"><span class="lineNum">      24</span>                 :             :     }</span>
 <span id="L25"><span class="lineNum">      25</span>                 :             : </span>
 <span id="L26"><span class="lineNum">      26</span>                 :             :     /**</span>
@@ -101,9 +101,9 @@
 <span id="L30"><span class="lineNum">      30</span>                 :             :      * @param _contractBytecode The bytecode of the contract to deploy.</span>
 <span id="L31"><span class="lineNum">      31</span>                 :             :      * @return result The address of the deployed contract.</span>
 <span id="L32"><span class="lineNum">      32</span>                 :             :      */</span>
-<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">         992 :     function build(bytes32 _create3Salt, bytes calldata _contractBytecode) external onlyOwner returns (address result) {</span></span>
-<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">         992 :         result = LibCreate3.create3(_create3Salt, _contractBytecode);</span></span>
-<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">         992 :         emit Create3Contract(result);</span></span>
+<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">        1088 :     function build(bytes32 _create3Salt, bytes calldata _contractBytecode) external onlyOwner returns (address result) {</span></span>
+<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">        1088 :         result = LibCreate3.create3(_create3Salt, _contractBytecode);</span></span>
+<span id="L35"><span class="lineNum">      35</span>                 :<span class="tlaGNC">        1088 :         emit Create3Contract(result);</span></span>
 <span id="L36"><span class="lineNum">      36</span>                 :             :     }</span>
 <span id="L37"><span class="lineNum">      37</span>                 :             : </span>
 <span id="L38"><span class="lineNum">      38</span>                 :             :     /**</span>
