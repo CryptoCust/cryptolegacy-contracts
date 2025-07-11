@@ -115,6 +115,25 @@
 
 ---
 
+## Contracts Addresses
+
+| Contract                                  | Address                                    |
+|-------------------------------------------|--------------------------------------------|
+| **CryptoLegacy Implementation**           | 0x7aeba7fa7fd64e1297e60962449c37852fa41b8e |
+| **CryptoLegacyBuildManager**              | 0xF056a682A6b68833356D340a149A5bA1e6B1b194 |
+| **BeneficiaryRegistry**                   | 0x53cA4b509e32F9685068D299Aa314593c203f1c9 |
+| **LegacyMessenger**                       | 0x9F5233DaD0550E7758CFEc6cbd4C6FB25302391B |
+| **FeeRegistry and LockChainGate**         | 0x2C8660b01F7d45561370AC1DE3E75cf7F80199a6 |
+| **PluginsRegistry**                       | 0x9AFaa7dC9D0BE1B259D2DC05C5920E5FB82f4511 |
+| **LifetimeNft**                           | 0xFd7ceF1Aa59792E44bb92ad1fBB553bD19d5682c |
+| **CryptoLegacyBasePlugin Implementation** | 0x75B8e5df957B11accDFc7dB88640400542453D4b |
+| **TrustedGuardiansPlugin Implementation** | 0x39C7557eAb8E75A708e4aDA17FDC22234e9d6462 |
+| **LegacyRecoveryPlugin Implementation**   | 0x416A809f0c292bacC4d11f828d6633b092995ab3 |
+| **SignatureRoleTimelock**                 | 0x7Fa59eF176b1a43603a81C5E5d0fCd5E46f82b50 |
+| **ProxyBuilder**                          | 0x31b64ca07a243535f7aeef794d3ad56dbb0bc55a |
+
+---
+
 ## Getting Started (Foundry)
 
 1. **Clone and install dependencies**:
