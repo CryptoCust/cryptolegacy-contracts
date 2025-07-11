@@ -575,13 +575,14 @@ contract SignatureRoleTimelockTest is AbstractTestHelper {
         assertEq(targets[8], address(lifetimeNft));
 
         ISignatureRoleTimelock.TargetSigRes[] memory resSigs = srt.getTargetSigs(address(lm));
-        assertEq(resSigs.length, 1);
+        assertEq(resSigs.length, 2);
         assertEq(resSigs[0].signature, lm.setBuildManager.selector);
         assertEq(resSigs[0].role, LibDeploy._getMsig3Role());
         assertEq(resSigs[0].timelock, 5 days);
 
-        ISignatureRoleTimelock.SignatureToRemove[] memory sigsToRemove = new ISignatureRoleTimelock.SignatureToRemove[](1);
+        ISignatureRoleTimelock.SignatureToRemove[] memory sigsToRemove = new ISignatureRoleTimelock.SignatureToRemove[](2);
         sigsToRemove[0] = ISignatureRoleTimelock.SignatureToRemove(address(lm), lm.setBuildManager.selector);
+        sigsToRemove[1] = ISignatureRoleTimelock.SignatureToRemove(address(lm), lm.transferOwnership.selector);
 
         _removeSignatures(msig1, sigsToRemove, 5 days);
 

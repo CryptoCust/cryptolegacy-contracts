@@ -16,16 +16,16 @@ import "../contracts/CryptoLegacyBuildManager.sol";
 import "forge-std/console.sol";
 import "forge-std/Script.sol";
 
-contract MockCryptoLegacyFactoryDeploy is Script {
+contract CryptoLegacyFactoryDeploy is Script {
     bytes32 internal salt =              bytes32(uint256(1));
     bytes32 internal proxySalt =         bytes32(uint256(1));
     uint32 internal refDiscountPct =     uint32(500);
     uint32 internal refSharePct =        uint32(1000);
-    uint64 internal nftLockPeriod =      12 minutes;
-    uint64 internal nftTransferTimeout = 2 minutes;
-    uint128 internal lifetimeFee =       uint128(0.000000001 ether);
-    uint128 internal buildFee =          uint128(0.000000000001 ether);
-    uint128 internal updateFee =         uint128(0.000000000001 ether);
+    uint64 internal nftLockPeriod =      150 days;
+    uint64 internal nftTransferTimeout = 14 days;
+    uint128 internal lifetimeFee =       uint128(1 ether);
+    uint128 internal buildFee =          uint128(0.05 ether);
+    uint128 internal updateFee =         uint128(0.05 ether);
 
     address internal create3Factory;
 
@@ -33,7 +33,15 @@ contract MockCryptoLegacyFactoryDeploy is Script {
     address internal multiSig2;
     address internal multiSig3;
 
-    function run() external {
+    SignatureRoleTimelock internal srt;
+    CryptoLegacyBuildManager internal buildManager;
+    LegacyMessenger internal legacyMessenger;
+    ProxyBuilder internal proxyBuilder;
+    LifetimeNft internal lifetimeNft;
+    FeeRegistry internal feeRegistry;
+    PluginsRegistry internal pluginRegistry;
+
+    function run() public virtual {
         salt = bytes32(vm.envUint("SALT"));
         proxySalt = bytes32(vm.envUint("PROXY_SALT"));
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -47,30 +55,25 @@ contract MockCryptoLegacyFactoryDeploy is Script {
 
         Create3Factory factory = Create3Factory(create3Factory);
 
-        LifetimeNft lifetimeNft;
         if (LibDeploy._getNftMainnetId() == block.chainid) {
-            //TODO: change from mock to simple one
-            lifetimeNft = LibMockDeploy._deployMockLifeTimeNft(factory, salt, msg.sender);
+            lifetimeNft = LibDeploy._deployLifeTimeNft(factory, salt, msg.sender);
         } else {
-            //TODO: change from mock to simple one
-            lifetimeNft = LifetimeNft(LibMockDeploy._mockLifetimeNftPredictedAddress(factory, salt));
+            lifetimeNft = LifetimeNft(LibDeploy._lifetimeNftPredictedAddress(factory, salt));
         }
-        ProxyBuilder proxyBuilder = LibDeploy._deployProxyBuilder(factory, salt, msg.sender);
-        FeeRegistry feeRegistry = LibDeploy._deployFeeRegistry(factory, salt, proxySalt, msg.sender, proxyBuilder, refDiscountPct, refSharePct, lifetimeNft, nftLockPeriod, nftTransferTimeout);
-        PluginsRegistry pluginRegistry = LibDeploy._deployPluginsRegistryAndSet(factory, salt, msg.sender);
+        proxyBuilder = LibDeploy._deployProxyBuilder(factory, salt, msg.sender);
+        feeRegistry = LibDeploy._deployFeeRegistry(factory, salt, proxySalt, msg.sender, proxyBuilder, refDiscountPct, refSharePct, lifetimeNft, nftLockPeriod, nftTransferTimeout);
+        pluginRegistry = LibDeploy._deployPluginsRegistryAndSet(factory, salt, msg.sender);
 
-        //TODO: change from mock to simple one
-        (CryptoLegacyBuildManager buildManager, , ) = LibMockDeploy._deployMockBuildManager(factory, salt, msg.sender,  feeRegistry, pluginRegistry, lifetimeNft);
+        (buildManager, , ) = LibDeploy._deployBuildManager(factory, salt, msg.sender,  feeRegistry, pluginRegistry, lifetimeNft);
         LibDeploy._deployExternalLens(factory, salt, buildManager);
 
         LibDeploy._initFeeRegistry(feeRegistry, buildManager, lifetimeFee, buildFee, updateFee);
         LibDeploy._setFeeRegistryCrossChains(feeRegistry);
-        LegacyMessenger legacyMessenger = LibDeploy._deployLegacyMessenger(factory, salt, msg.sender, buildManager);
+        legacyMessenger = LibDeploy._deployLegacyMessenger(factory, salt, msg.sender, buildManager);
 
-        //TODO: change from mock to simple one
-        LibMockDeploy._deployZeroCryptoLegacy(factory, salt);
+        LibDeploy._deployZeroCryptoLegacy(factory, salt);
 
-        SignatureRoleTimelock srt = LibDeploy._deploySignatureRoleTimelock(factory, salt, buildManager, proxyBuilder, legacyMessenger, multiSig1, multiSig2, multiSig3);
+        srt = LibDeploy._deploySignatureRoleTimelock(factory, salt, buildManager, proxyBuilder, legacyMessenger, multiSig1, multiSig2, multiSig3);
 
         LibDeploy._initMultisigRights(feeRegistry, multiSig2);
         LibDeploy._transferOwnershipWithLm(address(srt), buildManager, proxyBuilder, legacyMessenger);
