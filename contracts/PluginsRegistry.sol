@@ -4,6 +4,7 @@
 
 pragma solidity 0.8.24;
 
+import "./interfaces/ArbSys.sol";
 import "./interfaces/IPluginsRegistry.sol";
 import "./interfaces/ICryptoLegacyPlugin.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -36,7 +37,7 @@ contract PluginsRegistry is IPluginsRegistry, Ownable {
    */
   function addPlugin(address _plugin, string memory _description) public onlyOwner {
     pluginsList.add(_plugin);
-    pluginDescriptionBlockNumbers[_plugin].push(uint64(block.number));
+    pluginDescriptionBlockNumbers[_plugin].push(uint64(block.chainid == 42161 ? ArbSys(address(100)).arbBlockNumber() : block.number));
     emit AddPlugin(_plugin, _description);
   }
 
@@ -47,7 +48,7 @@ contract PluginsRegistry is IPluginsRegistry, Ownable {
    * @param _description A string describing the plugin update.
    */
   function addPluginDescription(address _plugin, string memory _description) public onlyOwner {
-    pluginDescriptionBlockNumbers[_plugin].push(uint64(block.number));
+    pluginDescriptionBlockNumbers[_plugin].push(uint64(block.chainid == 42161 ? ArbSys(address(100)).arbBlockNumber() : block.number));
     emit AddPluginDescription(_plugin, _description);
   }
 

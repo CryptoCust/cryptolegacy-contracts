@@ -4,6 +4,7 @@
 
 pragma solidity 0.8.24;
 
+import "./interfaces/ArbSys.sol";
 import "./BuildManagerOwnable.sol";
 import "./interfaces/IBeneficiaryRegistry.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
@@ -37,8 +38,9 @@ contract BeneficiaryRegistry is IBeneficiaryRegistry, BuildManagerOwnable {
    */
   function _setBlockNumberChange(address _cryptoLegacy) internal {
     uint256[] storage blockNumbers = blockNumberChangesByCryptoLegacy[_cryptoLegacy];
-    if (blockNumbers.length == 0 || blockNumbers[blockNumbers.length - 1] != block.number) {
-      blockNumbers.push(block.number);
+    uint256 blockNumber = block.chainid == 42161 ? ArbSys(address(100)).arbBlockNumber() : block.number;
+    if (blockNumbers.length == 0 || blockNumbers[blockNumbers.length - 1] != blockNumber) {
+      blockNumbers.push(blockNumber);
     }
   }
 

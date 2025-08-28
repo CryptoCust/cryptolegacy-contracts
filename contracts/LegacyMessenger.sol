@@ -4,6 +4,7 @@
 
 pragma solidity 0.8.24;
 
+import "./interfaces/ArbSys.sol";
 import "./BuildManagerOwnable.sol";
 import "./interfaces/ILegacyMessenger.sol";
 
@@ -41,7 +42,7 @@ contract LegacyMessenger is ILegacyMessenger, BuildManagerOwnable {
     for (uint256 i = 0; i < _recipientList.length; i++) {
       emit LegacyMessage(_cryptoLegacy, _recipientList[i], _messageHashList[i], _messageList[i], _messageType);
       emit LegacyMessageCheck(_cryptoLegacy, _recipientList[i], _messageHashList[i], _messageCheckList[i], _messageType);
-      messagesGotByBlockNumber[_recipientList[i]].push(uint64(block.number));
+      messagesGotByBlockNumber[_recipientList[i]].push(uint64(block.chainid == 42161 ? ArbSys(address(100)).arbBlockNumber() : block.number));
     }
   }
 
