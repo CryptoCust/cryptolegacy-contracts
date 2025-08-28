@@ -4,6 +4,7 @@
 pragma solidity 0.8.24;
 
 import "./LibDiamond.sol";
+import "../interfaces/ArbSys.sol";
 import "../interfaces/IFeeRegistry.sol";
 import "../interfaces/ICryptoLegacy.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -597,7 +598,7 @@ library LibCryptoLegacy {
             td.lastBalance = IERC20(_tokens[i]).balanceOf(address(this));
         }
         emit ICryptoLegacy.TransferTreasuryTokensToLegacy(_holders, _tokens);
-        cls.transfersGotByBlockNumber.push(uint64(block.number));
+        cls.transfersGotByBlockNumber.push(uint64(block.chainid == 42161 ? ArbSys(address(100)).arbBlockNumber() : block.number));
     }
 
     /**
@@ -616,7 +617,7 @@ library LibCryptoLegacy {
             t.safeTransfer(_transfers[i].recipient, _transfers[i].amount);
         }
         emit ICryptoLegacy.TransferTokensFromLegacy(_transfers);
-        cls.transfersGotByBlockNumber.push(uint64(block.number));
+        cls.transfersGotByBlockNumber.push(uint64(block.chainid == 42161 ? ArbSys(address(100)).arbBlockNumber() : block.number));
     }
 
     /**

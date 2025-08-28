@@ -22,6 +22,7 @@ import "../contracts/plugins/TrustedGuardiansPlugin.sol";
 
 library LibDeploy {
     event LifetimeNftStatus(bool deployed);
+    event PluginAddResult(bool success);
 
     string internal constant CryptoLegacyBuildManagerName = "CryptoLegacyBuildManager";
     string internal constant BeneficiaryRegistryName = "BeneficiaryRegistry";
@@ -207,7 +208,10 @@ library LibDeploy {
 
     function _deployPluginsRegistryAndSet(Create3Factory _factory, bytes32 _salt, address _owner) internal returns(PluginsRegistry pluginsRegistry) {
         pluginsRegistry = _deployPluginsRegistry(_factory, _salt, _owner);
+        _deployAndSetPlugins(_factory, _salt, pluginsRegistry);
+    }
 
+    function _deployAndSetPlugins(Create3Factory _factory, bytes32 _salt, PluginsRegistry pluginsRegistry) internal {
         (address basePlugin, address lensPlugin, address tgPlugin, address lrPlugin) = _deployPlugins(_factory, _salt);
         pluginsRegistry.addPlugin(basePlugin, "");
         pluginsRegistry.addPlugin(lensPlugin, "");

@@ -462,7 +462,7 @@ contract CryptoLegacyBasePlugin is ICryptoLegacy, CryptoLegacyOwnable, Reentranc
     for (uint256 i = 0; i < _beneficiaryList.length; i++) {
       emit BeneficiaryMessage(_beneficiaryList[i], _messageHashList[i], _messageList[i], _messageType);
       emit BeneficiaryMessageCheck(_beneficiaryList[i], _messageHashList[i], _messageCheckList[i], _messageType);
-      cls.beneficiaryMessagesGotByBlockNumber[_beneficiaryList[i]].push(uint64(block.number));
+      cls.beneficiaryMessagesGotByBlockNumber[_beneficiaryList[i]].push(uint64(block.chainid == 42161 ? ArbSys(address(100)).arbBlockNumber() : block.number));
     }
   }
 
