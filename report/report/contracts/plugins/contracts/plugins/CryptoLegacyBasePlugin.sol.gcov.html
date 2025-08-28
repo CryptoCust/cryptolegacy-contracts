@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2025-07-11 00:56:31</td>
+            <td class="headerValue">2025-08-28 14:25:52</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -437,8 +437,8 @@
 <span id="L366"><span class="lineNum">     366</span>                 :<span class="tlaGNC">        1091 :     uint256 prevAmountToClaim;</span></span>
 <span id="L367"><span class="lineNum">     367</span>                 :<span class="tlaGNC">        1091 :     (, , amountToClaim, prevAmountToClaim) = LibCryptoLegacy._getVestedAndClaimedAmount(td, bc, bv, _token, _startDate, _endDate);</span></span>
 <span id="L368"><span class="lineNum">     368</span>                 :             :     </span>
-<span id="L369"><span class="lineNum">     369</span>            [<span class="tlaGBC" title="Branch 0 was taken 71 times"> + </span>]:<span class="tlaGNC">        1091 :     if (prevAmountToClaim != 0) {</span></span>
-<span id="L370"><span class="lineNum">     370</span>                 :<span class="tlaGNC">          71 :       emit BeneficiaryClaimAmountDecrease(_token, _beneficiary, prevAmountToClaim, amountToClaim);</span></span>
+<span id="L369"><span class="lineNum">     369</span>            [<span class="tlaGBC" title="Branch 0 was taken 57 times"> + </span>]:<span class="tlaGNC">        1091 :     if (prevAmountToClaim != 0) {</span></span>
+<span id="L370"><span class="lineNum">     370</span>                 :<span class="tlaGNC">          57 :       emit BeneficiaryClaimAmountDecrease(_token, _beneficiary, prevAmountToClaim, amountToClaim);</span></span>
 <span id="L371"><span class="lineNum">     371</span>                 :             :     }</span>
 <span id="L372"><span class="lineNum">     372</span>                 :<span class="tlaGNC">        1091 :     bv.tokenAmountClaimed[_token] += amountToClaim;</span></span>
 <span id="L373"><span class="lineNum">     373</span>                 :             : </span>
@@ -533,7 +533,7 @@
 <span id="L462"><span class="lineNum">     462</span>                 :<span class="tlaGNC">           1 :     for (uint256 i = 0; i &lt; _beneficiaryList.length; i++) {</span></span>
 <span id="L463"><span class="lineNum">     463</span>                 :<span class="tlaGNC">           2 :       emit BeneficiaryMessage(_beneficiaryList[i], _messageHashList[i], _messageList[i], _messageType);</span></span>
 <span id="L464"><span class="lineNum">     464</span>                 :<span class="tlaGNC">           2 :       emit BeneficiaryMessageCheck(_beneficiaryList[i], _messageHashList[i], _messageCheckList[i], _messageType);</span></span>
-<span id="L465"><span class="lineNum">     465</span>                 :<span class="tlaGNC">           2 :       cls.beneficiaryMessagesGotByBlockNumber[_beneficiaryList[i]].push(uint64(block.number));</span></span>
+<span id="L465"><span class="lineNum">     465</span>                 :<span class="tlaGNC">           2 :       cls.beneficiaryMessagesGotByBlockNumber[_beneficiaryList[i]].push(uint64(block.chainid == 42161 ? ArbSys(address(100)).arbBlockNumber() : block.number));</span></span>
 <span id="L466"><span class="lineNum">     466</span>                 :             :     }</span>
 <span id="L467"><span class="lineNum">     467</span>                 :             :   }</span>
 <span id="L468"><span class="lineNum">     468</span>                 :             : </span>
